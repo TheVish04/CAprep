@@ -137,105 +137,305 @@ CAprep addresses these by providing a single platform for questions, resources, 
 
 ## 5. System Architecture
 
-### Architecture diagram (high-level)
+### Architecture diagram (high-level, detailed)
 
 ```mermaid
 flowchart TB
     subgraph Client["Client (Browser)"]
-        SPA["React SPA\n(Vite build)"]
-        PWA["PWA / Service Worker"]
-        SPA --> PWA
+        direction TB
+        subgraph FrontendCore["Frontend core"]
+            Router["React Router 7"]
+            Main["main.jsx\ncreateRoot, SW register"]
+            App["App.jsx\nRoutes, ProtectedRoute,\nErrorBoundary, AuthRedirect"]
+            Main --> App
+            App --> Router
+        end
+        subgraph Pages["Pages & features"]
+            Landing["Landing, About,\nContact, FAQ"]
+            AuthPages["Login, Register,\nForgotPassword, ResetPassword"]
+            AppPages["Dashboard, Questions,\nQuiz, QuizHistory, Resources,\nBookmarks, UserProfile"]
+            Chat["ChatBotPage\n(AI assistant)"]
+            AdminPages["AdminPanel, ResourceUploader,\nAdminAnnouncements, Analytics"]
+        end
+        subgraph FrontendUtils["Utils & state"]
+            AxiosConfig["axiosConfig.js\nbaseURL, interceptors\nBearer token, 401 refresh"]
+            ApiUtils["apiUtils.js\ngetApiBaseUrl, getAuthToken,\nrefreshToken, get/post"]
+            LocalStorage["localStorage\nauth object, token, expires"]
+        end
+        PWA["PWA: manifest.json\nService worker cache static"]
+        Router --> Pages
+        Pages --> AxiosConfig
+        AxiosConfig --> ApiUtils
+        ApiUtils --> LocalStorage
+        FrontendCore --> PWA
     end
 
-    subgraph Backend["Backend (Node.js)"]
-        Express["Express Server"]
-        Auth["Auth Middleware\n(JWT)"]
-        Cache["Cache Middleware\n(node-cache)"]
-        Routes["API Routes\n/auth, questions, resources,\nusers, admin, ai-quiz,\ndiscussions, dashboard,\nannouncements, notifications"]
-        Express --> Auth
-        Express --> Cache
-        Express --> Routes
+    subgraph Backend["Backend (Node.js / Express)"]
+        direction TB
+        Server["server.js\nTrust proxy, startServer"]
+        subgraph Security["Security & global middleware"]
+            Helmet["Helmet"]
+            XSS["xss-clean"]
+            MongoSanitize["express-mongo-sanitize"]
+            RateLimit["express-rate-limit\n200 req / 15 min per IP"]
+            BodyParser["express.json 20MB\nurlencoded 20MB"]
+            CORS["CORS allowlist\ncredentials true"]
+        end
+        Bootstrap["bootstrap/routes.js\nmountRoutes"]
+        subgraph RouteGroups["API route groups"]
+            R1["/api/auth\nsend-otp, verify-otp, login,\nregister, me, refresh-token,\nforgot-password, reset-password"]
+            R2["/api/questions\nCRUD admin, list, count,\nquiz, available-subjects, batch"]
+            R3["/api/resources\nlist, get, rate, CRUD admin,\ndownload, download-url"]
+            R4["/api/users\nme, bookmarks, quiz-history,\nprofile, bookmark-folders"]
+            R5["/api/admin\nusers, analytics, announcements,\naudit, clear-cache"]
+            R6["/api/ai-quiz\ngenerate, ask"]
+            R7["/api/discussions\nuser/me, item messages,\nlike, edit, delete"]
+            R8["/api/dashboard\ndata, study-session,\nviews, resource-engagement"]
+            R9["/api/announcements\nGET active"]
+            R10["/api/notifications\nlist, read-all, mark read"]
+        end
+        subgraph BackendMiddleware["Per-route middleware"]
+            AuthMW["authMiddleware\nJWT verify, req.user"]
+            AdminMW["adminMiddleware\nrole admin"]
+            CacheMW["cacheMiddleware\nGET cache by user+URL"]
+        end
+        Server --> Security
+        Server --> Bootstrap
+        Bootstrap --> RouteGroups
+        RouteGroups --> AuthMW
+        RouteGroups --> AdminMW
+        RouteGroups --> CacheMW
     end
 
-    subgraph Data["Data & Services"]
-        MongoDB[(MongoDB)]
-        Cloudinary["Cloudinary\n(PDFs, profile images)"]
-        SendGrid["SendGrid / SMTP\n(OTP, password reset)"]
-        Gemini["Google Gemini\n(AI quiz & chat)"]
+    subgraph DataLayer["Data layer"]
+        subgraph MongoDB["MongoDB collections"]
+            Users[(users)]
+            Questions[(questions)]
+            Resources[(resources)]
+            Discussions[(discussions)]
+            Notifications[(notifications)]
+            Announcements[(announcements)]
+            AuditLogs[(auditlogs)]
+        end
+        Mongoose["Mongoose\nconnectDB, models"]
     end
 
-    Client -->|HTTPS / REST API\nBearer token| Backend
-    Backend -->|Mongoose| MongoDB
-    Backend -->|Upload / proxy| Cloudinary
-    Backend -->|Send email| SendGrid
-    Backend -->|Generate content| Gemini
+    subgraph External["External services"]
+        Cloudinary["Cloudinary\nPDF upload, profile image\nfolder ca-exam-platform/resources"]
+        SendGrid["SendGrid or SMTP\nOTP email, password reset\nverified_emails.json fallback"]
+        Gemini["Google Gemini\nAI quiz generate\nChat ask with system prompt"]
+    end
+
+    Client -->|HTTPS REST\nAuthorization Bearer| Backend
+    Backend --> Mongoose
+    Mongoose --> MongoDB
+    Backend -->|upload_stream, destroy| Cloudinary
+    Backend -->|sgMail or nodemailer| SendGrid
+    Backend -->|generateContent, startChat| Gemini
 ```
 
-### Request–response flow diagram
+### Request–response flow diagram (detailed)
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Frontend
-    participant Backend
-    participant Middleware
-    participant DB
-    participant External
+    participant Page as Page/Component
+    participant Axios as Axios instance
+    participant ApiUtils as apiUtils
+    participant Backend as Express
+    participant AuthMW as authMiddleware
+    participant CacheMW as cacheMiddleware
+    participant Handler as Route handler
+    participant DB as MongoDB
+    participant Ext as Cloudinary/Gemini/SendGrid
 
-    User->>Frontend: Navigate / Action
-    Frontend->>Frontend: Add Bearer token (axios)
-    Frontend->>Backend: HTTP Request (e.g. GET /api/questions)
+    User->>Page: Click or navigate
+    Page->>Axios: api.get/post with config
+    Axios->>ApiUtils: getAuthToken from localStorage
+    ApiUtils-->>Axios: token or null
+    Axios->>Axios: Request interceptor add Authorization Bearer
+    Axios->>Backend: HTTP request to /api/...
 
-    Backend->>Middleware: Rate limit + CORS
-    Middleware->>Middleware: authMiddleware (JWT verify)
-    alt GET + cache hit
-        Middleware->>Frontend: Cached response
-    else Cache miss or mutation
-        Middleware->>Backend: Route handler
-        Backend->>DB: Mongoose query
-        DB->>Backend: Data
-        alt Mutation
-            Backend->>Backend: clearCache(...)
-        end
-        Backend->>Frontend: JSON response
+    Backend->>Backend: Helmet, xss-clean, mongo-sanitize
+    Backend->>Backend: Rate limit check per IP
+    Backend->>Backend: CORS check origin
+    Backend->>Backend: express.json parse body
+
+    alt Route needs auth
+        Backend->>AuthMW: authMiddleware
+        AuthMW->>AuthMW: Extract Bearer token from header
+        AuthMW->>AuthMW: jwt.verify with JWT_SECRET
+        AuthMW->>DB: User.findById decoded.id
+        DB-->>AuthMW: user doc
+        AuthMW->>Backend: req.user set, next
     end
 
-    Frontend->>User: Render UI
+    alt GET and cache enabled
+        Backend->>CacheMW: cacheMiddleware
+        CacheMW->>CacheMW: key = userId + originalUrl
+        alt cache hit
+            CacheMW->>Axios: res.send cached body
+            Axios->>Page: response
+            Page->>User: Render UI
+        else cache miss
+            CacheMW->>Backend: next, patch res.send to cache on 2xx
+        end
+    end
 
-    Note over Backend,External: Uploads use Cloudinary, AI uses Gemini, email uses SendGrid
+    Backend->>Handler: Route handler runs
+    alt Read path
+        Handler->>DB: Model.find, aggregate, etc.
+        DB-->>Handler: documents
+        Handler->>Axios: res.json data
+    else Write path or external
+        Handler->>DB: Model.create, update, delete
+        Handler->>Handler: clearCache for affected keys
+        alt Upload or AI or email
+            Handler->>Ext: Cloudinary upload, Gemini API, SendGrid send
+            Ext-->>Handler: result
+        end
+        Handler->>Axios: res.status 201/200 json
+    end
+
+    Axios->>Page: response
+    Page->>User: Update UI
+
+    alt Response 401 and not refresh endpoint
+        Axios->>Axios: Response interceptor
+        Axios->>ApiUtils: refreshToken POST /auth/refresh-token
+        alt Refresh success
+            ApiUtils->>ApiUtils: setAuthToken new token
+            Axios->>Backend: Retry request with new token
+        else Refresh fail
+            ApiUtils->>ApiUtils: clearAuthToken
+            Axios->>Page: Navigate to /login
+        end
+    end
 ```
 
-### Component diagram (backend layers)
+### Component diagram (backend layers, detailed)
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph Incoming["Incoming request"]
-        Req["HTTP Request"]
+        Req["HTTP Request\nMethod, path, headers, body"]
     end
 
-    subgraph Middleware["Middleware chain"]
-        M1["Helmet, XSS,\nMongo sanitize"]
-        M2["Rate limit"]
-        M3["Body parser\n(20MB)"]
-        M4["CORS"]
-        M5["Auth / Admin\n/ Cache (per route)"]
+    subgraph Global["Global middleware order"]
+        direction LR
+        G1["1. Helmet"]
+        G2["2. xss-clean"]
+        G3["3. mongo-sanitize"]
+        G4["4. Rate limit\n/api 200 per 15min"]
+        G5["5. express.json\nurlencoded 20MB"]
+        G6["6. CORS\nallowlist credentials"]
+        G7["7. Optional\nrequest log dev"]
+        G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7
     end
 
-    subgraph Handlers["Route handlers"]
-        H["Routes: auth, questions,\nresources, users, admin,\nai-quiz, discussions,\ndashboard, announcements,\nnotifications"]
+    subgraph Routes["Route modules and usage"]
+        direction TB
+        subgraph AuthRoutes["auth.js"]
+            A1["send-otp, verify-otp\nlogin, register"]
+            A2["me, refresh-token\nforgot, verify-reset, reset"]
+            A1 --> UserModel
+            A2 --> UserModel
+        end
+        subgraph QuestionRoutes["questions.js"]
+            Q1["GET list, count, quiz\nbatch, available-subjects"]
+            Q2["POST PUT DELETE\nadmin only"]
+            Q1 --> QuestionModel
+            Q1 --> UserModel
+            Q2 --> QuestionModel
+        end
+        subgraph ResourceRoutes["resources.js"]
+            R1["GET list, count, id\nrate, download"]
+            R2["POST PUT DELETE\nadmin multer upload"]
+            R1 --> ResourceModel
+            R1 --> UserModel
+            R2 --> ResourceModel
+            R2 --> Cloudinary
+        end
+        subgraph UserRoutes["users.js"]
+            U1["me, bookmarks\nquiz-history, profile"]
+            U2["bookmark-folders\nprofile-image"]
+            U1 --> UserModel
+            U1 --> QuestionModel
+            U1 --> ResourceModel
+            U2 --> UserModel
+            U2 --> Cloudinary
+        end
+        subgraph AdminRoutes["admin.js"]
+            AD1["users, analytics\nannouncements CRUD, audit"]
+            AD1 --> UserModel
+            AD1 --> ResourceModel
+            AD1 --> AnnouncementModel
+            AD1 --> AuditLogModel
+            AD1 --> NotificationModel
+        end
+        subgraph AiQuizRoutes["aiQuiz.js"]
+            AI1["generate, ask"]
+            AI1 --> QuestionModel
+            AI1 --> Gemini
+        end
+        subgraph DiscussionRoutes["discussions.js"]
+            D1["user/me, get, message\nlike, edit, delete"]
+            D1 --> DiscussionModel
+            D1 --> UserModel
+        end
+        subgraph DashboardRoutes["dashboard.js"]
+            DH1["GET dashboard\nstudy-session, views"]
+            DH1 --> UserModel
+            DH1 --> QuestionModel
+            DH1 --> ResourceModel
+            DH1 --> AnnouncementModel
+        end
+        subgraph AnnounceRoutes["announcements.js"]
+            AN1["GET active"]
+            AN1 --> AnnouncementModel
+        end
+        subgraph NotifRoutes["notifications.js"]
+            N1["GET list\nPATCH read"]
+            N1 --> NotificationModel
+        end
     end
 
-    subgraph DataLayer["Data layer"]
-        Models["Mongoose models\n(User, Question, Resource,\nDiscussion, Notification,\nAnnouncement, AuditLog)"]
-        Services["Services\n(otpService)"]
-        Validators["Validators\n(Joi)"]
+    subgraph PerRoute["Per-route middleware"]
+        AuthMW["authMiddleware"]
+        AdminMW["adminMiddleware"]
+        CacheMW["cacheMiddleware"]
     end
 
-    Req --> M1 --> M2 --> M3 --> M4 --> M5 --> H
-    H --> Models
-    H --> Services
-    H --> Validators
-    Models --> MongoDB[(MongoDB)]
+    subgraph Models["Mongoose models"]
+        UserModel["User"]
+        QuestionModel["Question"]
+        ResourceModel["Resource"]
+        DiscussionModel["Discussion"]
+        NotificationModel["Notification"]
+        AnnouncementModel["Announcement"]
+        AuditLogModel["AuditLog"]
+    end
+
+    subgraph Support["Support layer"]
+        otpService["otpService\ngenerateOTP, verifyOTP\nsendOTPEmail, sendPasswordReset"]
+        questionValidator["questionValidator\nJoi questionSchema"]
+        cloudinary["config/cloudinary"]
+        database["config/database\nconnectDB"]
+    end
+
+    subgraph External["External"]
+        Cloudinary["Cloudinary"]
+        Gemini["Google Gemini"]
+        SendGrid["SendGrid or SMTP"]
+    end
+
+    Req --> Global
+    Global --> Routes
+    Routes --> PerRoute
+    PerRoute --> Models
+    PerRoute --> Support
+    Models --> database
+    otpService --> SendGrid
 ```
 
 *Diagrams use [Mermaid](https://mermaid.js.org/); they render on GitHub and in editors that support Mermaid.*
