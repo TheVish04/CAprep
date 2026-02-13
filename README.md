@@ -137,6 +137,70 @@ CAprep addresses these by providing a single platform for questions, resources, 
 
 ## 5. System Architecture
 
+### Project overview: what CAprep is and how it works
+
+This diagram explains the project from a product perspective—what it is, who it is for, and how the main parts fit together. No technical implementation details, just the idea of the product.
+
+```mermaid
+flowchart TB
+    subgraph What["What is CAprep?"]
+        Purpose["CAprep: CA Exam Prep Platform\nHelps Indian Chartered Accountancy students prepare for\nFoundation, Intermediate, and Final exams (ICAI syllabus)"]
+    end
+
+    subgraph Who["Who uses it?"]
+        Student["CA Student\nRegisters with email, verifies OTP\nLogs in to practice and track progress"]
+        Admin["Admin\nManages questions, uploads PDFs\nCreates announcements, views analytics"]
+    end
+
+    subgraph How["How does it work? — Main pillars"]
+        direction TB
+        subgraph Content["Study content"]
+            Q["Past paper questions\nMTP, RTP, PYQS, Model TP\nBy subject, year, month, exam stage"]
+            R["Study resources\nPDFs to view or download\nSame filters as questions"]
+        end
+        subgraph Practice["Practice & assess"]
+            QuizBank["Quiz from question bank\nMCQ by subject and stage\nScore and review answers"]
+            AIQuiz["AI-generated quiz\nGemini creates new MCQs\nInstant practice with explanations"]
+        end
+        subgraph Help["Get help"]
+            AIChat["CA Prep Assistant\nChat with AI tutor\nCA syllabus only, no code or off-topic"]
+        end
+        subgraph Engage["Engage & organize"]
+            Discuss["Discussions\nOne thread per question or resource\nReply, like, edit, delete"]
+            Bookmark["Bookmarks\nSave questions and resources\nFolders with notes, move between folders"]
+        end
+        subgraph Track["Track progress"]
+            Dash["Dashboard\nQuiz score trends, study hours\nRecent and bookmarked content\nNew resources, announcements"]
+        end
+    end
+
+    subgraph Flow["Typical student journey"]
+        F1["Land on site"]
+        F2["Register and verify email"]
+        F3["Login"]
+        F4["Browse questions and resources\nor take a quiz or ask AI"]
+        F5["Bookmark, discuss, log study time"]
+        F6["Check dashboard for progress"]
+        F1 --> F2 --> F3 --> F4 --> F5 --> F6
+    end
+
+    What --> Who
+    Who --> How
+    How --> Flow
+
+    Student -.->|uses| Content
+    Student -.->|uses| Practice
+    Student -.->|uses| Help
+    Student -.->|uses| Engage
+    Student -.->|uses| Track
+    Admin -.->|manages| Content
+    Admin -.->|views| Track
+```
+
+In one sentence: **CAprep is a CA exam prep web app where students study past questions and PDFs, take bank or AI-generated quizzes, chat with an AI tutor, discuss and bookmark content, and track their progress on a dashboard—while admins manage content and announcements.**
+
+---
+
 ### Architecture diagram (high-level, detailed)
 
 ```mermaid
