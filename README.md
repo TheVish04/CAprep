@@ -190,7 +190,7 @@ The application follows a client-server architecture with clear separation of co
    - `MONGODB_URI`: MongoDB connection string
    - `JWT_SECRET`: Secret key for JWT
    - `CORS_ORIGIN`: Allowed origins for CORS
-   - `EMAIL_*`: Email service configuration
+   - `EMAIL_*` or **SendGrid**: For transactional email (OTPs, etc.) use **SendGrid** — no DNS required with Single Sender Verification. Set `SENDGRID_API_KEY` (from [SendGrid](https://sendgrid.com)) and `SENDGRID_FROM_EMAIL` (your verified sender). Works with Vercel/Render serverless. Otherwise use `EMAIL_USER` + `EMAIL_PASSWORD` (Gmail SMTP).
    - `CLOUDINARY_*`: Cloudinary configuration
    - `GOOGLE_AI_API_KEY`: Google AI API key
 3. Deploy using a cloud provider (e.g., Render, Railway, or AWS):
@@ -237,7 +237,9 @@ The application follows a client-server architecture with clear separation of co
      JWT_SECRET=your_jwt_secret
      JWT_EXPIRY=7d
      CORS_ORIGIN=http://localhost:5173
-     EMAIL_SERVICE=
+     # Email: SendGrid (recommended for Vercel/Render) or Gmail SMTP
+     SENDGRID_API_KEY=
+     SENDGRID_FROM_EMAIL=your-verified-sender@example.com
      EMAIL_USER=
      EMAIL_PASSWORD=
      CLOUDINARY_CLOUD_NAME=
