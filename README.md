@@ -209,24 +209,24 @@ flowchart TB
         direction TB
         subgraph FrontendCore["Frontend core"]
             Router["React Router 7"]
-            Main["main.jsx\ncreateRoot, SW register"]
-            App["App.jsx\nRoutes, ProtectedRoute,\nErrorBoundary, AuthRedirect"]
+            Main["main.jsx<br/>createRoot, SW register"]
+            App["App.jsx<br/>Routes, ProtectedRoute,<br/>ErrorBoundary, AuthRedirect"]
             Main --> App
             App --> Router
         end
         subgraph Pages["Pages & features"]
-            Landing["Landing, About,\nContact, FAQ"]
-            AuthPages["Login, Register,\nForgotPassword, ResetPassword"]
-            AppPages["Dashboard, Questions,\nQuiz, QuizHistory, Resources,\nBookmarks, UserProfile"]
-            Chat["ChatBotPage\n(AI assistant)"]
-            AdminPages["AdminPanel, ResourceUploader,\nAdminAnnouncements, Analytics"]
+            Landing["Landing, About,<br/>Contact, FAQ"]
+            AuthPages["Login, Register,<br/>ForgotPassword, ResetPassword"]
+            AppPages["Dashboard, Questions,<br/>Quiz, QuizHistory, Resources,<br/>Bookmarks, UserProfile"]
+            Chat["ChatBotPage<br/>(AI assistant)"]
+            AdminPages["AdminPanel, ResourceUploader,<br/>AdminAnnouncements, Analytics"]
         end
         subgraph FrontendUtils["Utils & state"]
-            AxiosConfig["axiosConfig.js\nbaseURL, interceptors\nBearer token, 401 refresh"]
-            ApiUtils["apiUtils.js\ngetApiBaseUrl, getAuthToken,\nrefreshToken, get/post"]
-            LocalStorage["localStorage\nauth object, token, expires"]
+            AxiosConfig["axiosConfig.js<br/>baseURL, interceptors<br/>Bearer token, 401 refresh"]
+            ApiUtils["apiUtils.js<br/>getApiBaseUrl, getAuthToken,<br/>refreshToken, get/post"]
+            LocalStorage["localStorage<br/>auth object, token, expires"]
         end
-        PWA["PWA: manifest.json\nService worker cache static"]
+        PWA["PWA: manifest.json<br/>Service worker cache static"]
         Router --> Pages
         Pages --> AxiosConfig
         AxiosConfig --> ApiUtils
@@ -236,32 +236,32 @@ flowchart TB
 
     subgraph Backend["Backend (Node.js / Express)"]
         direction TB
-        Server["server.js\nTrust proxy, startServer"]
+        Server["server.js<br/>Trust proxy, startServer"]
         subgraph Security["Security & global middleware"]
             Helmet["Helmet"]
             XSS["xss-clean"]
             MongoSanitize["express-mongo-sanitize"]
-            RateLimit["express-rate-limit\n200 req / 15 min per IP"]
-            BodyParser["express.json 20MB\nurlencoded 20MB"]
-            CORS["CORS allowlist\ncredentials true"]
+            RateLimit["express-rate-limit<br/>200 req / 15 min per IP"]
+            BodyParser["express.json 20MB<br/>urlencoded 20MB"]
+            CORS["CORS allowlist<br/>credentials true"]
         end
-        Bootstrap["bootstrap/routes.js\nmountRoutes"]
+        Bootstrap["bootstrap/routes.js<br/>mountRoutes"]
         subgraph RouteGroups["API route groups"]
-            R1["/api/auth\nsend-otp, verify-otp, login,\nregister, me, refresh-token,\nforgot-password, reset-password"]
-            R2["/api/questions\nCRUD admin, list, count,\nquiz, available-subjects, batch"]
-            R3["/api/resources\nlist, get, rate, CRUD admin,\ndownload, download-url"]
-            R4["/api/users\nme, bookmarks, quiz-history,\nprofile, bookmark-folders"]
-            R5["/api/admin\nusers, analytics, announcements,\naudit, clear-cache"]
-            R6["/api/ai-quiz\ngenerate, ask"]
-            R7["/api/discussions\nuser/me, item messages,\nlike, edit, delete"]
-            R8["/api/dashboard\ndata, study-session,\nviews, resource-engagement"]
-            R9["/api/announcements\nGET active"]
-            R10["/api/notifications\nlist, read-all, mark read"]
+            R1["/api/auth<br/>send-otp, verify-otp, login,<br/>register, me, refresh-token,<br/>forgot-password, reset-password"]
+            R2["/api/questions<br/>CRUD admin, list, count,<br/>quiz, available-subjects, batch"]
+            R3["/api/resources<br/>list, get, rate, CRUD admin,<br/>download, download-url"]
+            R4["/api/users<br/>me, bookmarks, quiz-history,<br/>profile, bookmark-folders"]
+            R5["/api/admin<br/>users, analytics, announcements,<br/>audit, clear-cache"]
+            R6["/api/ai-quiz<br/>generate, ask"]
+            R7["/api/discussions<br/>user/me, item messages,<br/>like, edit, delete"]
+            R8["/api/dashboard<br/>data, study-session,<br/>views, resource-engagement"]
+            R9["/api/announcements<br/>GET active"]
+            R10["/api/notifications<br/>list, read-all, mark read"]
         end
         subgraph BackendMiddleware["Per-route middleware"]
-            AuthMW["authMiddleware\nJWT verify, req.user"]
-            AdminMW["adminMiddleware\nrole admin"]
-            CacheMW["cacheMiddleware\nGET cache by user+URL"]
+            AuthMW["authMiddleware<br/>JWT verify, req.user"]
+            AdminMW["adminMiddleware<br/>role admin"]
+            CacheMW["cacheMiddleware<br/>GET cache by user+URL"]
         end
         Server --> Security
         Server --> Bootstrap
@@ -281,16 +281,16 @@ flowchart TB
             Announcements[(announcements)]
             AuditLogs[(auditlogs)]
         end
-        Mongoose["Mongoose\nconnectDB, models"]
+        Mongoose["Mongoose<br/>connectDB, models"]
     end
 
     subgraph External["External services"]
-        Cloudinary["Cloudinary\nPDF upload, profile image\nfolder ca-exam-platform/resources"]
-        SendGrid["SendGrid or SMTP\nOTP email, password reset\nverified_emails.json fallback"]
-        Gemini["Google Gemini\nAI quiz generate\nChat ask with system prompt"]
+        Cloudinary["Cloudinary<br/>PDF upload, profile image<br/>folder ca-exam-platform/resources"]
+        SendGrid["SendGrid or SMTP<br/>OTP email, password reset<br/>verified_emails.json fallback"]
+        Gemini["Google Gemini<br/>AI quiz generate<br/>Chat ask with system prompt"]
     end
 
-    Client -->|HTTPS REST\nAuthorization Bearer| Backend
+    Client -->|HTTPS REST<br/>Authorization Bearer| Backend
     Backend --> Mongoose
     Mongoose --> MongoDB
     Backend -->|upload_stream, destroy| Cloudinary
@@ -382,7 +382,7 @@ sequenceDiagram
 ```mermaid
 flowchart TB
     subgraph Incoming["Incoming request"]
-        Req["HTTP Request\nMethod, path, headers, body"]
+        Req["HTTP Request<br/>Method, path, headers, body"]
     end
 
     subgraph Global["Global middleware order"]
@@ -390,39 +390,39 @@ flowchart TB
         G1["1. Helmet"]
         G2["2. xss-clean"]
         G3["3. mongo-sanitize"]
-        G4["4. Rate limit\n/api 200 per 15min"]
-        G5["5. express.json\nurlencoded 20MB"]
-        G6["6. CORS\nallowlist credentials"]
-        G7["7. Optional\nrequest log dev"]
+        G4["4. Rate limit<br/>/api 200 per 15min"]
+        G5["5. express.json<br/>urlencoded 20MB"]
+        G6["6. CORS<br/>allowlist credentials"]
+        G7["7. Optional<br/>request log dev"]
         G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7
     end
 
     subgraph Routes["Route modules and usage"]
         direction TB
         subgraph AuthRoutes["auth.js"]
-            A1["send-otp, verify-otp\nlogin, register"]
-            A2["me, refresh-token\nforgot, verify-reset, reset"]
+            A1["send-otp, verify-otp<br/>login, register"]
+            A2["me, refresh-token<br/>forgot, verify-reset, reset"]
             A1 --> UserModel
             A2 --> UserModel
         end
         subgraph QuestionRoutes["questions.js"]
-            Q1["GET list, count, quiz\nbatch, available-subjects"]
-            Q2["POST PUT DELETE\nadmin only"]
+            Q1["GET list, count, quiz<br/>batch, available-subjects"]
+            Q2["POST PUT DELETE<br/>admin only"]
             Q1 --> QuestionModel
             Q1 --> UserModel
             Q2 --> QuestionModel
         end
         subgraph ResourceRoutes["resources.js"]
-            R1["GET list, count, id\nrate, download"]
-            R2["POST PUT DELETE\nadmin multer upload"]
+            R1["GET list, count, id<br/>rate, download"]
+            R2["POST PUT DELETE<br/>admin multer upload"]
             R1 --> ResourceModel
             R1 --> UserModel
             R2 --> ResourceModel
             R2 --> Cloudinary
         end
         subgraph UserRoutes["users.js"]
-            U1["me, bookmarks\nquiz-history, profile"]
-            U2["bookmark-folders\nprofile-image"]
+            U1["me, bookmarks<br/>quiz-history, profile"]
+            U2["bookmark-folders<br/>profile-image"]
             U1 --> UserModel
             U1 --> QuestionModel
             U1 --> ResourceModel
@@ -430,7 +430,7 @@ flowchart TB
             U2 --> Cloudinary
         end
         subgraph AdminRoutes["admin.js"]
-            AD1["users, analytics\nannouncements CRUD, audit"]
+            AD1["users, analytics<br/>announcements CRUD, audit"]
             AD1 --> UserModel
             AD1 --> ResourceModel
             AD1 --> AnnouncementModel
@@ -443,12 +443,12 @@ flowchart TB
             AI1 --> Gemini
         end
         subgraph DiscussionRoutes["discussions.js"]
-            D1["user/me, get, message\nlike, edit, delete"]
+            D1["user/me, get, message<br/>like, edit, delete"]
             D1 --> DiscussionModel
             D1 --> UserModel
         end
         subgraph DashboardRoutes["dashboard.js"]
-            DH1["GET dashboard\nstudy-session, views"]
+            DH1["GET dashboard<br/>study-session, views"]
             DH1 --> UserModel
             DH1 --> QuestionModel
             DH1 --> ResourceModel
@@ -459,7 +459,7 @@ flowchart TB
             AN1 --> AnnouncementModel
         end
         subgraph NotifRoutes["notifications.js"]
-            N1["GET list\nPATCH read"]
+            N1["GET list<br/>PATCH read"]
             N1 --> NotificationModel
         end
     end
@@ -481,10 +481,10 @@ flowchart TB
     end
 
     subgraph Support["Support layer"]
-        otpService["otpService\ngenerateOTP, verifyOTP\nsendOTPEmail, sendPasswordReset"]
-        questionValidator["questionValidator\nJoi questionSchema"]
+        otpService["otpService<br/>generateOTP, verifyOTP<br/>sendOTPEmail, sendPasswordReset"]
+        questionValidator["questionValidator<br/>Joi questionSchema"]
         cloudinary["config/cloudinary"]
-        database["config/database\nconnectDB"]
+        database["config/database<br/>connectDB"]
     end
 
     subgraph External["External"]
