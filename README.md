@@ -202,7 +202,7 @@ sequenceDiagram
 
     Frontend->>User: Render UI
 
-    Note over Backend,External: For uploads: Backend → Cloudinary; for AI: Backend → Gemini; for email: Backend → SendGrid
+    Note over Backend,External: Uploads use Cloudinary, AI uses Gemini, email uses SendGrid
 ```
 
 ### Component diagram (backend layers)
