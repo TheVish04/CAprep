@@ -34,6 +34,45 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
+// GET user's profile stats (quiz count, study hours, subject strengths) — lightweight
+router.get('/me/stats', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select('quizHistory studyHours subjectStrengths')
+      .lean();
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const quizHistory = user.quizHistory || [];
+    const studyHours = user.studyHours || [];
+    const subjectStrengths = user.subjectStrengths || [];
+
+    const quizCount = quizHistory.length;
+    const lastQuizAt = quizHistory.length
+      ? new Date(Math.max(...quizHistory.map((e) => new Date(e.date).getTime())))
+      : null;
+    const totalStudyHours = studyHours.reduce((sum, e) => sum + (e.hours || 0), 0);
+    const lastStudyAt = studyHours.length
+      ? new Date(Math.max(...studyHours.map((e) => new Date(e.date).getTime())))
+      : null;
+
+    res.json({
+      quizCount,
+      lastQuizAt: lastQuizAt ? lastQuizAt.toISOString() : null,
+      totalStudyHours: Math.round(totalStudyHours * 10) / 10,
+      lastStudyAt: lastStudyAt ? lastStudyAt.toISOString() : null,
+      subjectStrengths: subjectStrengths.map(({ subject, strengthScore, lastUpdated }) => ({
+        subject,
+        strengthScore,
+        lastUpdated: lastUpdated ? new Date(lastUpdated).toISOString() : null
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    res.status(500).json({ error: 'Failed to fetch user stats' });
+  }
+});
+
 // GET user's bookmarked question IDs
 router.get('/me/bookmarks/ids', authMiddleware, async (req, res) => {
     try {

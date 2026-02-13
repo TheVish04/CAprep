@@ -9,13 +9,13 @@ import EditProfile from './EditProfile';
 const UserProfile = () => {
     const navigate = useNavigate();
     const [userData, setUserData] = useState(null);
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deletePassword, setDeletePassword] = useState('');
     const [deleteError, setDeleteError] = useState(null);
-    // API base URL is handled by axiosConfig
 
     useEffect(() => {
         const token = apiUtils.getAuthToken();
@@ -24,12 +24,16 @@ const UserProfile = () => {
             return;
         }
 
-        const fetchUserProfile = async () => {
+        const fetchProfileAndStats = async () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await api.get('/users/me');
-                setUserData(response.data);
+                const [profileRes, statsRes] = await Promise.all([
+                    api.get('/users/me'),
+                    api.get('/users/me/stats').catch(() => ({ data: null }))
+                ]);
+                setUserData(profileRes.data);
+                setStats(statsRes.data);
             } catch (err) {
                 setError(err.response?.data?.error || "Failed to load profile.");
                 if (err.response?.status === 401) {
@@ -45,14 +49,12 @@ const UserProfile = () => {
                 setLoading(false);
             }
         };
-        fetchUserProfile();
+        fetchProfileAndStats();
     }, [navigate]);
 
-
-
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        navigate('/login');
+        apiUtils.clearAuthToken();
+        navigate('/login', { state: { message: 'You have been logged out.', alertType: 'info' } });
     };
     
     const handleDeleteAccount = async () => {
@@ -64,7 +66,7 @@ const UserProfile = () => {
             await api.delete('/users/me', {
                 data: { password: deletePassword }
             });
-            localStorage.removeItem('token');
+            apiUtils.clearAuthToken();
             navigate('/login', { state: { message: 'Your account has been successfully deleted' } });
         } catch (err) {
             setDeleteError(err.response?.data?.error || 'Failed to delete account. Please try again.');
@@ -99,11 +101,30 @@ const UserProfile = () => {
     }
     const bookmarkedQuestionsCount = userData.bookmarkedQuestions?.length || 0;
     const bookmarkedResourcesCount = userData.bookmarkedResources?.length || 0;
+    const quizCount = stats?.quizCount ?? 0;
+    const totalStudyHours = stats?.totalStudyHours ?? 0;
+    const subjectStrengths = stats?.subjectStrengths ?? [];
+    const lastQuizAt = stats?.lastQuizAt;
+    const lastStudyAt = stats?.lastStudyAt;
+
     return (
         <div className="page-wrapper user-profile-page">
             <Navbar />
             <div className="profile-container">
                 <h1>My Profile</h1>
+
+                {/* Quick actions */}
+                <div className="profile-quick-actions card">
+                    <h2>Quick actions</h2>
+                    <div className="quick-actions-grid">
+                        <Link to="/dashboard" className="quick-action-link">Dashboard</Link>
+                        <Link to="/chat" className="quick-action-link">Chat</Link>
+                        <Link to="/quiz" className="quick-action-link">Quiz</Link>
+                        <Link to="/questions" className="quick-action-link">Questions</Link>
+                        <Link to="/resources" className="quick-action-link">Resources</Link>
+                    </div>
+                </div>
+
                 <div className="profile-details card">
                     <div className="profile-header">
                         <div className="profile-picture-container">
@@ -125,6 +146,53 @@ const UserProfile = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Stats row */}
+                <div className="profile-stats-row">
+                    <div className="profile-stat-card card">
+                        <span className="profile-stat-value">{quizCount}</span>
+                        <span className="profile-stat-label">Quizzes taken</span>
+                        {lastQuizAt && (
+                            <span className="profile-stat-meta">Last: {new Date(lastQuizAt).toLocaleDateString()}</span>
+                        )}
+                    </div>
+                    <div className="profile-stat-card card">
+                        <span className="profile-stat-value">{totalStudyHours}h</span>
+                        <span className="profile-stat-label">Study hours</span>
+                        {lastStudyAt && (
+                            <span className="profile-stat-meta">Last: {new Date(lastStudyAt).toLocaleDateString()}</span>
+                        )}
+                    </div>
+                    <div className="profile-stat-card card">
+                        <span className="profile-stat-value">{bookmarkedQuestionsCount + bookmarkedResourcesCount}</span>
+                        <span className="profile-stat-label">Bookmarks</span>
+                        <span className="profile-stat-meta">{bookmarkedQuestionsCount} Q · {bookmarkedResourcesCount} R</span>
+                    </div>
+                </div>
+
+                {subjectStrengths.length > 0 && (
+                    <div className="profile-subject-strengths card">
+                        <h2>Subject strengths</h2>
+                        <div className="subject-strengths-list">
+                            {subjectStrengths
+                                .slice()
+                                .sort((a, b) => (b.strengthScore || 0) - (a.strengthScore || 0))
+                                .map((s) => (
+                                    <div key={s.subject} className="subject-strength-item">
+                                        <span className="subject-strength-name">{s.subject}</span>
+                                        <div className="subject-strength-bar-wrap">
+                                            <div 
+                                                className="subject-strength-bar" 
+                                                style={{ width: `${s.strengthScore || 0}%` }} 
+                                            />
+                                        </div>
+                                        <span className="subject-strength-score">{s.strengthScore}%</span>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="profile-summary card">
                     <h2>My Content</h2>
                     <div className="summary-item">
