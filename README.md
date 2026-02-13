@@ -1,325 +1,294 @@
 # CAprep
 
+A web application for Indian Chartered Accountancy (CA) students to practice exams, access study resources, take AI-powered quizzes, and track progress. The project is a monorepo with a React frontend and an Express backend.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Folder Structure](#folder-structure)
+- [Environment Variables](#environment-variables)
+- [Development Setup](#development-setup)
+- [API Overview](#api-overview)
+- [Deployment](#deployment)
+- [Security](#security)
+- [Future Roadmap](#future-roadmap)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+---
+
 ## Overview
-CAprep is a comprehensive web application designed to help Chartered Accountancy students prepare for their examinations effectively. This platform provides practice questions, quizzes, learning resources, discussion forums, and performance analytics to enhance the study experience. Built with a modern tech stack, the platform aims to provide a seamless, responsive user experience across devices.
+
+CAprep helps CA students prepare for Foundation, Intermediate, and Final exams with:
+
+- **Question bank** — Filter by subject, exam stage, paper type, year, and month; bookmark questions.
+- **Quizzes** — Generated from the question bank or from **Google Gemini** (AI) by subject and exam stage.
+- **Resources** — PDFs (MTP, RTP, PYQS, etc.) stored on Cloudinary; search and download.
+- **Discussions** — Per-question and per-resource threads with replies and likes.
+- **Dashboard** — Quiz history, study hours, bookmarks, recent activity, and announcements.
+- **Admin** — User management, questions/resources/announcements CRUD, analytics, cache clear.
+
+Authentication uses **email + OTP** for registration and **JWT** for sessions. Protected routes require a valid `Authorization: Bearer <token>` header.
+
+---
 
 ## Features
 
-### User Authentication and Authorization
-- **Secure Registration & Login**: Email verification with OTP and secure password management
-- **Role-Based Access Control**: User and Admin roles with appropriate permissions
-- **JWT Authentication**: Secure token-based session management
-- **Password Reset**: Automated password recovery via email
-- **Security Measures**: Rate limiting, XSS protection, and more
+| Area | Capabilities |
+|------|----------------|
+| **Auth** | Email OTP verification, register, login, forgot/reset password (OTP), JWT, role-based access (user/admin). |
+| **Questions** | List/filter, bookmark, CRUD (admin); quiz generation from DB or AI. |
+| **Resources** | List/filter, bookmark, download; upload/update/delete (admin); Cloudinary storage. |
+| **Quizzes** | Generate from DB by subject/exam stage; submit answers; view history and review. |
+| **AI Quiz** | Generate MCQs via Gemini; CA-focused chat assistant (`/api/ai-quiz/ask`). |
+| **Dashboard** | Stats, quiz trends, study hours, recent questions/resources, bookmarks, announcements. |
+| **Discussions** | Threads per question or resource; post reply, edit, delete, like. |
+| **Admin** | Users list, role update; announcements CRUD; analytics (resources, quizzes, donations); clear cache. |
 
-### Learning Resources
-- **Categorized Study Materials**: Organized by subjects, topics, and difficulty levels
-- **PDF Document Viewer**: In-app PDF reading capability 
-- **Resource Management**: Admin-controlled uploading and organization of study materials
-- **Search & Filter**: Find relevant resources quickly
-- **Downloadable Content**: Save resources for offline study
-
-### Question Bank & Practice
-- **Extensive Question Database**: Practice questions with solutions
-- **Topic-Based Categorization**: Questions organized by examination topics
-- **Difficulty Levels**: Progressive difficulty settings
-- **Bookmarking System**: Save important questions for later review
-- **Admin Question Management**: Add, edit, and manage question repository
-
-### Interactive Quizzes
-- **Custom Quiz Generation**: Create quizzes based on specific topics and difficulty
-- **AI-Powered Quizzes**: Dynamically generated questions using Google's Generative AI
-- **Timed Tests**: Simulate exam conditions with timed sessions
-- **Instant Feedback**: Immediate scoring and answer explanations
-- **Performance Tracking**: Comprehensive statistics on quiz performance
-
-### Performance Analytics
-- **Personalized Dashboard**: User-specific performance metrics
-- **Progress Tracking**: Visual representation of study progress
-- **Strength & Weakness Analysis**: Identify areas needing improvement
-- **Study Time Tracking**: Monitor time spent on different topics
-- **Performance Trends**: Track improvement over time with historical data
-
-### Discussion Forums
-- **Topic-Based Discussions**: Organized conversations by subject area
-- **Question & Answer Format**: Ask questions and receive answers from peers and experts
-- **Moderation Tools**: Admin controls to maintain quality discussions
-- **User Engagement**: React and respond to posts
-
-### Admin Panel
-- **User Management**: Create, edit, suspend user accounts
-- **Content Administration**: Manage questions, resources, and discussions
-- **Announcement System**: Create and publish important notifications
-- **Analytics Dashboard**: Monitor platform usage and performance
+---
 
 ## Tech Stack
 
-### Frontend
-- **React 19**: Core framework for building interactive UI
-- **React Router Dom 7**: Client-side routing
-- **Tailwind CSS 4**: Utility-first CSS framework for styling
-- **Chart.js / React-Chartjs-2**: Data visualization components
-- **Framer Motion / React Spring**: Advanced animations and transitions
-- **HTML2PDF / jsPDF**: PDF generation for reports and certificates
-- **React Error Boundary**: Graceful error handling
-- **React-PDF**: PDF viewing functionality
-- **Axios**: Promise-based HTTP client
-- **Date-fns**: Modern JavaScript date utility library
-- **DOMPurify**: XSS sanitization for user-generated content
-- **Vite 6**: Next-generation frontend build tool
+| Layer | Technologies |
+|-------|--------------|
+| **Frontend** | React 19, React Router 7, Vite 6, Tailwind CSS 4, Chart.js, Framer Motion, Axios, DOMPurify, html2pdf.js, react-pdf, react-error-boundary |
+| **Backend** | Node.js, Express 4, Mongoose 8, JWT, bcrypt, Joi, Multer, Helmet, xss-clean, express-mongo-sanitize, express-rate-limit, NodeCache |
+| **Database** | MongoDB (Atlas or self-hosted) |
+| **Auth** | JWT (Bearer), OTP (in-memory + disk for verified emails), SendGrid or Nodemailer for email |
+| **External** | Google Generative AI (Gemini), Cloudinary (file storage) |
 
-### Backend
-- **Node.js with Express**: Server-side JavaScript runtime and framework
-- **MongoDB with Mongoose 8**: NoSQL database with ODM
-- **JWT**: Stateless authentication mechanism
-- **Google Generative AI**: Integration for AI-powered question generation
-- **Cloudinary**: Cloud-based image and file management
-- **Nodemailer**: Email sending capability for notifications
-- **Bcrypt**: Password hashing and security
-- **Joi**: Request validation and data sanitization
-- **Multer**: Middleware for handling file uploads
-- **Express Rate Limit**: API request rate limiting
-- **Node-Cache**: Server-side caching for performance
-- **OTP Generator**: One-time password functionality
+---
 
 ## Architecture
-The application follows a client-server architecture with clear separation of concerns:
 
-### Frontend Architecture
-- **Component-Based Structure**: Reusable UI components
-- **Custom Hooks**: Encapsulated logic for reusability
-- **Context API**: State management across components
-- **Error Boundaries**: Fallback UI for component errors
+- **Frontend:** Single-page app (SPA). Routes are protected by checking `localStorage` for a JWT; admin routes also require `role === 'admin'` from the decoded token. API calls use an Axios instance that attaches `Authorization: Bearer <token>`.
+- **Backend:** REST API. Auth middleware validates JWT and attaches `req.user`; admin middleware checks `req.user.role === 'admin'`. Global rate limit (e.g. 200 requests per 15 minutes per IP). GET responses for questions/resources can be cached (NodeCache) with a TTL; cache is cleared on mutations.
+- **Auth flow:** Register: send OTP → verify OTP → register (password hashed with bcrypt) → JWT. Login: email + password → JWT. Password reset: forgot (OTP sent) → verify OTP → reset password. Token is used as Bearer in `Authorization` header; expiry is controlled by `JWT_EXPIRES_IN` on the server.
+- **Database:** MongoDB with Mongoose. Main collections: User, Question, Resource, Discussion, Announcement. Indexes are defined on models for common filters and searches.
 
-### Backend Architecture
-- **RESTful API Design**: Standard HTTP methods and status codes
-- **MVC Pattern**: Models, routes, and controllers separation
-- **Middleware Pipeline**: Request processing with composable middleware
-- **Service Layer**: Business logic encapsulation
-- **Caching Strategy**: Performance optimization with strategic caching
+---
 
-### Database Schema
-- **User Collection**: User profiles and authentication data
-- **Question Collection**: Practice questions with metadata
-- **Resource Collection**: Study materials and reference documents
-- **Discussion Collection**: Forum posts and replies
-- **Announcement Collection**: System-wide notifications
+## Folder Structure
 
-## API Endpoints
+```
+CAPrep/
+├── backend/
+│   ├── config/           # database.js, cloudinary.js, logger.js
+│   ├── middleware/       # authMiddleware.js, cacheMiddleware.js
+│   ├── models/           # UserModel, QuestionModel, ResourceModel, DiscussionModel, AnnouncementModel
+│   ├── routes/           # auth, questions, resources, users, admin, discussions, dashboard, aiQuiz
+│   ├── services/         # otpService.js (OTP generation, verification, email)
+│   ├── server.js         # Express app, DB connect, route mounting, security middleware
+│   └── .env              # Environment variables (do not commit)
+├── frontend/
+│   ├── src/
+│   │   ├── components/   # Login, Register, Dashboard, Quiz, AdminPanel, Resources, etc.
+│   │   ├── pages/        # LandingPage, About, ContactUs, FAQ, ChatBotPage, QuizReview
+│   │   ├── utils/        # axiosConfig.js, apiUtils.js, authUtils.js, pdfGenerator.js
+│   │   ├── App.jsx       # Router, routes, protected/redirect guards
+│   │   └── main.jsx
+│   ├── dist/             # Production build output
+│   ├── vite.config.js
+│   └── package.json
+├── README.md
+└── .gitignore
+```
 
-### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Authenticate user and get token
-- `POST /api/auth/refresh-token` - Refresh authentication token
-- `POST /api/auth/forgot-password` - Initiate password reset
-- `POST /api/auth/reset-password` - Complete password reset
-- `POST /api/auth/send-otp` - Send OTP for email verification
-- `POST /api/auth/verify-otp` - Verify OTP
+- **Backend:** Entry point is `server.js`. It connects to MongoDB, mounts routes under `/api/*`, and applies security (Helmet, CORS, rate limit, body parsers). Announcements are served at `/api/announcements` (inline in server) and admin clear-cache at `POST /api/admin/clear-cache`.
+- **Frontend:** `App.jsx` defines all routes; protected routes use a wrapper that reads `localStorage.getItem('token')` and decodes the JWT for role. Most API calls use the Axios instance from `utils/axiosConfig.js`, which sets the base URL from `VITE_API_URL` and adds the Bearer token.
 
-### Users
-- `GET /api/users/profile` - Get current user profile
-- `PUT /api/users/profile` - Update user profile
-- `PUT /api/users/change-password` - Change user password
-- `GET /api/users/activity` - Get user activity log
-- `DELETE /api/users/account` - Delete user account
+---
 
-### Questions
-- `GET /api/questions` - List questions with pagination and filters
-- `GET /api/questions/:id` - Get question by ID
-- `POST /api/questions` - Create new question (admin)
-- `PUT /api/questions/:id` - Update question (admin)
-- `DELETE /api/questions/:id` - Delete question (admin)
-- `POST /api/questions/bookmark/:id` - Bookmark a question
-- `DELETE /api/questions/bookmark/:id` - Remove bookmark
+## Environment Variables
 
-### Quizzes
-- `POST /api/questions/quiz/generate` - Generate a quiz based on criteria
-- `POST /api/questions/quiz/submit` - Submit quiz answers
-- `GET /api/questions/quiz/history` - Get quiz attempt history
-- `GET /api/questions/quiz/history/:id` - Get specific quiz attempt
-- `POST /api/ai-quiz/generate` - Generate AI-powered quiz
+**Important:** Never commit `.env` files. Use `.env.example` with placeholder values and keep real secrets in your environment or secret store.
 
-### Resources
-- `GET /api/resources` - List resources with pagination and filters
-- `GET /api/resources/:id` - Get resource by ID
-- `POST /api/resources` - Upload new resource (admin)
-- `PUT /api/resources/:id` - Update resource metadata (admin)
-- `DELETE /api/resources/:id` - Delete resource (admin)
-- `GET /api/resources/download/:id` - Download resource file
+### Backend (`backend/.env`)
 
-### Discussions
-- `GET /api/discussions` - List discussion threads
-- `GET /api/discussions/:id` - Get discussion thread with replies
-- `POST /api/discussions` - Create new discussion thread
-- `PUT /api/discussions/:id` - Update discussion thread
-- `DELETE /api/discussions/:id` - Delete discussion thread
-- `POST /api/discussions/:id/replies` - Add reply to discussion
-- `PUT /api/discussions/:id/replies/:replyId` - Update reply
-- `DELETE /api/discussions/:id/replies/:replyId` - Delete reply
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | No | Server port (default `5000`) |
+| `MONGODB_URI` | Yes | MongoDB connection string |
+| `JWT_SECRET` | Yes | Secret for signing JWTs |
+| `JWT_EXPIRES_IN` | No | JWT lifetime (e.g. `1d`, `24h`) |
+| `CORS_ORIGIN` | No | Comma-separated allowed origins (e.g. `http://localhost:5173,https://caprep.vercel.app`) |
+| `GEMINI_API_KEY` | Yes for AI | Google Gemini API key (AI quiz and chat) |
+| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Yes | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
+| `SENDGRID_API_KEY` | One of email | SendGrid API key (recommended for serverless) |
+| `SENDGRID_FROM_EMAIL` | With SendGrid | Verified sender email for SendGrid |
+| `EMAIL_USER` | One of email | SMTP user (e.g. Gmail) if not using SendGrid |
+| `EMAIL_PASSWORD` | With EMAIL_USER | SMTP password |
+| `ADMIN_EMAIL` | No | Email for bootstrap admin (default `admin@example.com`) |
+| `ADMIN_PASSWORD` | No | Password for bootstrap admin (min 8 chars) |
+| `ADMIN_FULL_NAME` | No | Display name for bootstrap admin |
+| `NODE_ENV` | No | `development` or `production` |
 
-### Admin
-- `GET /api/admin/users` - List all users (admin)
-- `PUT /api/admin/users/:id/role` - Update user role (admin)
-- `POST /api/admin/announcements` - Create announcement (admin)
-- `GET /api/admin/analytics/users` - Get user analytics (admin)
-- `GET /api/admin/analytics/quizzes` - Get quiz analytics (admin)
-- `GET /api/admin/analytics/resources` - Get resource usage analytics (admin)
+### Frontend (`frontend/.env`)
 
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_URL` | Yes | Backend API base URL (e.g. `http://localhost:5000/api` for dev, `https://your-api.com/api` for prod) |
 
-### Dashboard
-- `GET /api/dashboard/stats` - Get user dashboard statistics
-- `GET /api/dashboard/recent-activity` - Get recent user activity
-- `GET /api/dashboard/performance` - Get performance metrics
-- `GET /api/dashboard/recommended` - Get recommended resources and questions
+Use **one** name only: `VITE_API_URL`. The app expects the base URL to include `/api` (e.g. `https://api.example.com/api`).
 
-## Deployment
-
-### Frontend Deployment (Vercel)
-1. Connect your GitHub repository to Vercel
-2. Configure build settings:
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Install Command: `npm install`
-3. Set up environment variables in Vercel dashboard:
-   - `VITE_API_URL`: Backend API URL
-4. Deploy with Vercel CLI or GitHub integration
-
-### Backend Deployment
-1. Set up a production MongoDB instance (MongoDB Atlas recommended)
-2. Configure environment variables for production:
-   - `MONGODB_URI`: MongoDB connection string
-   - `JWT_SECRET`: Secret key for JWT
-   - `CORS_ORIGIN`: Allowed origins for CORS
-   - `EMAIL_*` or **SendGrid**: For transactional email (OTPs, etc.) use **SendGrid** — no DNS required with Single Sender Verification. Set `SENDGRID_API_KEY` (from [SendGrid](https://sendgrid.com)) and `SENDGRID_FROM_EMAIL` (your verified sender). Works with Vercel/Render serverless. Otherwise use `EMAIL_USER` + `EMAIL_PASSWORD` (Gmail SMTP).
-   - `CLOUDINARY_*`: Cloudinary configuration
-   - `GOOGLE_AI_API_KEY`: Google AI API key
-3. Deploy using a cloud provider (e.g., Render, Railway, or AWS):
-   - Set Node.js environment
-   - Set start command: `node server.js`
-   - Configure environment variables
-4. Alternatively, use PM2 for VPS deployments:
-   ```bash
-   npm install -g pm2
-   pm2 start server.js --name "ca-exam-platform-api"
-   pm2 save
-   ```
+---
 
 ## Development Setup
 
 ### Prerequisites
-- Node.js (v18+)
-- MongoDB (v6+)
+
+- Node.js v18+
+- MongoDB v6+ (local or Atlas)
 - npm or yarn
 
-### Getting Started
-1. Clone the repository:
+### Steps
+
+1. **Clone and install**
+
    ```bash
-   git clone https://github.com/yourusername/ca-exam-platform.git
-   cd ca-exam-platform
+   git clone https://github.com/yourusername/CAPrep.git
+   cd CAPrep
    ```
 
-2. Install dependencies for both frontend and backend:
    ```bash
-   # Backend
-   cd backend
-   npm install
-
-   # Frontend
-   cd ../frontend
-   npm install
+   cd backend && npm install
+   cd ../frontend && npm install
    ```
 
-3. Configure environment variables:
-   - Create `.env` file in the backend directory with:
-     ```
-     PORT=5000
-     MONGODB_URI=mongodb://localhost:27017/ca-exam-platform
-     JWT_SECRET=your_jwt_secret
-     JWT_EXPIRY=7d
-     CORS_ORIGIN=http://localhost:5173
-     # Email: SendGrid (recommended for Vercel/Render) or Gmail SMTP
-     SENDGRID_API_KEY=
-     SENDGRID_FROM_EMAIL=your-verified-sender@example.com
-     EMAIL_USER=
-     EMAIL_PASSWORD=
-     CLOUDINARY_CLOUD_NAME=
-     CLOUDINARY_API_KEY=
-     CLOUDINARY_API_SECRET=
-     RAZORPAY_KEY_ID=
-     RAZORPAY_KEY_SECRET=
-     GOOGLE_AI_API_KEY=
-     ```
-   - Create `.env` file in the frontend directory with:
-     ```
-     VITE_API_URL=http://localhost:5000/api
-     ```
+2. **Backend environment**
 
-4. Start development servers:
-   ```bash
-   # Backend
-   cd backend
-   npm run dev
+   In `backend/`, create `.env` with at least:
 
-   # Frontend
-   cd ../frontend
-   npm run dev
+   ```env
+   PORT=5000
+   MONGODB_URI=mongodb://localhost:27017/CAPrep
+   JWT_SECRET=your_secure_random_string
+   JWT_EXPIRES_IN=1d
+   CORS_ORIGIN=http://localhost:5173
+   GEMINI_API_KEY=your_gemini_api_key
+   CLOUDINARY_CLOUD_NAME=your_cloud_name
+   CLOUDINARY_API_KEY=your_key
+   CLOUDINARY_API_SECRET=your_secret
+   SENDGRID_API_KEY=your_sendgrid_key
+   SENDGRID_FROM_EMAIL=your-verified@example.com
    ```
 
-5. Access the application:
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:5000/api
+   For local SMTP instead of SendGrid, set `EMAIL_USER` and `EMAIL_PASSWORD`.
 
-## Code Style and Contribution
+3. **Frontend environment**
 
-### Code Style
-- Follow ESLint configuration for code style
-- Use meaningful variable and function names
-- Write JSDoc comments for functions
-- Maintain consistent file and directory naming:
-  - React components: PascalCase
-  - Utilities and hooks: camelCase
-  - API routes: kebab-case
+   In `frontend/`, create `.env`:
 
-### Contribution Guide
-1. Fork the repository
-2. Create a new branch for your feature
-3. Make your changes
-4. Write tests if applicable
-5. Submit a pull request
+   ```env
+   VITE_API_URL=http://localhost:5000/api
+   ```
 
-## Security Measures
-- **Input Validation**: All user inputs validated with Joi
-- **XSS Protection**: DOMPurify for client-side sanitization, xss-clean for server
-- **Rate Limiting**: Prevent brute force attacks
-- **MongoDB Injection Prevention**: Mongoose schema validation
-- **Secure Headers**: Helmet for HTTP header security
-- **Authentication Security**: Bcrypt for password hashing, JWT with appropriate expiration
-- **Error Handling**: Custom error handling without leaking information
+4. **Run**
+
+   ```bash
+   # Terminal 1 – backend
+   cd backend && npm run dev
+
+   # Terminal 2 – frontend
+   cd frontend && npm run dev
+   ```
+
+   - Frontend: http://localhost:5173  
+   - Backend: http://localhost:5000  
+   - Health: http://localhost:5000/health  
+
+---
+
+## API Overview
+
+Base path: `/api`. Authenticated routes require header: `Authorization: Bearer <token>`.
+
+| Group | Endpoints (summary) |
+|-------|----------------------|
+| **Auth** | `POST /auth/send-otp`, `POST /auth/verify-otp`, `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/refresh-token`, `POST /auth/forgot-password`, `POST /auth/verify-reset-otp`, `POST /auth/reset-password` |
+| **Users** | `GET /users/me`, `GET /users/me/bookmarks/ids`, `POST /users/me/bookmarks/:questionId`, `DELETE /users/me/bookmarks/:questionId`, profile/avatar/password and resource bookmark routes |
+| **Questions** | `GET /questions` (filter, optional cache), `GET /questions/:id`, `POST /questions` (admin), `PUT /questions/:id` (admin), `DELETE /questions/:id` (admin), `GET /questions/count`, `GET /questions/quiz`, `POST /questions/quiz/submit`, bookmark routes under users |
+| **Resources** | `GET /resources`, `GET /resources/count`, `GET /resources/:id`, `POST /resources` (admin, multipart), `PUT /resources/:id` (admin), `DELETE /resources/:id` (admin), download via backend or Cloudinary URL |
+| **Quizzes / AI** | `POST /ai-quiz/generate` (auth), `POST /ai-quiz/ask` (chat) |
+| **Discussions** | `GET /discussions/:itemType/:itemId` (question or resource), `POST /discussions/:itemType/:itemId/message`, and reply/edit/delete/like as implemented in routes |
+| **Dashboard** | `GET /dashboard` (auth; returns stats, trends, announcements, recent activity, bookmarks), `POST /dashboard/study-session`, `POST /dashboard/resource-engagement`, `POST /dashboard/question-view`, `POST /dashboard/resource-view`, `GET /dashboard/announcements` |
+| **Announcements** | `GET /announcements` (auth; active announcements) |
+| **Admin** | `GET /admin/analytics`, `POST /admin/announcements`, `GET /admin/announcements`, `PUT /admin/announcements/:id`, `DELETE /admin/announcements/:id`, `POST /admin/clear-cache` (auth + admin) |
+
+---
+
+## Deployment
+
+### Frontend (Vercel)
+
+1. Connect the repo to Vercel.
+2. Set **Root Directory** to `frontend` (or build from repo root with correct root in config).
+3. Build: `npm run build`; output directory: `dist`.
+4. Set environment variable: `VITE_API_URL=https://your-backend-url.com/api`.
+5. Deploy; ensure rewrites/redirects for SPA (e.g. all routes → `index.html`).
+
+### Backend (Render / Railway / VPS)
+
+1. Use Node.js; start command: `node server.js` (from `backend/` if root is repo root, or set root to `backend`).
+2. Set all required backend environment variables (see [Environment Variables](#environment-variables)).
+3. Set `CORS_ORIGIN` to your frontend origin(s), comma-separated (e.g. `https://caprep.vercel.app`).
+4. For MongoDB, use Atlas or another managed service and set `MONGODB_URI`.
+5. For email, prefer SendGrid (`SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`) on serverless/hosted platforms.
+
+**PM2 (VPS):**
+
+```bash
+cd backend
+npm install -g pm2
+pm2 start server.js --name caprep-api
+pm2 save
+```
+
+---
+
+## Security
+
+- **Secrets:** Never commit `.env`. Rotate JWT secret, DB credentials, and API keys if ever exposed.
+- **Auth:** Passwords hashed with bcrypt (e.g. 12 rounds). JWT signed with `JWT_SECRET`; use `JWT_EXPIRES_IN` for short-lived tokens.
+- **HTTP:** Helmet, CORS allowlist, rate limiting, body size limits. Request/response sanitization (xss-clean, express-mongo-sanitize).
+- **Validation:** Joi for request validation; Mongoose schemas and sanitization to reduce injection risk.
+- **Admin:** Sensitive actions (e.g. clear-cache, announcements, analytics) behind admin middleware; bootstrap admin from env only on first run.
+
+---
+
+## Future Roadmap
+
+- **High:** Fix login response to use `fullName`; fix cache clear when passing multiple patterns; fix dashboard Question populate field name; use `JWT_EXPIRES_IN` for login; replace hardcoded API URLs with `VITE_API_URL`; optional token refresh flow.
+- **Medium:** Pagination for questions/resources and admin lists; stricter rate limits for auth endpoints; optional email verification link; in-app notifications; PWA/offline support.
+- **Optional:** Audit log for admin actions; analytics dashboard; monetization (e.g. Razorpay); dark mode; export (PDF/CSV).
+
+---
 
 ## Troubleshooting
 
-### Common Issues
-1. **Connection Refused on API Calls**
-   - Check if backend server is running
-   - Verify API URL in frontend .env file
-   - Confirm network connectivity
+| Issue | Check |
+|-------|--------|
+| API calls fail (CORS / connection) | Backend running; `CORS_ORIGIN` includes frontend origin; `VITE_API_URL` points to backend base URL including `/api`. |
+| 401 on protected routes | Valid token in `Authorization: Bearer <token>`; token not expired; user still exists in DB. |
+| OTP / email not sending | SendGrid: `SENDGRID_API_KEY` and `SENDGRID_FROM_EMAIL` set; SMTP: `EMAIL_USER` and `EMAIL_PASSWORD` set; check provider limits and spam. |
+| AI quiz errors | `GEMINI_API_KEY` set; quota/rate limits for Gemini; subject/examStage match expected values. |
+| DB errors | `MONGODB_URI` correct; network access (Atlas IP allowlist); Mongoose and Node versions compatible. |
 
-2. **Authentication Failures**
-   - Clear browser localStorage and try again
-   - Check JWT expiration and refresh flow
-   - Verify user credentials in database
-
-3. **Missing Environment Variables**
-   - Ensure all required variables are set in .env files
-   - Restart servers after changing environment variables
-
-4. **Database Connection Issues**
-   - Verify MongoDB connection string
-   - Check MongoDB service status
-   - Confirm network access to database server
+---
 
 ## License
+
 This project is licensed under the MIT License.
 
+---
+
 ## Contact
+
 For support or inquiries, please reach out to the development team.
