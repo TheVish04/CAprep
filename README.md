@@ -144,33 +144,33 @@ This diagram explains the project from a product perspective—what it is, who i
 ```mermaid
 flowchart TB
     subgraph What["What is CAprep?"]
-        Purpose["CAprep: CA Exam Prep Platform\nHelps Indian Chartered Accountancy students prepare for\nFoundation, Intermediate, and Final exams (ICAI syllabus)"]
+        Purpose["CAprep: CA Exam Prep Platform<br/>Helps Indian Chartered Accountancy students prepare for<br/>Foundation, Intermediate, and Final exams (ICAI syllabus)"]
     end
 
     subgraph Who["Who uses it?"]
-        Student["CA Student\nRegisters with email, verifies OTP\nLogs in to practice and track progress"]
-        Admin["Admin\nManages questions, uploads PDFs\nCreates announcements, views analytics"]
+        Student["CA Student<br/>Registers with email, verifies OTP<br/>Logs in to practice and track progress"]
+        Admin["Admin<br/>Manages questions, uploads PDFs<br/>Creates announcements, views analytics"]
     end
 
     subgraph How["How does it work? — Main pillars"]
         direction TB
         subgraph Content["Study content"]
-            Q["Past paper questions\nMTP, RTP, PYQS, Model TP\nBy subject, year, month, exam stage"]
-            R["Study resources\nPDFs to view or download\nSame filters as questions"]
+            Q["Past paper questions<br/>MTP, RTP, PYQS, Model TP<br/>By subject, year, month, exam stage"]
+            R["Study resources<br/>PDFs to view or download<br/>Same filters as questions"]
         end
         subgraph Practice["Practice & assess"]
-            QuizBank["Quiz from question bank\nMCQ by subject and stage\nScore and review answers"]
-            AIQuiz["AI-generated quiz\nGemini creates new MCQs\nInstant practice with explanations"]
+            QuizBank["Quiz from question bank<br/>MCQ by subject and stage<br/>Score and review answers"]
+            AIQuiz["AI-generated quiz<br/>Gemini creates new MCQs<br/>Instant practice with explanations"]
         end
         subgraph Help["Get help"]
-            AIChat["CA Prep Assistant\nChat with AI tutor\nCA syllabus only, no code or off-topic"]
+            AIChat["CA Prep Assistant<br/>Chat with AI tutor<br/>CA syllabus only, no code or off-topic"]
         end
         subgraph Engage["Engage & organize"]
-            Discuss["Discussions\nOne thread per question or resource\nReply, like, edit, delete"]
-            Bookmark["Bookmarks\nSave questions and resources\nFolders with notes, move between folders"]
+            Discuss["Discussions<br/>One thread per question or resource<br/>Reply, like, edit, delete"]
+            Bookmark["Bookmarks<br/>Save questions and resources<br/>Folders with notes, move between folders"]
         end
         subgraph Track["Track progress"]
-            Dash["Dashboard\nQuiz score trends, study hours\nRecent and bookmarked content\nNew resources, announcements"]
+            Dash["Dashboard<br/>Quiz score trends, study hours<br/>Recent and bookmarked content<br/>New resources, announcements"]
         end
     end
 
@@ -178,7 +178,7 @@ flowchart TB
         F1["Land on site"]
         F2["Register and verify email"]
         F3["Login"]
-        F4["Browse questions and resources\nor take a quiz or ask AI"]
+        F4["Browse questions and resources<br/>or take a quiz or ask AI"]
         F5["Bookmark, discuss, log study time"]
         F6["Check dashboard for progress"]
         F1 --> F2 --> F3 --> F4 --> F5 --> F6
