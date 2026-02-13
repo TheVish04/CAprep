@@ -157,10 +157,23 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     };
 
     return (
-        <div className="edit-profile-modal">
+        <div className="edit-profile-modal" role="dialog" aria-labelledby="edit-profile-title">
             <div className="edit-profile-content">
-                <h2>Edit Profile</h2>
-                {error && <div className="error-message">{error}</div>}
+                <header className="edit-profile-header">
+                    <h2 id="edit-profile-title">Edit Profile</h2>
+                    <button
+                        type="button"
+                        className="edit-profile-close"
+                        onClick={onClose}
+                        aria-label="Close"
+                        disabled={loading}
+                    >
+                        ×
+                    </button>
+                </header>
+
+                {error && <div className="edit-profile-error" role="alert">{error}</div>}
+
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -170,32 +183,29 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                     className="edit-profile-hidden-file-input"
                     aria-hidden="true"
                 />
+
                 <form onSubmit={handleSubmit} className="edit-profile-form">
-                    <div className="edit-profile-left">
-                        <div className="profile-photo-card">
-                            <div className="profile-photo-card-avatar-wrap">
-                                <img
-                                    src={previewUrl || defaultAvatar}
-                                    alt="Profile"
-                                    className="profile-photo-card-avatar"
-                                />
-                            </div>
-                            <div className="profile-photo-card-info">
-                                <span className="profile-photo-card-name">{formData.fullName || 'Name'}</span>
-                                <span className="profile-photo-card-meta">{formData.email || ''}</span>
-                            </div>
-                            <button
-                                type="button"
-                                className="profile-photo-card-change-btn"
-                                onClick={() => setShowChangePhotoModal(true)}
-                            >
-                                Change photo
-                            </button>
+                    <div className="edit-profile-photo-row">
+                        <div className="edit-profile-avatar-wrap">
+                            <img
+                                src={previewUrl || defaultAvatar}
+                                alt=""
+                                className="edit-profile-avatar"
+                            />
                         </div>
+                        <button
+                            type="button"
+                            className="edit-profile-change-photo-btn"
+                            onClick={() => setShowChangePhotoModal(true)}
+                        >
+                            Change photo
+                        </button>
                     </div>
-                    <div className="edit-profile-right">
+
+                    <section className="edit-profile-section" aria-labelledby="account-heading">
+                        <h3 id="account-heading" className="edit-profile-section-title">Account</h3>
                         <div className="form-group">
-                            <label htmlFor="fullName">Full Name</label>
+                            <label htmlFor="fullName">Full name</label>
                             <input
                                 type="text"
                                 id="fullName"
@@ -203,6 +213,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                                 value={formData.fullName}
                                 onChange={handleChange}
                                 required
+                                autoComplete="name"
                             />
                         </div>
                         <div className="form-group">
@@ -214,30 +225,44 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
+                                autoComplete="email"
                             />
                         </div>
-                        <div className="form-group edit-profile-password-section">
-                            <span className="form-section-label">Change password (optional)</span>
+                    </section>
+
+                    <section className="edit-profile-section edit-profile-password-section" aria-labelledby="password-heading">
+                        <h3 id="password-heading" className="edit-profile-section-title">Password (optional)</h3>
+                        <div className="form-group">
+                            <label htmlFor="currentPassword">Current password</label>
                             <input
                                 type="password"
+                                id="currentPassword"
                                 name="currentPassword"
                                 value={passwordData.currentPassword}
                                 onChange={handlePasswordChange}
-                                placeholder="Current password"
+                                placeholder="Enter current password"
                                 autoComplete="current-password"
                                 className="edit-profile-password-input"
                             />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="newPassword">New password</label>
                             <input
                                 type="password"
+                                id="newPassword"
                                 name="newPassword"
                                 value={passwordData.newPassword}
                                 onChange={handlePasswordChange}
-                                placeholder="New password"
+                                placeholder="Enter new password"
                                 autoComplete="new-password"
                                 className="edit-profile-password-input"
                             />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="confirmPassword">Confirm new password</label>
                             <input
                                 type="password"
+                                id="confirmPassword"
                                 name="confirmPassword"
                                 value={passwordData.confirmPassword}
                                 onChange={handlePasswordChange}
@@ -246,51 +271,57 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                                 className="edit-profile-password-input"
                             />
                         </div>
-                        <div className="form-actions">
-                            <button
-                                type="button"
-                                className="cancel-button"
-                                onClick={onClose}
-                                disabled={loading}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="save-button"
-                                disabled={loading}
-                            >
-                                {loading ? 'Saving...' : 'Save Changes'}
-                            </button>
-                        </div>
-                    </div>
+                    </section>
+
+                    <footer className="edit-profile-footer">
+                        <button
+                            type="button"
+                            className="edit-profile-btn edit-profile-btn-secondary"
+                            onClick={onClose}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="edit-profile-btn edit-profile-btn-primary"
+                            disabled={loading}
+                        >
+                            {loading ? 'Saving…' : 'Save changes'}
+                        </button>
+                    </footer>
                 </form>
             </div>
 
             {showChangePhotoModal && (
-                <div className="change-photo-modal-overlay" onClick={() => !photoActionLoading && setShowChangePhotoModal(false)}>
-                    <div className="change-photo-modal" onClick={e => e.stopPropagation()}>
-                        <h3 className="change-photo-modal-title">Change Profile Photo</h3>
-                        <div className="change-photo-modal-actions">
+                <div
+                    className="change-photo-overlay"
+                    onClick={() => !photoActionLoading && setShowChangePhotoModal(false)}
+                    role="dialog"
+                    aria-labelledby="change-photo-title"
+                >
+                    <div className="change-photo-dialog" onClick={e => e.stopPropagation()}>
+                        <h3 id="change-photo-title" className="change-photo-title">Change profile photo</h3>
+                        <div className="change-photo-actions">
                             <button
                                 type="button"
-                                className="change-photo-option change-photo-upload"
+                                className="change-photo-action change-photo-upload"
                                 onClick={handleUploadPhoto}
                                 disabled={photoActionLoading}
                             >
-                                Upload Photo
+                                Upload photo
                             </button>
                             <button
                                 type="button"
-                                className="change-photo-option change-photo-remove"
+                                className="change-photo-action change-photo-remove"
                                 onClick={handleRemovePhoto}
                                 disabled={photoActionLoading}
                             >
-                                Remove Current Photo
+                                Remove current photo
                             </button>
                             <button
                                 type="button"
-                                className="change-photo-option change-photo-cancel"
+                                className="change-photo-action change-photo-cancel"
                                 onClick={() => !photoActionLoading && setShowChangePhotoModal(false)}
                                 disabled={photoActionLoading}
                             >
