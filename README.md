@@ -199,6 +199,37 @@ flowchart TB
 
 In one sentence: **CAprep is a CA exam prep web app where students study past questions and PDFs, take bank or AI-generated quizzes, chat with an AI tutor, discuss and bookmark content, and track their progress on a dashboard—while admins manage content and announcements.**
 
+### Complete user journey (traced in code)
+
+This sequence diagram traces the typical user path through the app and the components/API calls involved, as reflected in the codebase.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Landing
+    participant Register
+    participant Login
+    participant Dashboard
+    participant Questions
+    participant Quiz
+    participant Resources
+    participant Chat
+    participant Bookmarks
+
+    User->>Landing: Visit /
+    User->>Register: Register: OTP then Verify then Form then Submit
+    Register->>Login: Redirect to /login (no auto-login)
+    User->>Login: Login
+    Login->>Dashboard: Navigate dashboard (or admin)
+    Dashboard->>Dashboard: GET /api/dashboard (raw axios)
+
+    User->>Questions: Browse, filter, bookmark, discuss
+    User->>Quiz: Bank or AI quiz, Submit, History/Review
+    User->>Resources: Browse, download, rate, bookmark
+    User->>Chat: Chat (api from axiosConfig)
+    User->>Bookmarks: Folders, add/remove/move
+```
+
 ---
 
 ### Architecture diagram (high-level, detailed)
