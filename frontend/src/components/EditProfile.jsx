@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import './EditProfile.css';
 
 const EditProfile = ({ userData, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
         fullName: '',
+        email: '',
         profilePicture: ''
+    });
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -18,6 +23,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
         if (userData) {
             setFormData({
                 fullName: userData.fullName || '',
+                email: userData.email || '',
                 profilePicture: userData.profilePicture || ''
             });
             setPreviewUrl(userData.profilePicture || '');
@@ -26,21 +32,20 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
             setFile(selectedFile);
-            // Create a preview URL
             const fileReader = new FileReader();
-            fileReader.onload = () => {
-                setPreviewUrl(fileReader.result);
-            };
+            fileReader.onload = () => setPreviewUrl(fileReader.result);
             fileReader.readAsDataURL(selectedFile);
         }
     };
@@ -50,54 +55,47 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
         setLoading(true);
         setError(null);
 
+        const { newPassword, confirmPassword, currentPassword } = passwordData;
+        if (newPassword || confirmPassword || currentPassword) {
+            if (!currentPassword || !newPassword) {
+                setError('To change password, enter current password and new password.');
+                setLoading(false);
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setError('New password and confirmation do not match.');
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
-            const token = apiUtils.getAuthToken();
-            if (!token) {
+            if (!apiUtils.getAuthToken()) {
                 throw new Error('Authentication required');
             }
 
-            let updatedData = { ...formData };
-
-            // If a file was selected, upload it first
             if (file) {
-                const formData = new FormData();
-                formData.append('profileImage', file);
-
-                const uploadResponse = await axios.post(
-                    `${apiUtils.getApiBaseUrl()}/users/me/profile-image`,
-                    formData,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }
-                );
-
-                updatedData.profilePicture = uploadResponse.data.profilePicture;
+                const fd = new FormData();
+                fd.append('profileImage', file);
+                await api.post('/users/me/profile-image', fd);
             }
 
-            // Update user profile
-            const response = await axios.put(
-                `${apiUtils.getApiBaseUrl()}/users/me`,
-                updatedData,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
+            const response = await api.put('/users/me', {
+                fullName: formData.fullName.trim(),
+                email: formData.email?.trim() || undefined
+            });
 
-            // Call the onUpdate callback with updated user data
-            if (onUpdate) {
-                onUpdate(response.data);
+            if (newPassword && currentPassword) {
+                await api.put('/users/me/password', {
+                    currentPassword,
+                    newPassword
+                });
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
             }
 
-            // Close the modal
-            if (onClose) {
-                onClose();
-            }
-
+            if (onUpdate) onUpdate(response.data);
+            if (onClose) onClose();
         } catch (err) {
-            console.error('Error updating profile:', err);
             setError(err.response?.data?.error || 'Failed to update profile');
         } finally {
             setLoading(false);
@@ -124,6 +122,18 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                     </div>
 
                     <div className="form-group">
+                        <label htmlFor="email">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
+
+                    <div className="form-group">
                         <label htmlFor="profilePicture">Profile Picture</label>
                         <div className="profile-picture-preview">
                             {previewUrl && (
@@ -136,6 +146,37 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                             name="profilePicture"
                             onChange={handleFileChange}
                             accept="image/*"
+                        />
+                    </div>
+
+                    <div className="form-group edit-profile-password-section">
+                        <span className="form-section-label">Change password (optional)</span>
+                        <input
+                            type="password"
+                            name="currentPassword"
+                            value={passwordData.currentPassword}
+                            onChange={handlePasswordChange}
+                            placeholder="Current password"
+                            autoComplete="current-password"
+                            className="edit-profile-password-input"
+                        />
+                        <input
+                            type="password"
+                            name="newPassword"
+                            value={passwordData.newPassword}
+                            onChange={handlePasswordChange}
+                            placeholder="New password"
+                            autoComplete="new-password"
+                            className="edit-profile-password-input"
+                        />
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            value={passwordData.confirmPassword}
+                            onChange={handlePasswordChange}
+                            placeholder="Confirm new password"
+                            autoComplete="new-password"
+                            className="edit-profile-password-input"
                         />
                     </div>
 

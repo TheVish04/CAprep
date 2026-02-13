@@ -333,13 +333,12 @@ router.get('/me/quiz-history', authMiddleware, async (req, res) => {
 
 // --- Profile Management ---
 
-// PUT Update user profile (excluding profile picture)
+// PUT Update user profile (fullName, email; profile picture via separate endpoint)
 router.put('/me', authMiddleware, async (req, res) => {
     try {
-        const { fullName } = req.body;
+        const { fullName, email } = req.body;
         const updateData = {};
 
-        // Validate and add fullName if provided
         if (fullName !== undefined) {
             if (typeof fullName !== 'string' || fullName.trim() === '') {
                 return res.status(400).json({ error: 'Full name must be a non-empty string' });
@@ -347,18 +346,30 @@ router.put('/me', authMiddleware, async (req, res) => {
             updateData.fullName = fullName.trim();
         }
 
-        // Add other updatable fields here if needed
+        if (email !== undefined) {
+            const trimmed = typeof email === 'string' ? email.trim().toLowerCase() : '';
+            if (!trimmed) {
+                return res.status(400).json({ error: 'Email cannot be empty' });
+            }
+            if (!/^\S+@\S+\.\S+$/.test(trimmed)) {
+                return res.status(400).json({ error: 'Please use a valid email address' });
+            }
+            const existing = await User.findOne({ email: trimmed });
+            if (existing && existing._id.toString() !== req.user.id) {
+                return res.status(400).json({ error: 'This email is already in use' });
+            }
+            updateData.email = trimmed;
+        }
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: 'No update data provided' });
         }
 
-        // Find user and update
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
             { $set: updateData },
-            { new: true, runValidators: true } // Ensure validation rules are run
-        ).select('-password -quizHistory'); // Exclude sensitive fields
+            { new: true, runValidators: true }
+        ).select('-password -quizHistory');
 
         if (!updatedUser) {
             return res.status(404).json({ error: 'User not found' });
@@ -367,11 +378,41 @@ router.put('/me', authMiddleware, async (req, res) => {
         res.json(updatedUser);
     } catch (error) {
         console.error('Error updating user profile:', error);
-        // Handle potential validation errors
         if (error.name === 'ValidationError') {
             return res.status(400).json({ error: error.message });
         }
         res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
+// PUT Change password (requires current password)
+router.put('/me/password', authMiddleware, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Current password and new password are required' });
+        }
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return res.status(400).json({
+                error: 'New password must be at least 8 characters and include one uppercase, one lowercase, one number, and one special character (@$!%*?&)'
+            });
+        }
+        const user = await User.findById(req.user.id).select('+password');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+        const salt = await bcrypt.genSalt(12);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ error: 'Failed to change password' });
     }
 });
 

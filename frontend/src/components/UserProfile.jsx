@@ -138,7 +138,6 @@ const UserProfile = () => {
                             <h2>Account Information</h2>
                             <p><strong>Name:</strong> {userData.fullName}</p>
                             <p><strong>Email:</strong> {userData.email}</p>
-                            <p><strong>Role:</strong> {userData.role}</p>
                             <p><strong>Member Since:</strong> {new Date(userData.createdAt).toLocaleDateString()}</p>
                             <div className="profile-actions-inline">
                                 <button className="edit-profile-btn" onClick={() => setShowEditModal(true)}>Edit Profile</button>
