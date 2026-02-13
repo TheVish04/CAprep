@@ -14,6 +14,9 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Gemini 2. Override with GEMINI_MODEL in .env if needed (e.g. gemini-2.5-flash, gemini-1.5-flash).
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+
 // Configure safety settings (adjust as needed)
 const safetySettings = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -177,14 +180,12 @@ Use these examples to refine the quality and relevance of the questions you gene
     // console.log("Prompt:", prompt); // Uncomment for debugging
 
     try {
-      // NOTE: Using 'gemini-3-flash-preview' as requested.
-      // If you hit Rate Limits, switch this to 'gemini-2.5-flash'
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-3-flash-preview", 
-        safetySettings 
+      const model = genAI.getGenerativeModel({
+        model: GEMINI_MODEL,
+        safetySettings
       });
-      
-      console.log("Using model: gemini-3-flash-preview");
+
+      console.log("Using model:", GEMINI_MODEL);
 
       const generationConfig = {
         temperature: 0.7,
@@ -388,12 +389,10 @@ router.post('/ask', async (req, res) => {
 
     try {
       // Initialize the model with SYSTEM INSTRUCTIONS
-      // NOTE: Using 'gemini-3-flash-preview' as requested.
-      // If you encounter a 404 or 429 error, fallback to 'gemini-2.5-flash'
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-3-flash-preview", 
+      const model = genAI.getGenerativeModel({
+        model: GEMINI_MODEL,
         safetySettings,
-        systemInstruction: systemPrompt // <--- KEY FIX: Guardrails apply to every turn
+        systemInstruction: systemPrompt
       });
       
       const generationConfig = {
