@@ -8,6 +8,7 @@ import axios from 'axios';
 import MoreMenu from './MoreMenu';
 import DiscussionModal from './DiscussionModal';
 import BookmarkFolderSelector from './BookmarkFolderSelector';
+import { QuestionsListSkeleton } from './Skeleton';
 
 // Add a Bookmark icon component (simple example)
 const BookmarkIcon = ({ filled }) => (
@@ -34,13 +35,14 @@ const Questions = () => {
     bookmarked: false,
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [serverPagination, setServerPagination] = useState({ total: 0, page: 1, pages: 1, limit: 10 });
   const [showAnswers, setShowAnswers] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [individualShowAnswers, setIndividualShowAnswers] = useState({});
   const [bookmarkedQuestionIds, setBookmarkedQuestionIds] = useState(new Set());
-  const questionsPerPage = 5;
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://caprep.onrender.com';
+  const questionsPerPage = 10;
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
   const [currentDiscussionQuestion, setCurrentDiscussionQuestion] = useState(null);
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
   const [showBookmarkFolderSelector, setShowBookmarkFolderSelector] = useState(false);
@@ -49,7 +51,7 @@ const Questions = () => {
   // --- Fetch Bookmarked Question IDs --- 
   const fetchBookmarkIds = useCallback(async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/me/bookmarks/ids`, {
+      const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/ids`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -62,45 +64,63 @@ const Questions = () => {
     }
   }, [API_BASE_URL]);
 
-  // --- Fetch Questions based on filters --- 
-  const fetchQuestions = useCallback(async (token, currentFilters) => {
+  // --- Fetch Questions based on filters (with pagination) --- 
+  const fetchQuestions = useCallback(async (token, currentFilters, page = 1) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
       Object.entries(currentFilters).forEach(([key, value]) => {
         if (value) {
-            params.append(key, value);
+          params.append(key, value);
         }
       });
+      params.append('page', String(page));
+      params.append('limit', String(questionsPerPage));
 
-      const response = await axios.get(`${API_BASE_URL}/api/questions`, {
+      const response = await axios.get(`${API_BASE_URL}/questions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
         params: params
       });
 
-      setQuestions(response.data || []);
+      const data = response.data;
+      const list = Array.isArray(data) ? data : (data?.data ?? []);
+      const pagination = data?.pagination ?? { total: list.length, page: 1, pages: 1, limit: questionsPerPage };
+      setQuestions(list);
+      setServerPagination(pagination);
     } catch (err) {
       console.error('Error fetching questions:', err);
       setError(err.response?.data?.error || err.message || 'Failed to fetch questions');
       setQuestions([]);
+      setServerPagination({ total: 0, page: 1, pages: 1, limit: questionsPerPage });
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, questionsPerPage]);
 
-  // --- Initial Load: Check Token, Fetch Bookmarks & Initial Questions --- 
+  // --- Initial Load: Check Token, Fetch Bookmarks --- 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
     } else {
       fetchBookmarkIds(token);
-      fetchQuestions(token, filters);
     }
   }, [navigate]);
+
+  // --- Refetch when page changes (user clicked pagination) --- 
+  const initialMount = React.useRef(true);
+  useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetchQuestions(token, filters, currentPage);
+  }, [currentPage]);
 
   // --- Handle preSelectedQuestion from location.state ---
   useEffect(() => {
@@ -112,7 +132,7 @@ const Questions = () => {
       const trackQuestionView = async () => {
         try {
           // Call the API endpoint to track question view
-          await axios.post(`${API_BASE_URL}/api/dashboard/question-view`, {
+          await axios.post(`${API_BASE_URL}/dashboard/question-view`, {
             questionId
           }, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -164,11 +184,12 @@ const Questions = () => {
     }
   }, [location.state?.preSelectedQuestion, questions, loading, API_BASE_URL, navigate]);
 
-  // --- Handle Filter Changes --- 
+  // --- Handle Filter Changes: refetch page 1 when filters change --- 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-        fetchQuestions(token, filters);
+      setCurrentPage(1);
+      fetchQuestions(token, filters, 1);
     }
   }, [filters, fetchQuestions]);
 
@@ -233,7 +254,7 @@ const Questions = () => {
     
     if (isCurrentlyBookmarked) {
       // If already bookmarked, remove the bookmark
-      const url = `${API_BASE_URL}/api/users/me/bookmarks/${questionId}`;
+      const url = `${API_BASE_URL}/users/me/bookmarks/${questionId}`;
       const config = {
           headers: { 'Authorization': `Bearer ${token}` }
       };
@@ -275,7 +296,7 @@ const Questions = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/users/me/bookmarks/ids`, {
+        const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/ids`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (response.data && response.data.bookmarkedQuestionIds) {
@@ -294,10 +315,9 @@ const Questions = () => {
     }
   };
 
-  const indexOfLastQuestion = currentPage * questionsPerPage;
-  const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
-  const currentQuestions = questions.slice(indexOfFirstQuestion, indexOfLastQuestion);
-  const totalPages = Math.ceil(questions.length / questionsPerPage);
+  // Server returns one page of questions; no client-side slice
+  const currentQuestions = questions;
+  const totalPages = serverPagination.pages || 1;
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -342,7 +362,7 @@ const Questions = () => {
         <div className="questions-container">
           <h1>Questions</h1>
           
-          {loading && <div className="loading-indicator">Loading questions...</div>}
+          {loading && <QuestionsListSkeleton />}
           
           {error && (
             <div className="error">

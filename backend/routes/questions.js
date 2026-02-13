@@ -4,66 +4,7 @@ const { authMiddleware, adminMiddleware } = require('../middleware/authMiddlewar
 const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
 const Question = require('../models/QuestionModel');
 const User = require('../models/UserModel');
-const Joi = require('joi');
-
-const questionSchema = Joi.object({
-  subject: Joi.string()
-    .required()
-    .when('examStage', {
-      is: 'Foundation',
-      then: Joi.string().valid(
-        'Accounting',
-        'Business Laws',
-        'Quantitative Aptitude',
-        'Business Economics'
-      ),
-      otherwise: Joi.string().when('examStage', {
-        is: 'Intermediate',
-        then: Joi.string().valid(
-          'Advanced Accounting',
-          'Corporate Laws',
-          'Cost and Management Accounting',
-          'Taxation',
-          'Auditing and Code of Ethics',
-          'Financial and Strategic Management'
-        ),
-        otherwise: Joi.string().valid(
-          'Financial Reporting',
-          'Advanced Financial Management',
-          'Advanced Auditing',
-          'Direct and International Tax Laws',
-          'Indirect Tax Laws',
-          'Integrated Business Solutions'
-        )
-      })
-    }),
-  paperType: Joi.string().required().valid('MTP', 'RTP', 'PYQS', 'Model TP'),
-  year: Joi.string().required().valid('2025', '2024', '2023'),
-  month: Joi.string().required().valid(
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ),
-  examStage: Joi.string().required().valid('Foundation', 'Intermediate', 'Final'),
-  questionNumber: Joi.string().required(),
-  questionText: Joi.string().allow('').optional(),
-  answerText: Joi.string().allow('').optional(),
-  subQuestions: Joi.array()
-    .optional()
-    .items(
-      Joi.object({
-        subQuestionNumber: Joi.string().allow('').optional(),
-        subQuestionText: Joi.string().allow('').optional(),
-        subOptions: Joi.array()
-          .optional()
-          .items(
-            Joi.object({
-              optionText: Joi.string().allow('').optional(),
-              isCorrect: Joi.boolean().default(false),
-            })
-          ),
-      })
-    ),
-});
+const { questionSchema } = require('../validators/questionValidator');
 
 router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
@@ -185,7 +126,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
 router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
   try {
-    const { subject, year, questionNumber, paperType, month, examStage, search, bookmarked } = req.query;
+    const { subject, year, questionNumber, paperType, month, examStage, search, bookmarked, page, limit } = req.query;
     const filter = {};
     if (subject) filter.subject = subject;
     if (year) filter.year = year;
@@ -210,8 +151,25 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
       filter._id = { $in: user.bookmarkedQuestions };
     }
 
-    const questions = await Question.find(filter);
-    res.json(questions);
+    // Pagination: default limit 20, max 100
+    const limitNum = Math.min(parseInt(limit, 10) || 20, 100);
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [questions, total] = await Promise.all([
+      Question.find(filter).skip(skip).limit(limitNum),
+      Question.countDocuments(filter)
+    ]);
+
+    res.json({
+      data: questions,
+      pagination: {
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum),
+        limit: limitNum
+      }
+    });
   } catch (error) {
     console.error('Error fetching questions:', error);
     res.status(500).json({ error: 'Failed to fetch questions' });
@@ -341,9 +299,6 @@ router.get('/available-subjects', [authMiddleware, cacheMiddleware(3600)], async
       }
     ]);
     
-    // Clear related caches to ensure the changes take effect
-    clearCache('/api/questions/available-subjects');
-    
     res.json(availableSubjects);
   } catch (error) {
     console.error('Error fetching available subjects:', error);
@@ -359,9 +314,6 @@ router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req,
     if (!examStage) {
       return res.status(400).json({ error: 'Exam stage is required' });
     }
-    
-    // Clear the cache for this endpoint to reflect changes immediately
-    clearCache(`/api/questions/all-subjects?examStage=${examStage}`);
     
     // Define default subjects for each exam stage
     let defaultSubjects = [];
@@ -433,9 +385,6 @@ router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req,
         mergedSubjects.push(foundSubj);
       }
     });
-        
-    // Clear related caches to ensure the changes take effect
-    clearCache('/api/questions/available-subjects');
     
     res.json(mergedSubjects);
   } catch (error) {

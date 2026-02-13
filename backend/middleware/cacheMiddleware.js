@@ -1,5 +1,7 @@
 const NodeCache = require('node-cache');
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 // Initialize cache with a standard TTL (time-to-live) of 5 minutes (300 seconds)
 // and checkperiod every 1 minute (60 seconds)
 const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
@@ -7,13 +9,13 @@ const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 const cacheMiddleware = (duration) => (req, res, next) => {
   // Skip caching if specifically requested
   if (req.headers['x-skip-cache'] === 'true') {
-    console.log(`Skipping cache for request: ${req.originalUrl}`);
+    if (isDev) console.log(`Skipping cache for request: ${req.originalUrl}`);
     return next();
   }
 
   // Only cache GET requests
   if (req.method !== 'GET') {
-    console.log(`Not caching ${req.method} request to ${req.originalUrl}`);
+    if (isDev) console.log(`Not caching ${req.method} request to ${req.originalUrl}`);
     return next();
   }
 
@@ -25,70 +27,59 @@ const cacheMiddleware = (duration) => (req, res, next) => {
   const cachedResponse = cache.get(key);
 
   if (cachedResponse) {
-    console.log(`Cache hit for key: ${key}`);
+    if (isDev) console.log(`Cache hit for key: ${key}`);
     return res.send(cachedResponse);
-  } 
-  
-  console.log(`Cache miss for key: ${key}`);
-  
-  // Monkey patch res.send to cache the response before sending it
+  }
+
+  if (isDev) console.log(`Cache miss for key: ${key}`);
+
+  // Monkey patch res.send: call originalSend first, then cache on success (avoids caching if send throws)
   res.originalSend = res.send;
   res.send = (body) => {
+    res.originalSend(body);
     try {
-      // Only cache successful responses
       if (res.statusCode >= 200 && res.statusCode < 300) {
         cache.set(key, body, duration);
-        console.log(`Cache set for key: ${key} with duration: ${duration}s`);
-      } else {
+        if (isDev) console.log(`Cache set for key: ${key} with duration: ${duration}s`);
+      } else if (isDev) {
         console.log(`Not caching response with status code: ${res.statusCode}`);
       }
     } catch (error) {
       console.error(`Error setting cache for ${key}:`, error);
     }
-    
-    // Call the original send
-    res.originalSend(body);
   };
-  
+
   next();
 };
 
-// Function to clear the cache for specific routes
+// Clear cache for a single route pattern (string)
+const clearCacheForPattern = (routePattern) => {
+  if (typeof routePattern !== 'string') return;
+  const cacheKeys = cache.keys();
+  if (cacheKeys.length === 0) return;
+  const keysToDelete = cacheKeys.filter(key => {
+    const routePart = key.split(':').slice(1).join(':');
+    return routePart.startsWith(routePattern);
+  });
+  keysToDelete.forEach(key => cache.del(key));
+  if (keysToDelete.length > 0 && isDev) {
+    console.log(`Cleared ${keysToDelete.length} cache entries for pattern: ${routePattern}`);
+  }
+};
+
+// Function to clear the cache for specific routes (accepts string or array of strings)
 const clearCache = (routePattern) => {
   try {
+    if (Array.isArray(routePattern)) {
+      routePattern.forEach(p => clearCacheForPattern(p));
+      return;
+    }
     if (typeof routePattern !== 'string') {
       console.error('Invalid route pattern for cache clearing:', routePattern);
       return;
     }
-
-    // Log the operation
-    console.log(`Attempting to clear cache for pattern: ${routePattern}`);
-    
-    // Get all cache keys
-    const cacheKeys = cache.keys();
-    
-    if (cacheKeys.length === 0) {
-      console.log('No cache keys found to clear');
-      return;
-    }
-    
-    // Find keys that match the pattern
-    const keysToDelete = cacheKeys.filter(key => {
-      // Split the key to get the route part (after the userId:)
-      const routePart = key.split(':').slice(1).join(':');
-      return routePart.startsWith(routePattern);
-    });
-    
-    // Delete matched keys
-    if (keysToDelete.length > 0) {
-      keysToDelete.forEach(key => {
-        cache.del(key);
-        console.log(`Cleared cache for key: ${key}`);
-      });
-      console.log(`Cleared ${keysToDelete.length} cache entries for pattern: ${routePattern}`);
-    } else {
-      console.log(`No matching cache keys found for pattern: ${routePattern}`);
-    }
+    if (isDev) console.log(`Attempting to clear cache for pattern: ${routePattern}`);
+    clearCacheForPattern(routePattern);
   } catch (error) {
     console.error('Error clearing cache:', error);
   }
@@ -99,7 +90,7 @@ const clearAllCache = () => {
   try {
     const keysCount = cache.keys().length;
     cache.flushAll();
-    console.log(`Cleared all cache entries (${keysCount} items)`);
+    if (isDev) console.log(`Cleared all cache entries (${keysCount} items)`);
   } catch (error) {
     console.error('Error clearing all cache:', error);
   }

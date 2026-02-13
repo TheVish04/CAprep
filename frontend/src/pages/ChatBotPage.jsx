@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import './ChatBotPage.css';
+
+// Typing speed: chars per tick; tick interval in ms (ChatGPT-like ~40-60 chars/sec)
+const STREAM_CHARS_PER_TICK = 2;
+const STREAM_TICK_MS = 35;
 
 const ChatBotPage = () => {
   const [messages, setMessages] = useState([
@@ -13,6 +17,7 @@ const ChatBotPage = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState(null); // { content, displayedLength }
   const [chatHistory, setChatHistory] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const messageEndRef = useRef(null);
@@ -32,7 +37,7 @@ const ChatBotPage = () => {
     }
   }, []);
   
-  // Auto scroll to bottom of messages
+  // Auto scroll to bottom of messages (including during streaming)
   useEffect(() => {
     if (messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ 
@@ -41,7 +46,32 @@ const ChatBotPage = () => {
         inline: 'nearest'
       });
     }
-  }, [messages]);
+  }, [messages, streamingMessage?.displayedLength]);
+
+  // Token-by-token animation effect (ChatGPT-like)
+  useEffect(() => {
+    if (!streamingMessage) return;
+    const { content, displayedLength } = streamingMessage;
+    if (displayedLength >= content.length) {
+      const botMsg = { type: 'bot', content, timestamp: new Date() };
+      setMessages(prev => {
+        const newMsgs = [...prev, botMsg];
+        queueMicrotask(() => saveToHistory(newMsgs));
+        return newMsgs;
+      });
+      setStreamingMessage(null);
+      setIsLoading(false);
+      return;
+    }
+    const timer = setInterval(() => {
+      setStreamingMessage(prev => {
+        if (!prev) return null;
+        const next = Math.min(prev.displayedLength + STREAM_CHARS_PER_TICK, prev.content.length);
+        return { ...prev, displayedLength: next };
+      });
+    }, STREAM_TICK_MS);
+    return () => clearInterval(timer);
+  }, [streamingMessage]);
 
   // Function to remove markdown formatting from AI responses
   const sanitizeResponse = (text) => {
@@ -71,6 +101,8 @@ const ChatBotPage = () => {
   };
   
   const createNewChat = () => {
+    setStreamingMessage(null);
+    setIsLoading(false);
     setMessages([{ 
       type: 'bot', 
       content: 'Hello! I\'m your CA Assistant. Ask me any questions about Chartered Accountancy. My knowledge is based on the existing CA curriculum. However, remember that accounting standards and legal provisions are subject to change, so always refer to the official ICAI publications for the most up-to-date information. I am a tool to assist your learning, not a replacement for thorough study and engagement with official resources.\n\nPlease mention your Exam Stage and Subject with every question for best results.\nCA Assistant can make mistakes. Check important info. Please dont rely on answers blindly. Check the official ICAI publications for the most up-to-date information.',
@@ -151,38 +183,27 @@ const ChatBotPage = () => {
         requestData.subject = selectedSubject;
       }
       
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/ai-quiz/ask`, 
-        requestData,
-        config
-      );
+      const response = await api.post('/ai-quiz/ask', requestData, config);
       
-      const botMessage = {
-        type: 'bot',
-        // Sanitize the response to remove markdown formatting
-        content: sanitizeResponse(response.data.answer),
-        timestamp: new Date()
-      };
+      const content = sanitizeResponse(response.data.answer);
       
-      const newMessages = [...messages, userMessage, botMessage];
-      setMessages(prev => [...prev, botMessage]);
-      
-      // Save this conversation to history
-      saveToHistory(newMessages);
+      // Start token-by-token animation (ChatGPT-like); isLoading stays true until done
+      setStreamingMessage({ content, displayedLength: 0 });
       
     } catch (error) {
       console.error('Error fetching bot response:', error);
+      setIsLoading(false);
       setMessages(prev => [...prev, {
         type: 'bot',
         content: 'Sorry, I encountered an error. Please try again later.',
         timestamp: new Date()
       }]);
-    } finally {
-      setIsLoading(false);
     }
   };
   
   const loadConversation = (convo) => {
+    setStreamingMessage(null);
+    setIsLoading(false);
     setMessages(convo.messages);
     setSelectedConversation(convo);
   };
@@ -328,7 +349,28 @@ const ChatBotPage = () => {
               </div>
             ))}
             
-            {isLoading && (
+            {streamingMessage && (
+              <div className="chat-message bot streaming">
+                <div className="message-avatar">
+                  <div className="bot-avatar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="12" rx="2" ry="2"></rect>
+                      <line x1="8" y1="12" x2="8" y2="16"></line>
+                      <line x1="16" y1="12" x2="16" y2="16"></line>
+                      <rect x="8" y="8" width="2" height="2"></rect>
+                      <rect x="14" y="8" width="2" height="2"></rect>
+                    </svg>
+                  </div>
+                </div>
+                <div className="message-content">
+                  <div className="message-text">
+                    {streamingMessage.content.slice(0, streamingMessage.displayedLength)}
+                    <span className="streaming-cursor" aria-hidden="true">|</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {isLoading && !streamingMessage && (
               <div className="chat-message bot">
                 <div className="message-avatar">
                   <div className="bot-avatar">

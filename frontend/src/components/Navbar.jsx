@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import NotificationsDropdown from './NotificationsDropdown';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -153,6 +154,14 @@ const Navbar = () => {
                 <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
                   Profile
                 </Link>
+              </motion.li>
+
+              <motion.li 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="nav-item notifications-nav-item"
+              >
+                <NotificationsDropdown />
               </motion.li>
               
               {isAdmin && (

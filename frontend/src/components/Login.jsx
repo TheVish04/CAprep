@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import api from '../utils/axiosConfig';
+import apiUtils from '../utils/apiUtils';
 import './Login.css';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Login = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
   const [isEmailNotRegistered, setIsEmailNotRegistered] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +37,25 @@ const Login = () => {
   }, [location]);
 
   const handleChange = (e) => {
-    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setCredentials({ ...credentials, [name]: value });
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateFields = () => {
+    const errors = { email: '', password: '' };
+    if (!credentials.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!EMAIL_REGEX.test(credentials.email.trim())) {
+      errors.email = 'Please enter a valid email address';
+    }
+    if (!credentials.password) {
+      errors.password = 'Password is required';
+    }
+    setFieldErrors(errors);
+    return !errors.email && !errors.password;
   };
 
   const handleSubmit = async (e) => {
@@ -41,26 +63,29 @@ const Login = () => {
     setError('');
     setIsEmailNotRegistered(false);
     setInfoMessage('');
+    if (!validateFields()) return;
     setIsLoading(true);
 
     try {
       console.log('Attempting login...');
       
-      const response = await api.post('/api/auth/login', credentials);
+      const response = await api.post('/auth/login', credentials);
       
       console.log('Login response received:', response.status);
       
       if (response.data && response.data.token) {
-        const { token } = response.data;
-
-        localStorage.setItem('token', token);
-        // Safely decode JWT token
-        const parts = token.split('.');
-        if (parts.length !== 3) {
-          throw new Error('Invalid token format');
-        }
-        const payload = JSON.parse(atob(parts[1]));
-        const role = payload.role;
+        const { token, expires, user } = response.data;
+        // Store auth object for token refresh flow (apiUtils + axios interceptor)
+        apiUtils.setAuthToken({ token, expires, user });
+        const role = user?.role ?? (() => {
+          const parts = token.split('.');
+          if (parts.length !== 3) return 'user';
+          try {
+            return JSON.parse(atob(parts[1])).role || 'user';
+          } catch {
+            return 'user';
+          }
+        })();
 
         console.log('Login successful, navigating to appropriate dashboard');
         if (role === 'admin') {
@@ -117,7 +142,11 @@ const Login = () => {
                 onChange={handleChange}
                 required
                 disabled={isLoading}
+                className={fieldErrors.email ? 'input-error' : ''}
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               />
+              {fieldErrors.email && <p id="email-error" className="inline-error">{fieldErrors.email}</p>}
             </div>
             <div>
               <label>Password:</label>
@@ -129,12 +158,16 @@ const Login = () => {
                   onChange={handleChange}
                   required
                   disabled={isLoading}
+                  className={fieldErrors.password ? 'input-error' : ''}
+                  aria-invalid={!!fieldErrors.password}
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       handleSubmit(e);
                     }
                   }}
                 />
+                {fieldErrors.password && <p id="password-error" className="inline-error">{fieldErrors.password}</p>}
                 <span 
                   className="toggle-password" 
                   onClick={() => !isLoading && setShowPassword(!showPassword)}

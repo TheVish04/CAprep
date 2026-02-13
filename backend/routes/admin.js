@@ -4,6 +4,43 @@ const { authMiddleware, adminMiddleware } = require('../middleware/authMiddlewar
 const User = require('../models/UserModel');
 const Resource = require('../models/ResourceModel');
 const Announcement = require('../models/AnnouncementModel');
+const AuditLog = require('../models/AuditLogModel');
+const Notification = require('../models/NotificationModel');
+
+async function logAudit(actorId, action, resource, resourceId = null, details = null) {
+  try {
+    await AuditLog.create({ actor: actorId, action, resource, resourceId, details });
+  } catch (err) {
+    console.error('Audit log write error:', err);
+  }
+}
+
+// GET /api/admin/users - List users with pagination (admin only)
+router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      User.find({}).select('-password -resetPasswordToken -resetPasswordExpires').sort({ createdAt: -1 }).skip(skip).limit(limit),
+      User.countDocuments({})
+    ]);
+
+    res.status(200).json({
+      data: users,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
 
 // GET /api/admin/analytics - Fetch aggregated analytics data
 router.get('/analytics', authMiddleware, adminMiddleware, async (req, res) => {
@@ -21,11 +58,11 @@ router.get('/analytics', authMiddleware, adminMiddleware, async (req, res) => {
         const quizzesPerSubject = await User.aggregate([
             { $unwind: '$quizHistory' },
             { $group: { 
-                _id: '$quizHistory.subject', // Group by subject
-                count: { $sum: 1 }          // Count quizzes per subject
+                _id: '$quizHistory.subject',
+                count: { $sum: 1 }
             }},
-            { $sort: { count: -1 } }          // Sort by count descending
-        ]);
+            { $sort: { count: -1 } }
+        ]).hint({ 'quizHistory.date': -1 });
 
         // 3. Total Donations Received
         // $group calculates the sum of totalContribution across all users
@@ -74,7 +111,22 @@ router.post('/announcements', authMiddleware, adminMiddleware, async (req, res) 
     });
     
     await announcement.save();
-    
+    await logAudit(req.user.id, 'create', 'announcement', announcement._id, { title: announcement.title });
+
+    // In-app notifications for all users (fire-and-forget to avoid blocking response)
+    User.find({}).select('_id').lean().then((users) => {
+      if (users.length === 0) return;
+      const docs = users.map((u) => ({
+        user: u._id,
+        type: 'announcement',
+        title: announcement.title,
+        body: (announcement.content || '').slice(0, 500),
+        refId: announcement._id,
+        refType: 'Announcement'
+      }));
+      return Notification.insertMany(docs);
+    }).catch((err) => console.error('Create notifications for announcement:', err));
+
     res.status(201).json({
       success: true,
       message: 'Announcement created successfully',
@@ -148,7 +200,8 @@ router.put('/announcements/:id', authMiddleware, adminMiddleware, async (req, re
     if (validUntil) announcement.validUntil = new Date(validUntil);
     
     await announcement.save();
-    
+    await logAudit(req.user.id, 'update', 'announcement', announcement._id, { title: announcement.title });
+
     res.status(200).json({
       success: true,
       message: 'Announcement updated successfully',
@@ -170,7 +223,8 @@ router.delete('/announcements/:id', authMiddleware, adminMiddleware, async (req,
     if (!announcement) {
       return res.status(404).json({ success: false, message: 'Announcement not found' });
     }
-    
+    await logAudit(req.user.id, 'delete', 'announcement', announcement._id, { title: announcement.title });
+
     res.status(200).json({
       success: true,
       message: 'Announcement deleted successfully'
@@ -181,6 +235,35 @@ router.delete('/announcements/:id', authMiddleware, adminMiddleware, async (req,
   }
 });
 
-// Add other admin-specific routes here later if needed
+// GET /api/admin/audit - Paginated audit log (admin only)
+router.get('/audit', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      AuditLog.find({})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('actor', 'fullName email'),
+      AuditLog.countDocuments({})
+    ]);
+
+    res.status(200).json({
+      data: logs,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching audit log:', error);
+    res.status(500).json({ error: 'Failed to fetch audit log' });
+  }
+});
 
 module.exports = router; 

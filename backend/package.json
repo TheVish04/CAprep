@@ -32,7 +32,6 @@
     "nodemailer": "^6.10.0",
     "otp-generator": "^4.0.1",
     "pdf-lib": "^1.17.1",
-    "razorpay": "^2.9.6",
     "uuid": "^9.0.0",
     "xss-clean": "^0.1.4"
   },

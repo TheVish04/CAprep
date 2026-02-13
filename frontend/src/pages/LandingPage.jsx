@@ -50,7 +50,7 @@ const LandingPage = () => {
     // Fetch question count from the backend
     const fetchQuestionCount = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/questions/count`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/questions/count`);
         if (!response.ok) {
           throw new Error('Failed to fetch question count');
         }
@@ -66,7 +66,7 @@ const LandingPage = () => {
     // Fetch resource count from the backend
     const fetchResourceCount = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/resources/count`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/resources/count`);
         if (!response.ok) {
           throw new Error('Failed to fetch resource count');
         }

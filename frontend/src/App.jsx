@@ -1,7 +1,10 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from './components/ErrorBoundary';
+import apiUtils from './utils/apiUtils';
+import { setAuthRedirectHandler } from './utils/axiosConfig';
 
 // Statically import all components
 import LandingPage from './pages/LandingPage';
@@ -27,7 +30,7 @@ import ChatBotPage from './pages/ChatBotPage';
 import FAQ from './pages/FAQ';
 
 const ProtectedRoute = ({ element, requireAdmin = false }) => {
-  const token = localStorage.getItem('token');
+  const token = apiUtils.getAuthToken();
   let isAdmin = false;
 
   if (token) {
@@ -43,7 +46,7 @@ const ProtectedRoute = ({ element, requireAdmin = false }) => {
       }
     } catch (error) {
       console.error('Error decoding token:', error);
-      localStorage.removeItem('token'); // Clear invalid token
+      apiUtils.clearAuthToken();
     }
   }
 
@@ -60,7 +63,7 @@ const ProtectedRoute = ({ element, requireAdmin = false }) => {
 
 // Redirect already logged in users away from auth pages
 const RedirectIfLoggedIn = ({ element, path }) => {
-  const token = localStorage.getItem('token');
+  const token = apiUtils.getAuthToken();
   
   if (token && (path === '/login' || path === '/register')) {
     try {
@@ -72,8 +75,7 @@ const RedirectIfLoggedIn = ({ element, path }) => {
       }
     } catch (error) {
       console.error('Error checking token:', error);
-      // If token is invalid, remove it
-      localStorage.removeItem('token');
+      apiUtils.clearAuthToken();
     }
   }
   
@@ -81,10 +83,26 @@ const RedirectIfLoggedIn = ({ element, path }) => {
   return element;
 };
 
+// Sets axios 401 redirect to use navigate() instead of window.location (preserves SPA state)
+function AuthRedirectSetup() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  useEffect(() => {
+    setAuthRedirectHandler(() => {
+      navigate('/login', {
+        state: { from: location.pathname, message: 'Your session has expired. Please log in again.' },
+        replace: true,
+      });
+    });
+  }, [navigate, location.pathname]);
+  return null;
+}
+
 const App = () => {
   return (
     <Router>
-      <ErrorBoundary>
+      <AuthRedirectSetup />
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
         <div className="App">
           <Routes>
             {/* Public routes */}
@@ -95,7 +113,7 @@ const App = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/about" element={<About />} />
             <Route path="/contactus" element={<ContactUs />} />
-            <Route path="/chat" element={<ChatBotPage />} />
+            <Route path="/chat" element={<ProtectedRoute element={<ChatBotPage />} />} />
             {/* Policy page routes removed */}
             <Route path="/faq" element={<FAQ />} />
             

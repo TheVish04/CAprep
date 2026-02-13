@@ -8,6 +8,8 @@ import ResourceUploader from './ResourceUploader';
 import authUtils from '../utils/authUtils';
 import './AdminPanel.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,7 +63,7 @@ const AdminPanel = () => {
 
   const fetchQuestions = useCallback(async (token, query = '') => {
     try {
-      const response = await fetch(`https://caprep.onrender.com/api/questions${query ? `?${query}` : ''}`, {
+      const response = await fetch(`${API_BASE}/questions${query ? `?${query}` : ''}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Cache-Control': 'no-cache',
@@ -73,7 +75,8 @@ const AdminPanel = () => {
       const data = await response.json();
       
       if (response.ok) {
-        const questions = Array.isArray(data) ? data : [data];
+        const list = Array.isArray(data) ? data : (data?.data ?? [data]);
+        const questions = Array.isArray(list) ? list : [list];
         const sortedQuestions = [...questions].sort((a, b) => 
           new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
         );
@@ -458,7 +461,7 @@ const AdminPanel = () => {
       const cleanedSubQuestions = cleanSubQuestions(questionData.subQuestions);
       questionData.subQuestions = cleanedSubQuestions;
       
-      const response = await fetch('https://caprep.onrender.com/api/questions', {
+      const response = await fetch(`${API_BASE}/questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -551,7 +554,7 @@ const AdminPanel = () => {
       const cleanedSubQuestions = cleanSubQuestions(questionData.subQuestions);
       questionData.subQuestions = cleanedSubQuestions;
       
-      const response = await fetch(`https://caprep.onrender.com/api/questions/${editingQuestionId}`, {
+      const response = await fetch(`${API_BASE}/questions/${editingQuestionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -654,7 +657,7 @@ const AdminPanel = () => {
     if (!confirmDelete) return;
     
     try {
-      const response = await fetch(`https://caprep.onrender.com/api/questions/${id}`, {
+      const response = await fetch(`${API_BASE}/questions/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

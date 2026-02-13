@@ -48,7 +48,7 @@ Authentication uses **email + OTP** for registration and **JWT** for sessions. P
 | **AI Quiz** | Generate MCQs via Gemini; CA-focused chat assistant (`/api/ai-quiz/ask`). |
 | **Dashboard** | Stats, quiz trends, study hours, recent questions/resources, bookmarks, announcements. |
 | **Discussions** | Threads per question or resource; post reply, edit, delete, like. |
-| **Admin** | Users list, role update; announcements CRUD; analytics (resources, quizzes, donations); clear cache. |
+| **Admin** | Users list (paginated), role update; announcements CRUD; analytics dashboard (charts: quizzes per subject, top resources; donations); audit log (paginated); clear cache. |
 
 ---
 
@@ -61,15 +61,51 @@ Authentication uses **email + OTP** for registration and **JWT** for sessions. P
 | **Database** | MongoDB (Atlas or self-hosted) |
 | **Auth** | JWT (Bearer), OTP (in-memory + disk for verified emails), SendGrid or Nodemailer for email |
 | **External** | Google Generative AI (Gemini), Cloudinary (file storage) |
+| **Features** | Notifications (in-app dropdown), AuditLog (admin actions) |
 
 ---
 
 ## Architecture
 
-- **Frontend:** Single-page app (SPA). Routes are protected by checking `localStorage` for a JWT; admin routes also require `role === 'admin'` from the decoded token. API calls use an Axios instance that attaches `Authorization: Bearer <token>`.
-- **Backend:** REST API. Auth middleware validates JWT and attaches `req.user`; admin middleware checks `req.user.role === 'admin'`. Global rate limit (e.g. 200 requests per 15 minutes per IP). GET responses for questions/resources can be cached (NodeCache) with a TTL; cache is cleared on mutations.
-- **Auth flow:** Register: send OTP → verify OTP → register (password hashed with bcrypt) → JWT. Login: email + password → JWT. Password reset: forgot (OTP sent) → verify OTP → reset password. Token is used as Bearer in `Authorization` header; expiry is controlled by `JWT_EXPIRES_IN` on the server.
-- **Database:** MongoDB with Mongoose. Main collections: User, Question, Resource, Discussion, Announcement. Indexes are defined on models for common filters and searches.
+```mermaid
+flowchart TB
+    subgraph frontend [Frontend SPA]
+        App[App.jsx]
+        Protected[ProtectedRoute]
+        Landing[LandingPage]
+        Dashboard[Dashboard]
+        Admin[AdminPanel]
+        App --> Landing
+        App --> Protected
+        Protected --> Dashboard
+        Protected --> Admin
+    end
+    subgraph api [Backend REST API]
+        Auth[/api/auth]
+        Questions[/api/questions]
+        Resources[/api/resources]
+        Users[/api/users]
+        AdminAPI[/api/admin]
+        AIQuiz[/api/ai-quiz]
+        DashboardAPI[/api/dashboard]
+    end
+    subgraph db [MongoDB]
+        UserModel[User]
+        QuestionModel[Question]
+        ResourceModel[Resource]
+        DiscussionModel[Discussion]
+        AnnouncementModel[Announcement]
+    end
+    frontend -->|Axios Bearer| api
+    api --> db
+    api --> Cloudinary[Cloudinary]
+    api --> Gemini[Google Gemini]
+```
+
+- **Frontend:** Single-page app (SPA). Routes are protected by checking `apiUtils.getAuthToken()` (reads from `auth` object or `token` in localStorage); admin routes require `role === 'admin'` from the decoded JWT. API calls use an Axios instance that attaches `Authorization: Bearer <token>`. **API base URL:** `VITE_API_URL` must include `/api` (e.g. `http://localhost:5000/api`). Paths: `/auth/login`, `/dashboard`, `/users/me` (no leading `/api`).
+- **Backend:** REST API. Auth middleware validates JWT; admin middleware checks `req.user.role === 'admin'`. Global rate limit: 200 requests per 15 minutes per IP. GET responses for questions/resources can be cached (NodeCache); cache cleared on mutations.
+- **Auth flow:** Register: send OTP → verify OTP → register (bcrypt) → JWT. Login: email + password → JWT. Password reset: forgot (OTP) → verify OTP → reset. Token in `Authorization: Bearer <token>`; expiry via `JWT_EXPIRES_IN`.
+- **Database:** MongoDB with Mongoose. Collections: User, Question, Resource, Discussion, Announcement, AuditLog, Notification. Indexes on common filters.
 
 ---
 
@@ -78,12 +114,14 @@ Authentication uses **email + OTP** for registration and **JWT** for sessions. P
 ```
 CAPrep/
 ├── backend/
+│   ├── bootstrap/        # adminBootstrap.js, routes.js (admin creation, route mounting)
 │   ├── config/           # database.js, cloudinary.js, logger.js
+│   ├── database/         # verified_emails.json (OTP verification persistence; gitignore)
 │   ├── middleware/       # authMiddleware.js, cacheMiddleware.js
-│   ├── models/           # UserModel, QuestionModel, ResourceModel, DiscussionModel, AnnouncementModel
-│   ├── routes/           # auth, questions, resources, users, admin, discussions, dashboard, aiQuiz
+│   ├── models/           # UserModel, QuestionModel, ResourceModel, DiscussionModel, AnnouncementModel, AuditLogModel, NotificationModel
+│   ├── routes/           # auth, questions, resources, users, admin, discussions, dashboard, aiQuiz, announcements, notifications
 │   ├── services/         # otpService.js (OTP generation, verification, email)
-│   ├── server.js         # Express app, DB connect, route mounting, security middleware
+│   ├── server.js         # Express app entry, DB connect, security middleware
 │   └── .env              # Environment variables (do not commit)
 ├── frontend/
 │   ├── src/
@@ -92,6 +130,7 @@ CAPrep/
 │   │   ├── utils/        # axiosConfig.js, apiUtils.js, authUtils.js, pdfGenerator.js
 │   │   ├── App.jsx       # Router, routes, protected/redirect guards
 │   │   └── main.jsx
+│   ├── public/           # manifest.json (PWA), sw.js (service worker)
 │   ├── dist/             # Production build output
 │   ├── vite.config.js
 │   └── package.json
@@ -99,14 +138,14 @@ CAPrep/
 └── .gitignore
 ```
 
-- **Backend:** Entry point is `server.js`. It connects to MongoDB, mounts routes under `/api/*`, and applies security (Helmet, CORS, rate limit, body parsers). Announcements are served at `/api/announcements` (inline in server) and admin clear-cache at `POST /api/admin/clear-cache`.
-- **Frontend:** `App.jsx` defines all routes; protected routes use a wrapper that reads `localStorage.getItem('token')` and decodes the JWT for role. Most API calls use the Axios instance from `utils/axiosConfig.js`, which sets the base URL from `VITE_API_URL` and adds the Bearer token.
+- **Backend:** Entry point is `server.js`. Connects to MongoDB, mounts routes via `bootstrap/routes.js`, admin creation via `bootstrap/adminBootstrap.js`. Security: Helmet, CORS, rate limit. Announcements: `GET /api/announcements` (active, auth); admin CRUD: `/api/admin/announcements`. Clear cache: `POST /api/admin/clear-cache`.
+- **Frontend:** `App.jsx` defines routes; protected routes use `apiUtils.getAuthToken()` and decode JWT for role. API calls use `utils/axiosConfig.js` with Bearer token and 401 refresh retry.
 
 ---
 
 ## Environment Variables
 
-**Important:** Never commit `.env` files. Use `.env.example` with placeholder values and keep real secrets in your environment or secret store.
+**Important:** Never commit `.env` files. Copy `backend/.env.example` and `frontend/.env.example` to `.env` in each directory, then fill in real values. Keep real secrets in your environment or secret store.
 
 ### Backend (`backend/.env`)
 
@@ -116,6 +155,8 @@ CAPrep/
 | `MONGODB_URI` | Yes | MongoDB connection string |
 | `JWT_SECRET` | Yes | Secret for signing JWTs |
 | `JWT_EXPIRES_IN` | No | JWT lifetime (e.g. `1d`, `24h`) |
+| `JWT_REFRESH_SECRET` | No | Optional; for refresh token flow |
+| `JWT_REFRESH_EXPIRES_IN` | No | Optional; e.g. `7d` |
 | `CORS_ORIGIN` | No | Comma-separated allowed origins (e.g. `http://localhost:5173,https://caprep.vercel.app`) |
 | `GEMINI_API_KEY` | Yes for AI | Google Gemini API key (AI quiz and chat) |
 | `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name |
@@ -164,7 +205,7 @@ Use **one** name only: `VITE_API_URL`. The app expects the base URL to include `
 
 2. **Backend environment**
 
-   In `backend/`, create `.env` with at least:
+   In `backend/`, copy `.env.example` to `.env` and set at least:
 
    ```env
    PORT=5000
@@ -184,7 +225,7 @@ Use **one** name only: `VITE_API_URL`. The app expects the base URL to include `
 
 3. **Frontend environment**
 
-   In `frontend/`, create `.env`:
+   In `frontend/`, copy `.env.example` to `.env` and set:
 
    ```env
    VITE_API_URL=http://localhost:5000/api
@@ -216,11 +257,12 @@ Base path: `/api`. Authenticated routes require header: `Authorization: Bearer <
 | **Users** | `GET /users/me`, `GET /users/me/bookmarks/ids`, `POST /users/me/bookmarks/:questionId`, `DELETE /users/me/bookmarks/:questionId`, profile/avatar/password and resource bookmark routes |
 | **Questions** | `GET /questions` (filter, optional cache), `GET /questions/:id`, `POST /questions` (admin), `PUT /questions/:id` (admin), `DELETE /questions/:id` (admin), `GET /questions/count`, `GET /questions/quiz`, `POST /questions/quiz/submit`, bookmark routes under users |
 | **Resources** | `GET /resources`, `GET /resources/count`, `GET /resources/:id`, `POST /resources` (admin, multipart), `PUT /resources/:id` (admin), `DELETE /resources/:id` (admin), download via backend or Cloudinary URL |
-| **Quizzes / AI** | `POST /ai-quiz/generate` (auth), `POST /ai-quiz/ask` (chat) |
-| **Discussions** | `GET /discussions/:itemType/:itemId` (question or resource), `POST /discussions/:itemType/:itemId/message`, and reply/edit/delete/like as implemented in routes |
+| **Quizzes / AI** | `POST /ai-quiz/generate` (auth), `POST /ai-quiz/ask` (auth; chat) |
+| **Discussions** | `GET /discussions/user/me` (user's discussions; must be before `/:itemType/:itemId`), `GET /discussions/:itemType/:itemId`, `POST /discussions/:itemType/:itemId/message`, reply/edit/delete/like |
 | **Dashboard** | `GET /dashboard` (auth; returns stats, trends, announcements, recent activity, bookmarks), `POST /dashboard/study-session`, `POST /dashboard/resource-engagement`, `POST /dashboard/question-view`, `POST /dashboard/resource-view`, `GET /dashboard/announcements` |
-| **Announcements** | `GET /announcements` (auth; active announcements) |
-| **Admin** | `GET /admin/analytics`, `POST /admin/announcements`, `GET /admin/announcements`, `PUT /admin/announcements/:id`, `DELETE /admin/announcements/:id`, `POST /admin/clear-cache` (auth + admin) |
+| **Announcements** | `GET /api/announcements` (auth; active announcements for users). Admin CRUD at `GET/POST/PUT/DELETE /api/admin/announcements` |
+| **Notifications** | `GET /notifications` (auth; paginated), `PATCH /notifications/:id/read`, `PATCH /notifications/read-all` (auth) |
+| **Admin** | `GET /admin/users` (auth + admin; paginated), `GET /admin/analytics`, `GET /admin/audit` (auth + admin; paginated), announcements CRUD, `POST /admin/clear-cache` (auth + admin) |
 
 ---
 
@@ -233,6 +275,14 @@ Base path: `/api`. Authenticated routes require header: `Authorization: Bearer <
 3. Build: `npm run build`; output directory: `dist`.
 4. Set environment variable: `VITE_API_URL=https://your-backend-url.com/api`.
 5. Deploy; ensure rewrites/redirects for SPA (e.g. all routes → `index.html`).
+
+### PWA / Offline
+
+The frontend is set up as a Progressive Web App:
+
+- **Web App Manifest:** `public/manifest.json` defines name, short_name, start_url, display, theme_color, and icons. The app can be installed on supported browsers (e.g. “Add to Home Screen” on mobile).
+- **Service worker:** `public/sw.js` is registered in production builds. It uses a network-first strategy for same-origin requests and caches successful responses for offline fallback. API and cross-origin requests are not cached.
+- **Testing:** Build the frontend (`npm run build`), then serve `dist/` (e.g. `npx serve dist` or your host). The service worker is registered only when `import.meta.env.PROD` is true, so dev (`npm run dev`) does not register it; test PWA/offline after a production build.
 
 ### Backend (Render / Railway / VPS)
 
@@ -265,9 +315,9 @@ pm2 save
 
 ## Future Roadmap
 
-- **High:** Fix login response to use `fullName`; fix cache clear when passing multiple patterns; fix dashboard Question populate field name; use `JWT_EXPIRES_IN` for login; replace hardcoded API URLs with `VITE_API_URL`; optional token refresh flow.
-- **Medium:** Pagination for questions/resources and admin lists; stricter rate limits for auth endpoints; optional email verification link; in-app notifications; PWA/offline support.
-- **Optional:** Audit log for admin actions; analytics dashboard; monetization (e.g. Razorpay); dark mode; export (PDF/CSV).
+- **High:** Auth for AI chat (implemented); Redis for OTP, verified emails, and cache in production; structured logging (Winston/Pino); extend audit log to all admin actions; API versioning; health check with MongoDB/Gemini connectivity.
+- **Medium:** In-app notifications (real-time/badge); PDF/CSV export; dark mode; per-user rate limits for AI; magic-link login; resource ratings API; monetization (Razorpay).
+- **Optional:** Deeper analytics (retention, popular subjects); “Recommended for you”; offline-first PWA (cache critical GETs in service worker).
 
 ---
 
@@ -276,10 +326,19 @@ pm2 save
 | Issue | Check |
 |-------|--------|
 | API calls fail (CORS / connection) | Backend running; `CORS_ORIGIN` includes frontend origin; `VITE_API_URL` points to backend base URL including `/api`. |
-| 401 on protected routes | Valid token in `Authorization: Bearer <token>`; token not expired; user still exists in DB. |
+| API returns 404 for dashboard/resources | Set `VITE_API_URL` to base including `/api`; use paths like `/dashboard`, `/users/me` (no leading `/api`). |
+| 401 on protected routes | Valid token; token not expired; user exists in DB. Frontend uses `apiUtils.getAuthToken()` and axios retries on refresh. |
 | OTP / email not sending | SendGrid: `SENDGRID_API_KEY` and `SENDGRID_FROM_EMAIL` set; SMTP: `EMAIL_USER` and `EMAIL_PASSWORD` set; check provider limits and spam. |
-| AI quiz errors | `GEMINI_API_KEY` set; quota/rate limits for Gemini; subject/examStage match expected values. |
+| AI quiz / chat errors | `GEMINI_API_KEY` set; `/api/ai-quiz/ask` requires auth; subject/examStage match expected values. |
 | DB errors | `MONGODB_URI` correct; network access (Atlas IP allowlist); Mongoose and Node versions compatible. |
+| Discussions `/user/me` 404 | Route `GET /discussions/user/me` must be before `GET /:itemType/:itemId` (route shadowing). |
+
+### Production Checklist
+
+- Strong `JWT_SECRET` (32+ random bytes).
+- Redis for OTP/cache (multi-instance).
+- Structured logging (Winston/Pino).
+- Debug routes (`/auth/test-email`, `/auth/debug-email`) dev-only.
 
 ---
 

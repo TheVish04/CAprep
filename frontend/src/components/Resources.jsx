@@ -55,9 +55,10 @@ const Resources = () => {
     bookmarked: false,
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [serverPagination, setServerPagination] = useState({ total: 0, page: 1, pages: 1, limit: 10 });
   const [bookmarkedResourceIds, setBookmarkedResourceIds] = useState(new Set());
   const resourcesPerPage = 10;
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://caprep.onrender.com';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
   const [currentDiscussionResource, setCurrentDiscussionResource] = useState(null);
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
   const [showBookmarkFolderSelector, setShowBookmarkFolderSelector] = useState(false);
@@ -74,7 +75,7 @@ const Resources = () => {
       
       // First track the resource view
       try {
-        await axios.post(`${API_BASE_URL}/api/dashboard/resource-view`, {
+        await axios.post(`${API_BASE_URL}/dashboard/resource-view`, {
           resourceId: resource._id
         }, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -86,7 +87,7 @@ const Resources = () => {
       
       // Then increment the download count
       try {
-        await axios.post(`${API_BASE_URL}/api/resources/${resource._id}/download`, {}, {
+        await axios.post(`${API_BASE_URL}/resources/${resource._id}/download`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
       } catch (countError) {
@@ -110,7 +111,7 @@ const Resources = () => {
   // --- Fetch Bookmarked Resource IDs --- 
   const fetchBookmarkIds = useCallback(async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/me/bookmarks/resources/ids`, {
+      const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/resources/ids`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.data && response.data.bookmarkedResourceIds) {
@@ -121,8 +122,8 @@ const Resources = () => {
     }
   }, [API_BASE_URL]);
 
-  // --- Fetch Resources based on filters --- 
-  const fetchResources = useCallback(async (token, currentFilters) => {
+  // --- Fetch Resources based on filters (with pagination) --- 
+  const fetchResources = useCallback(async (token, currentFilters, page = 1) => {
     setLoading(true);
     setError(null);
     try {
@@ -130,20 +131,27 @@ const Resources = () => {
       Object.entries(currentFilters).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
+      params.append('page', String(page));
+      params.append('limit', String(resourcesPerPage));
 
-      const response = await axios.get(`${API_BASE_URL}/api/resources`, {
+      const response = await axios.get(`${API_BASE_URL}/resources`, {
         headers: { 'Authorization': `Bearer ${token}` },
         params: params
       });
-      setResources(response.data || []);
+      const data = response.data;
+      const list = Array.isArray(data) ? data : (data?.data ?? []);
+      const pagination = data?.pagination ?? { total: list.length, page: 1, pages: 1, limit: resourcesPerPage };
+      setResources(list);
+      setServerPagination(pagination);
     } catch (err) {
       console.error('Error fetching resources:', err);
       setError(err.response?.data?.error || err.message || 'Failed to fetch resources');
       setResources([]);
+      setServerPagination({ total: 0, page: 1, pages: 1, limit: resourcesPerPage });
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, resourcesPerPage]);
 
   // --- Initial Load --- 
   useEffect(() => {
@@ -204,7 +212,7 @@ const Resources = () => {
         // Resource not in current list, fetch it specifically
         const fetchSpecificResource = async () => {
           try {
-            const response = await axios.get(`${API_BASE_URL}/api/resources/${resourceId}`, {
+            const response = await axios.get(`${API_BASE_URL}/resources/${resourceId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -232,15 +240,13 @@ const Resources = () => {
     }
   }, [location.state?.preSelectedResource, navigate, handleDownload, API_BASE_URL]); // Only depend on preSelectedResource, not resources or loading
 
-  // --- Fetch on Filter Change --- 
-   useEffect(() => {
+  // --- Fetch on Filter or Page Change --- 
+  useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-        // Fetch whenever filters state changes
-        fetchResources(token, filters);
+      fetchResources(token, filters, currentPage);
     }
-    // Exclude fetchResources if wrapped in useCallback and API_BASE_URL is stable
-  }, [filters]); // Dependency on filters object
+  }, [filters, currentPage]);
 
 
   // Get unique years for filtering
@@ -273,7 +279,7 @@ const Resources = () => {
     
     if (isCurrentlyBookmarked) {
       // If already bookmarked, remove the bookmark
-      const url = `${API_BASE_URL}/api/users/me/bookmarks/resource/${resourceId}`;
+      const url = `${API_BASE_URL}/users/me/bookmarks/resource/${resourceId}`;
       
       try {
         const response = await axios.delete(url, {
@@ -310,7 +316,7 @@ const Resources = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await axios.get(`${API_BASE_URL}/api/users/me/bookmarks/resources/ids`, {
+        const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/resources/ids`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (response.data && response.data.bookmarkedResourceIds) {
@@ -329,11 +335,9 @@ const Resources = () => {
     }
   };
 
-  // Pagination logic
-  const indexOfLastResource = currentPage * resourcesPerPage;
-  const indexOfFirstResource = indexOfLastResource - resourcesPerPage;
-  const currentResources = resources.slice(indexOfFirstResource, indexOfLastResource);
-  const totalPages = Math.ceil(resources.length / resourcesPerPage);
+  // Server returns one page of resources; no client-side slice
+  const currentResources = resources;
+  const totalPages = serverPagination.pages || 1;
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 

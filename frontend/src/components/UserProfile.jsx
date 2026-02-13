@@ -27,7 +27,7 @@ const UserProfile = () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await api.get('/api/users/me');
+                const response = await api.get('/users/me');
                 setUserData(response.data);
             } catch (err) {
                 setError(err.response?.data?.error || "Failed to load profile.");
@@ -60,7 +60,7 @@ const UserProfile = () => {
             return;
         }
         try {
-            await api.delete('/api/users/me', {
+            await api.delete('/users/me', {
                 data: { password: deletePassword }
             });
             localStorage.removeItem('token');

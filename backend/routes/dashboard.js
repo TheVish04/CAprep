@@ -12,66 +12,41 @@ const Announcement = require('../models/AnnouncementModel');
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    
-    // Get user data with selected fields
-    let user;
-    try {
-      user = await User.findById(userId)
+
+    // Fetch user, announcements, and new resources in parallel
+    const [user, announcements, newResources] = await Promise.all([
+      User.findById(userId)
         .select('quizHistory bookmarkedQuestions bookmarkedResources studyHours recentlyViewedQuestions recentlyViewedResources subjectStrengths resourceEngagement')
-        .populate({
-          path: 'recentlyViewedQuestions.questionId',
-          select: 'text subject difficulty subQuestions'
+        .populate({ path: 'recentlyViewedQuestions.questionId', select: 'questionText subject difficulty subQuestions' })
+        .populate({ path: 'recentlyViewedResources.resourceId', select: 'title description subject resourceType' })
+        .populate({ path: 'bookmarkedQuestions', select: 'questionText subject difficulty' })
+        .populate({ path: 'bookmarkedResources', select: 'title description subject resourceType' })
+        .lean()
+        .then((u) => {
+          if (!u) return null;
+          // Ensure arrays exist on failure (populate can fail for orphaned refs)
+          if (!u.bookmarkedQuestions) u.bookmarkedQuestions = [];
+          if (!u.bookmarkedResources) u.bookmarkedResources = [];
+          return u;
         })
-        .populate({
-          path: 'recentlyViewedResources.resourceId',
-          select: 'title description subject resourceType'
-        });
+        .catch((err) => {
+          console.error('Error fetching user data:', err);
+          return null;
+        }),
+      Announcement.find({ validUntil: { $gte: new Date() } })
+        .sort({ priority: -1, createdAt: -1 })
+        .limit(5)
+        .lean(),
+      Resource.find({ createdAt: { $gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) } })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('title description subject resourceType createdAt')
+        .lean()
+    ]);
 
-      // Handle potential issues with populating bookmarked resources
-      try {
-        await User.populate(user, {
-          path: 'bookmarkedQuestions',
-          select: 'text subject difficulty'
-        });
-      } catch (populateError) {
-        console.error('Error populating bookmarked questions:', populateError);
-        // Ensure this field exists even if population fails
-        user.bookmarkedQuestions = [];
-      }
-
-      try {
-        await User.populate(user, {
-          path: 'bookmarkedResources',
-          select: 'title description subject resourceType'
-        });
-      } catch (populateError) {
-        console.error('Error populating bookmarked resources:', populateError);
-        // Ensure this field exists even if population fails
-        user.bookmarkedResources = [];
-      }
-    } catch (userError) {
-      console.error('Error fetching user data:', userError);
-      return res.status(404).json({ success: false, message: 'User not found or data error' });
-    }
-    
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    
-    // Get announcements
-    const announcements = await Announcement.find({
-      validUntil: { $gte: new Date() }
-    })
-    .sort({ priority: -1, createdAt: -1 })
-    .limit(5);
-    
-    // Get new resources added in last 14 days
-    const newResources = await Resource.find({
-      createdAt: { $gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) }
-    })
-    .sort({ createdAt: -1 })
-    .limit(5)
-    .select('title description subject resourceType createdAt');
     
     // Format quiz history for trend analysis
     const quizScoreTrends = {};
@@ -184,47 +159,34 @@ router.get('/', authMiddleware, async (req, res) => {
     };
     
     if (user.resourceEngagement && user.resourceEngagement.length > 0) {
-      // Calculate total time spent
       resourceStats.totalTimeSpent = user.resourceEngagement.reduce(
-        (total, resource) => total + resource.timeSpent, 0
+        (total, r) => total + (r.timeSpent || 0), 0
       );
-      
-      // Get most used resources (by access count)
       const sortedByUsage = [...user.resourceEngagement]
-        .sort((a, b) => b.accessCount - a.accessCount)
+        .sort((a, b) => (b.accessCount || 0) - (a.accessCount || 0))
         .slice(0, 5);
-      
-      // Get ALL resource Ids for type categorization
       const allResourceIds = user.resourceEngagement.map(item => item.resourceId);
-      
-      // Find all resources to categorize by type
-      const allResources = await Resource.find({
-        _id: { $in: allResourceIds }
-      }).select('_id resourceType timeSpent');
-      
-      // Process time spent by resource type (for ALL resources, not just top 5)
+      // Single query for all resource details (replaces two separate Resource.find calls)
+      const allResources = await Resource.find({ _id: { $in: allResourceIds } })
+        .select('_id resourceType title subject')
+        .lean();
+      const resourceMap = new Map(allResources.map(r => [r._id.toString(), r]));
       user.resourceEngagement.forEach(usage => {
-        const resourceDetails = allResources.find(r => r._id.toString() === usage.resourceId.toString());
-        if (resourceDetails && resourceDetails.resourceType) {
-          const type = resourceDetails.resourceType;
-          resourceStats.timeSpentByType[type] = (resourceStats.timeSpentByType[type] || 0) + usage.timeSpent;
+        const rid = (usage.resourceId && usage.resourceId.toString) ? usage.resourceId.toString() : String(usage.resourceId);
+        const r = resourceMap.get(rid);
+        if (r && r.resourceType) {
+          resourceStats.timeSpentByType[r.resourceType] = (resourceStats.timeSpentByType[r.resourceType] || 0) + (usage.timeSpent || 0);
         }
       });
-      
-      // Populate resource details for most used
-      const resources = await Resource.find({
-        _id: { $in: sortedByUsage.map(item => item.resourceId) }
-      }).select('title resourceType subject');
-      
-      // Combine usage data with resource details
       sortedByUsage.forEach(usage => {
-        const resourceDetails = resources.find(r => r._id.toString() === usage.resourceId.toString());
-        if (resourceDetails) {
+        const rid = (usage.resourceId && usage.resourceId.toString) ? usage.resourceId.toString() : String(usage.resourceId);
+        const r = resourceMap.get(rid);
+        if (r) {
           resourceStats.mostUsed.push({
-            ...usage._doc,
-            title: resourceDetails.title,
-            resourceType: resourceDetails.resourceType,
-            subject: resourceDetails.subject
+            ...usage,
+            title: r.title,
+            resourceType: r.resourceType,
+            subject: r.subject
           });
         }
       });
@@ -630,43 +592,6 @@ function formatStudyHours(studyHours) {
   studyHoursSummary.daily = last7Days;
   
   return studyHoursSummary;
-}
-
-// Helper function to format resource stats
-function formatResourceStats(resourceEngagement) {
-  const resourceStats = {
-    mostUsed: [],
-    timeSpentByType: {},
-    totalTimeSpent: 0
-  };
-  
-  if (resourceEngagement && resourceEngagement.length > 0) {
-    // Calculate total time spent
-    resourceStats.totalTimeSpent = resourceEngagement.reduce(
-      (total, resource) => total + (resource.timeSpent || 0), 0
-    );
-    
-    // We need to collect resource details from the database
-    // This needs to be done where the function is called, as this function
-    // doesn't have direct access to the database
-    
-    // Sort by access count for most used calculation
-    const sortedByUsage = [...resourceEngagement]
-      .sort((a, b) => b.accessCount - a.accessCount)
-      .slice(0, 5);
-    
-    // Just add basic data to mostUsed
-    sortedByUsage.forEach(usage => {
-      resourceStats.mostUsed.push({
-        resourceId: usage.resourceId,
-        timeSpent: usage.timeSpent,
-        accessCount: usage.accessCount,
-        lastAccessed: usage.lastAccessed
-      });
-    });
-  }
-  
-  return resourceStats;
 }
 
 module.exports = router; 

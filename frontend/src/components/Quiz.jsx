@@ -8,7 +8,7 @@ import axios from 'axios';
 const Quiz = () => {
   const navigate = useNavigate();
   const location = useLocation(); // Add useLocation hook
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://caprep.onrender.com';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
   
   // State for quiz setup
   const [step, setStep] = useState('setup'); // setup, quiz, result
@@ -73,8 +73,8 @@ const Quiz = () => {
         
         // For AI quizzes, fetch all subjects even if they don't have MCQs
         const endpoint = quizMode === 'ai' 
-          ? `${API_BASE_URL}/api/questions/all-subjects?examStage=${encodeURIComponent(examStage)}`
-          : `${API_BASE_URL}/api/questions/available-subjects?examStage=${encodeURIComponent(examStage)}`;
+          ? `${API_BASE_URL}/questions/all-subjects?examStage=${encodeURIComponent(examStage)}`
+          : `${API_BASE_URL}/questions/available-subjects?examStage=${encodeURIComponent(examStage)}`;
         
         const response = await axios.get(endpoint, {
           headers: {
@@ -111,7 +111,7 @@ const Quiz = () => {
     if (!token) return;
 
     try {
-      await axios.post(`${API_BASE_URL}/api/users/me/quiz-history`, quizResult, {
+      await axios.post(`${API_BASE_URL}/users/me/quiz-history`, quizResult, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -250,7 +250,7 @@ const Quiz = () => {
       if (quizMode === 'standard') {
         // Standard quiz - fetch questions from database
         const response = await axios.get(
-          `${API_BASE_URL}/api/questions/quiz?examStage=${encodeURIComponent(examStage)}&subject=${encodeURIComponent(subject)}&limit=${questionCount}`,
+          `${API_BASE_URL}/questions/quiz?examStage=${encodeURIComponent(examStage)}&subject=${encodeURIComponent(subject)}&limit=${questionCount}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -261,7 +261,7 @@ const Quiz = () => {
       } else {
         // AI-generated quiz
         const response = await axios.post(
-          `${API_BASE_URL}/api/ai-quiz/generate`,
+          `${API_BASE_URL}/ai-quiz/generate`,
           {
             examStage,
             subject,

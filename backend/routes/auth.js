@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 const User = require('../models/UserModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -9,7 +11,30 @@ const otpGenerator = require('otp-generator');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Rate limiting for login attempts
+// Route-specific rate limiters (stricter than global API limit)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts from this IP. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const sendOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many OTP requests from this IP. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many password reset requests from this IP. Try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiting for login attempts (per email+IP)
 const loginAttempts = new Map();
 
 // Cleanup expired login attempts every 15 minutes
@@ -50,14 +75,11 @@ function updateLoginAttempts(key, success) {
 }
 
 // Send OTP for registration
-router.post('/send-otp', async (req, res) => {
+router.post('/send-otp', sendOtpLimiter, async (req, res) => {
   try {
-    console.log('Received send-otp request:', {
-      body: req.body,
-      origin: req.headers.origin,
-      contentType: req.headers['content-type']
-    });
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Received send-otp request for email:', req.body?.email ? '(provided)' : '(missing)');
+    }
     const { email } = req.body;
     
     // Validate email format
@@ -120,12 +142,6 @@ router.post('/send-otp', async (req, res) => {
       }
     }
 
-    // Set CORS headers explicitly
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Access-Control-Allow-Origin, AccessToken');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    
     res.json({ 
       message: 'OTP sent successfully',
       email
@@ -146,12 +162,9 @@ router.post('/send-otp', async (req, res) => {
 // Verify OTP
 router.post('/verify-otp', async (req, res) => {
   try {
-    console.log('Verify OTP request received:', {
-      body: req.body,
-      origin: req.headers.origin,
-      contentType: req.headers['content-type']
-    });
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Verify OTP request received for email:', req.body?.email ? '(provided)' : '(missing)');
+    }
     const { email, otp } = req.body;
     
     if (!email || !otp) {
@@ -162,12 +175,6 @@ router.post('/verify-otp', async (req, res) => {
     }
     
     const verification = verifyOTP(email, otp);
-    
-    // Set CORS headers explicitly
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Access-Control-Allow-Origin, AccessToken, Origin, Accept, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
     
     if (verification.valid) {
       // Mark email as verified
@@ -192,8 +199,8 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// In login route:
-router.post('/login', async (req, res) => {
+// Login
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     console.log('Login attempt received:', {
       origin: req.headers.origin,
@@ -204,7 +211,9 @@ router.post('/login', async (req, res) => {
     });
 
     const { email, password } = req.body;
-    console.log(`Login handler started for email: ${email}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Login handler started for email:', email ? '(provided)' : '(missing)');
+    }
 
     // Validate email format
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -247,7 +256,9 @@ router.post('/login', async (req, res) => {
     }
 
     // Log debugging info
-    console.log(`User found for login: ${email}, password field exists: ${!!user.password}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('User found for login, password field exists:', !!user.password);
+    }
 
     // Verify password
     let isMatch = false;
@@ -279,29 +290,42 @@ router.post('/login', async (req, res) => {
         });
       }
       
-      console.log(`Login failed: incorrect password for email ${email}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Login failed: incorrect password for email');
+      }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Reset login attempts on successful login
     updateLoginAttempts(loginKey, true);
 
-    // Generate JWT
+    // Generate JWT (use same expiry as register/refresh)
+    const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn }
     );
+
+    // Compute expiry time for client (for token refresh flow)
+    const expiry = new Date();
+    const expirySeconds = typeof expiresIn === 'string' && expiresIn.endsWith('d')
+      ? parseInt(expiresIn, 10) * 24 * 60 * 60
+      : typeof expiresIn === 'string' && expiresIn.endsWith('h')
+      ? parseInt(expiresIn, 10) * 60 * 60
+      : 24 * 60 * 60;
+    expiry.setSeconds(expiry.getSeconds() + expirySeconds);
 
     console.log(`Login successful for user: ${email}`);
     
-    // Send response
+    // Send response (include expires for frontend token refresh)
     res.status(200).json({
       message: 'Login successful',
       token,
+      expires: expiry.toISOString(),
       user: {
         id: user._id,
-        name: user.name,
+        fullName: user.fullName,
         email: user.email,
         role: user.role
       }
@@ -326,21 +350,16 @@ router.post('/login', async (req, res) => {
 // User registration
 router.post('/register', async (req, res) => {
   try {
-    console.log('Register request received:', {
-      body: { ...req.body, password: '***HIDDEN***' },
-      origin: req.headers.origin,
-      contentType: req.headers['content-type']
-    });
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Register request received for email:', req.body?.email ? '(provided)' : '(missing)');
+    }
     const { fullName, email, password } = req.body;
     
     // Validate all required fields
     if (!fullName || !email || !password) {
-      console.log('Missing required fields:', { 
-        hasFullName: !!fullName, 
-        hasEmail: !!email, 
-        hasPassword: !!password 
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Missing required fields:', { hasFullName: !!fullName, hasEmail: !!email, hasPassword: !!password });
+      }
       
       return res.status(400).json({ 
         error: 'All fields are required',
@@ -446,12 +465,6 @@ router.post('/register', async (req, res) => {
     
     expiry.setSeconds(expiry.getSeconds() + expirySeconds);
     
-    // Set CORS headers explicitly
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Access-Control-Allow-Origin, AccessToken, Origin, Accept, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    
     // Return success with user data
     res.status(201).json({
       token,
@@ -482,7 +495,7 @@ if (!req.user?.id) {
 return res.status(401).json({ error: 'Invalid authentication' });
 }
 
-const user = await User.findById(req.user.id).select('id fullName email role createdAt');
+const user = await User.findById(req.user.id).select('_id fullName email role createdAt');
 
 if (!user) {
 return res.status(404).json({ error: 'User not found' });
@@ -520,7 +533,7 @@ router.post('/refresh-token', authMiddleware, async (req, res) => {
     const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
     const token = jwt.sign(
       { 
-        id: user.id, 
+        id: user._id, 
         role: user.role, 
         fullName: user.fullName,
         email: user.email
@@ -544,7 +557,7 @@ router.post('/refresh-token', authMiddleware, async (req, res) => {
     
     // Log token refresh for security auditing
     console.log('Token refreshed:', {
-      userId: user.id,
+      userId: user._id,
       ip: req.ip,
       timestamp: new Date().toISOString()
     });
@@ -571,7 +584,7 @@ router.post('/refresh-token', authMiddleware, async (req, res) => {
 });
 
 // Forgot Password - Request password reset
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     
@@ -594,10 +607,13 @@ router.post('/forgot-password', async (req, res) => {
       specialChars: false
     });
     
-    console.log(`Generated OTP for password reset: ${otp} for email: ${email}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Generated OTP for password reset for email: ${email}`);
+    }
     
-    // Store the actual OTP (not hashed) and expiry in the user document
-    user.resetPasswordToken = otp;
+    // Store hashed OTP and expiry in the user document (never store plain OTP)
+    const hashedOTP = crypto.createHash('sha256').update(String(otp).trim()).digest('hex');
+    user.resetPasswordToken = hashedOTP;
     user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
     
@@ -650,11 +666,9 @@ router.post('/verify-reset-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
     
-    console.log('Verify reset OTP request received:', { 
-      email, 
-      otp: otp ? otp : null,
-      reqBody: JSON.stringify(req.body) // Log the entire request body for debugging
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Verify reset OTP request received for email:', email);
+    }
     
     if (!email || !otp) {
       return res.status(400).json({ 
@@ -675,19 +689,6 @@ router.post('/verify-reset-otp', async (req, res) => {
       });
     }
     
-    // Add detailed logging to see exactly what's saved
-    console.log('User found, detailed OTP info:', { 
-      userEmail: user.email,
-      providedOTP: otp,
-      storedToken: user.resetPasswordToken,
-      tokenExpiry: user.resetPasswordExpires,
-      currentTime: new Date(),
-      isExpired: user.resetPasswordExpires < new Date(),
-      typesMatch: typeof otp === typeof user.resetPasswordToken,
-      exactMatch: user.resetPasswordToken === otp,
-      trimmedMatch: user.resetPasswordToken?.trim() === otp?.trim()
-    });
-    
     // Check if token exists
     if (!user.resetPasswordToken) {
       return res.status(400).json({ 
@@ -704,16 +705,9 @@ router.post('/verify-reset-otp', async (req, res) => {
       });
     }
     
-    // Normalize both values before comparison - trim spaces and ensure string comparison
-    const normalizedStoredOTP = String(user.resetPasswordToken).trim();
-    const normalizedProvidedOTP = String(otp).trim();
-    
-    // Check if the OTP matches - use normalized values for comparison
-    if (normalizedStoredOTP !== normalizedProvidedOTP) {
-      console.log('OTP mismatch:', {
-        normalizedStored: normalizedStoredOTP,
-        normalizedProvided: normalizedProvidedOTP
-      });
+    // Compare hashed OTP (stored token is SHA-256 hash of the OTP)
+    const hashedInputOTP = crypto.createHash('sha256').update(String(otp).trim()).digest('hex');
+    if (user.resetPasswordToken !== hashedInputOTP) {
       return res.status(400).json({ 
         success: false,
         error: 'Invalid OTP - please check and try again'
@@ -739,12 +733,9 @@ router.post('/reset-password', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
     
-    console.log('Reset password request received:', { 
-      email, 
-      otpProvided: otp ? otp : null,
-      passwordLength: newPassword?.length,
-      reqBody: JSON.stringify(req.body) // Log full request for debugging
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Reset password request received for email:', email);
+    }
     
     if (!email || !otp || !newPassword) {
       return res.status(400).json({ 
@@ -767,18 +758,6 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email address' });
     }
     
-    // Verify reset token with robust logging
-    console.log('User found, detailed OTP info:', { 
-      userEmail: user.email,
-      providedOTP: otp,
-      storedToken: user.resetPasswordToken,
-      tokenExpiry: user.resetPasswordExpires,
-      currentTime: new Date(),
-      isExpired: user.resetPasswordExpires < new Date(),
-      typesMatch: typeof otp === typeof user.resetPasswordToken,
-      exactMatch: user.resetPasswordToken === otp
-    });
-    
     // Check if token exists
     if (!user.resetPasswordToken) {
       return res.status(400).json({ error: 'No reset token found - please request a new OTP' });
@@ -789,16 +768,9 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'OTP has expired - please request a new OTP' });
     }
     
-    // Normalize both values before comparison
-    const normalizedStoredOTP = String(user.resetPasswordToken).trim();
-    const normalizedProvidedOTP = String(otp).trim();
-    
-    // Check if the OTP matches
-    if (normalizedStoredOTP !== normalizedProvidedOTP) {
-      console.log('OTP mismatch:', {
-        normalizedStored: normalizedStoredOTP,
-        normalizedProvided: normalizedProvidedOTP
-      });
+    // Compare hashed OTP (stored token is SHA-256 hash of the OTP)
+    const hashedInputOTP = crypto.createHash('sha256').update(String(otp).trim()).digest('hex');
+    if (user.resetPasswordToken !== hashedInputOTP) {
       return res.status(400).json({ error: 'Invalid OTP - please check and try again' });
     }
     
@@ -824,8 +796,11 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// Test Email Service - For debugging only
+// Test Email Service - For debugging only (development only)
 router.post('/test-email', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Not available in production mode' });
+  }
   try {
     const { email } = req.body;
     

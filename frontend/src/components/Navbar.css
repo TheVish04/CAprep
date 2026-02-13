@@ -225,6 +225,11 @@
   }
 }
 
+.notifications-nav-item {
+  display: flex;
+  align-items: center;
+}
+
 .chat-nav-item {
   margin-left: auto !important;
   display: flex;

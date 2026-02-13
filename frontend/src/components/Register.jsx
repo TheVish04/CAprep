@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from './Navbar';
-import apiUtils from '../utils/apiUtils';
 import './Register.css';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
 const Register = () => {
   // Step tracking
@@ -27,6 +28,7 @@ const Register = () => {
     confirmPassword: '' 
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({ fullName: '', password: '', confirmPassword: '' });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +72,7 @@ const Register = () => {
     setOtpError('');
     
     try {
-      const response = await axios.post('https://caprep.onrender.com/api/auth/send-otp', 
+      const response = await axios.post(`${API_BASE}/auth/send-otp`, 
         { email: email.trim() },
         {
           headers: {
@@ -129,7 +131,7 @@ const Register = () => {
     try {
       console.log(`Sending OTP verification request to caprep.onrender.com for email: ${email.trim()}`);
       
-      const response = await axios.post('https://caprep.onrender.com/api/auth/verify-otp', 
+      const response = await axios.post(`${API_BASE}/auth/verify-otp`, 
         { 
           email: email.trim(),
           otp: otp.trim() 
@@ -173,10 +175,19 @@ const Register = () => {
     setFormData({ ...formData, [name]: value });
     
     if (error) setError('');
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
     
     // Check password strength when password field changes
     if (name === 'password') {
       checkPasswordStrength(value);
+      if (fieldErrors.confirmPassword && formData.confirmPassword !== value) {
+        setFieldErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
+      } else if (fieldErrors.confirmPassword && formData.confirmPassword === value) {
+        setFieldErrors(prev => ({ ...prev, confirmPassword: '' }));
+      }
+    }
+    if (name === 'confirmPassword' && fieldErrors.confirmPassword) {
+      setFieldErrors(prev => ({ ...prev, confirmPassword: value !== formData.password ? 'Passwords do not match' : '' }));
     }
   };
 
@@ -225,43 +236,34 @@ const Register = () => {
     setPasswordMessage(message);
   };
 
-  // Form validation with added confirm password check
+  // Form validation with field-level errors
   const validateForm = () => {
-    // Full name validation
+    const errors = { fullName: '', password: '', confirmPassword: '' };
+    
     if (!formData.fullName.trim()) {
-      setError('Full name is required');
-      return false;
+      errors.fullName = 'Full name is required';
+    } else if (formData.fullName.trim().length < 3) {
+      errors.fullName = 'Full name must be at least 3 characters';
     }
     
-    if (formData.fullName.trim().length < 3) {
-      setError('Full name must be at least 3 characters');
-      return false;
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
     }
     
-    // Email validation - should be pre-filled and verified
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setFieldErrors(errors);
+    
     if (formData.email !== email) {
       setError('Email mismatch with verified email');
       return false;
     }
     
-    // Password validation
-    if (!formData.password) {
-      setError('Password is required');
-      return false;
-    }
-    
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return false;
-    }
-    
-    // Confirm password validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-    
-    return true;
+    return !errors.fullName && !errors.password && !errors.confirmPassword;
   };
 
   const handleSubmit = async (e) => {
@@ -283,7 +285,7 @@ const Register = () => {
       
       console.log('Sending registration data:', {...dataToSend, password: '***HIDDEN***'});
       
-      const response = await axios.post('https://caprep.onrender.com/api/auth/register', 
+      const response = await axios.post(`${API_BASE}/auth/register`, 
         dataToSend,
         {
           headers: {
@@ -441,7 +443,11 @@ const Register = () => {
             onChange={handleChange}
             placeholder="Enter your full name"
             required
+            className={fieldErrors.fullName ? 'input-error' : ''}
+            aria-invalid={!!fieldErrors.fullName}
+            aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
           />
+          {fieldErrors.fullName && <p id="fullName-error" className="inline-error">{fieldErrors.fullName}</p>}
         </div>
         
         <div>
@@ -466,7 +472,11 @@ const Register = () => {
               onChange={handleChange}
               placeholder="Create a strong password"
               required
+              className={fieldErrors.password ? 'input-error' : ''}
+              aria-invalid={!!fieldErrors.password}
+              aria-describedby={fieldErrors.password ? 'password-error' : undefined}
             />
+            {fieldErrors.password && <p id="password-error" className="inline-error">{fieldErrors.password}</p>}
             <span 
               className="toggle-password" 
               onClick={() => setShowPassword(!showPassword)}
@@ -501,6 +511,9 @@ const Register = () => {
               onChange={handleChange}
               placeholder="Confirm your password"
               required
+              className={fieldErrors.confirmPassword ? 'input-error' : ''}
+              aria-invalid={!!fieldErrors.confirmPassword}
+              aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleSubmit(e);
@@ -514,6 +527,7 @@ const Register = () => {
               {showConfirmPassword ? 'Hide' : 'Show'}
             </span>
           </div>
+          {fieldErrors.confirmPassword && <p id="confirmPassword-error" className="inline-error">{fieldErrors.confirmPassword}</p>}
         </div>
         
         <button 

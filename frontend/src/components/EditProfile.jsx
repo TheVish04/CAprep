@@ -64,7 +64,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 formData.append('profileImage', file);
 
                 const uploadResponse = await axios.post(
-                    `${API_BASE_URL}/api/users/me/profile-image`,
+                    `${API_BASE_URL}/users/me/profile-image`,
                     formData,
                     {
                         headers: {
@@ -79,7 +79,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
 
             // Update user profile
             const response = await axios.put(
-                `${API_BASE_URL}/api/users/me`,
+                `${API_BASE_URL}/users/me`,
                 updatedData,
                 {
                     headers: { 'Authorization': `Bearer ${token}` }

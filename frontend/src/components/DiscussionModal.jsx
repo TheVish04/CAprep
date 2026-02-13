@@ -47,7 +47,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const response = await axios.get(`${API_URL}/api/users/me`, {
+      const response = await axios.get(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -70,9 +70,9 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
         return;
       }
       
-      console.log(`Fetching discussion: ${API_URL}/api/discussions/${itemType}/${itemId}`);
+      console.log(`Fetching discussion: ${API_URL}/discussions/${itemType}/${itemId}`);
       const response = await axios.get(
-        `${API_URL}/api/discussions/${itemType}/${itemId}`,
+        `${API_URL}/discussions/${itemType}/${itemId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -111,7 +111,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       });
       
       const response = await axios.post(
-        `${API_URL}/api/discussions/${itemType}/${itemId}/message`,
+        `${API_URL}/discussions/${itemType}/${itemId}/message`,
         { 
           content: newMessage,
           parentMessageId: replyingTo ? replyingTo._id : null
@@ -140,14 +140,14 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       
       // First get the discussion ID
       const discussionResponse = await axios.get(
-        `${API_URL}/api/discussions/${itemType}/${itemId}`,
+        `${API_URL}/discussions/${itemType}/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const discussionId = discussionResponse.data._id;
       
       const response = await axios.post(
-        `${API_URL}/api/discussions/${discussionId}/message/${messageId}/like`,
+        `${API_URL}/discussions/${discussionId}/message/${messageId}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -198,14 +198,14 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       
       // First get the discussion ID
       const discussionResponse = await axios.get(
-        `${API_URL}/api/discussions/${itemType}/${itemId}`,
+        `${API_URL}/discussions/${itemType}/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const discussionId = discussionResponse.data._id;
       
       const response = await axios.put(
-        `${API_URL}/api/discussions/${discussionId}/message/${editingMessage._id}`,
+        `${API_URL}/discussions/${discussionId}/message/${editingMessage._id}`,
         { content: editContent },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -240,14 +240,14 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       
       // First get the discussion ID
       const discussionResponse = await axios.get(
-        `${API_URL}/api/discussions/${itemType}/${itemId}`,
+        `${API_URL}/discussions/${itemType}/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const discussionId = discussionResponse.data._id;
       
       const response = await axios.delete(
-        `${API_URL}/api/discussions/${discussionId}/message/${messageId}`,
+        `${API_URL}/discussions/${discussionId}/message/${messageId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

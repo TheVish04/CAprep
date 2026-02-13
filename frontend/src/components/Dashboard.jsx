@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from './Navbar';
+import { DashboardSkeleton } from './Skeleton';
 import './Dashboard.css';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Line, Bar, Pie } from 'react-chartjs-2';
@@ -41,7 +42,7 @@ const Dashboard = () => {
           return;
         }
 
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/dashboard`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/dashboard`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Cache-Control': 'no-cache', // Prevent caching issues
@@ -141,7 +142,7 @@ const Dashboard = () => {
       }
       
       // Record study session (25 min = 0.42 hours)
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/dashboard/study-session`, {
+      await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/study-session`, {
         hours: 0.42, // 25 minutes in hours
         subject: pomodoroSubject || null,
         examStage: pomodoroExamStage || null
@@ -189,7 +190,7 @@ const Dashboard = () => {
       if (!token) return;
       
       // Track the resource view on the backend
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/dashboard/resource-view`, {
+      await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/resource-view`, {
         resourceId
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -212,7 +213,7 @@ const Dashboard = () => {
       
       // Increment download count
       try {
-        await axios.post(`${import.meta.env.VITE_API_URL}/api/resources/${resourceId}/download`, {}, {
+        await axios.post(`${import.meta.env.VITE_API_URL}/resources/${resourceId}/download`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
       } catch (countError) {
@@ -220,7 +221,7 @@ const Dashboard = () => {
       }
       
       // Get the resource data
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/resources/${resourceId}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/resources/${resourceId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -242,7 +243,7 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/dashboard/question-view`, {
+      await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/question-view`, {
         questionId
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -299,10 +300,7 @@ const Dashboard = () => {
     return (
       <div className="dashboard-container">
         <Navbar />
-        <div className="dashboard-loading">
-          <div className="spinner"></div>
-          <p>Loading your personalized dashboard...</p>
-        </div>
+        <DashboardSkeleton />
       </div>
     );
   }
@@ -436,10 +434,7 @@ const Dashboard = () => {
         <h1 className="dashboard-title">Your Personal Dashboard</h1>
         
         {loading ? (
-          <div className="dashboard-loading">
-            <div className="spinner"></div>
-            <p>Loading your personalized dashboard...</p>
-          </div>
+          <DashboardSkeleton />
         ) : error ? (
           <div className="dashboard-error">
             <h2>Error Loading Dashboard</h2>

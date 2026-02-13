@@ -4,23 +4,16 @@ const User = require('./models/UserModel');
 const Question = require('./models/QuestionModel');
 const Resource = require('./models/ResourceModel');
 const Discussion = require('./models/DiscussionModel');
-const authRoutes = require('./routes/auth');
-const questionRoutes = require('./routes/questions');
-const resourceRoutes = require('./routes/resources');
-const userRoutes = require('./routes/users');
-const adminRoutes = require('./routes/admin');
-const discussionRoutes = require('./routes/discussions');
 const { authMiddleware, adminMiddleware } = require('./middleware/authMiddleware');
+const { checkAndCreateAdmin } = require('./bootstrap/adminBootstrap');
+const { mountRoutes } = require('./bootstrap/routes');
 const cors = require('cors');
 require('dotenv').config();
-const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
-const aiQuizRoutes = require('./routes/aiQuiz');
-const dashboardRoutes = require('./routes/dashboard');
 const { clearAllCache } = require('./middleware/cacheMiddleware');
 
 const app = express();
@@ -81,8 +74,9 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, x-skip-cache');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   
-  // Log CORS information for debugging
-  console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+  }
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -95,22 +89,13 @@ app.use((req, res, next) => {
 // Handle OPTIONS requests explicitly
 app.options('*', cors());
 
-// Remove all the custom CORS handling that might be causing conflicts
-// and replace with a simple, focused middleware for debugging CORS issues
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
-  next();
-});
-
-// Add request logging middleware for debugging
-app.use((req, res, next) => {
-  if (req.path === '/api/auth/register') {
-    console.log('💫 Register request received:');
-    console.log('💫 Headers:', req.headers);
-    console.log('💫 Body:', req.body);
-  }
-  next();
-});
+// Request logging (development only - avoid logging body/headers in production)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+    next();
+  });
+}
 
 // Initialize database and models before setting up routes
 const initializeDatabase = async () => {
@@ -215,45 +200,7 @@ const initializeDatabase = async () => {
     }
 
     console.log('Setting up API routes...');
-    // Set up routes after successful initialization
-    app.use('/api/auth', authRoutes);
-    app.use('/api/questions', questionRoutes);
-    // Payment routes removed
-    app.use('/api/resources', resourceRoutes);
-    app.use('/api/users', userRoutes);
-    app.use('/api/admin', adminRoutes);
-    app.use('/api/ai-quiz', aiQuizRoutes);
-    app.use('/api/discussions', discussionRoutes);
-    app.use('/api/dashboard', dashboardRoutes);
-    
-    // Add announcements routes
-    app.use('/api/announcements', authMiddleware, async (req, res) => {
-      try {
-        const Announcement = require('./models/AnnouncementModel');
-        const announcements = await Announcement.find({
-          validUntil: { $gte: new Date() }
-        })
-        .sort({ priority: -1, createdAt: -1 })
-        .limit(req.query.limit ? parseInt(req.query.limit) : 10)
-        .populate('createdBy', 'fullName');
-        
-        res.status(200).json({
-          success: true,
-          data: announcements
-        });
-      } catch (error) {
-        console.error('Announcements retrieval error:', error);
-        res.status(500).json({ success: false, message: 'Error retrieving announcements', error: error.message });
-      }
-    });
-    
-    // Uploads are now handled directly through Cloudinary
-    // No need to create local upload directories
-    
-    // All file downloads are now handled via Cloudinary URLs
-    // No need for custom download routes
-    
-    console.log('API routes initialized successfully');
+    mountRoutes(app);
 
     return true; // Signal successful initialization
   } catch (err) {
@@ -265,145 +212,11 @@ const initializeDatabase = async () => {
     // Continue server initialization if possible
     if (mongoose.connection.readyState === 1) {
       console.warn('Attempting to continue server initialization despite errors');
-      app.use('/api/auth', authRoutes);
-      app.use('/api/questions', questionRoutes);
-      // Payment routes removed
-      app.use('/api/resources', resourceRoutes);
-      app.use('/api/users', userRoutes);
-      app.use('/api/admin', adminRoutes);
-      app.use('/api/ai-quiz', aiQuizRoutes);
-      app.use('/api/discussions', discussionRoutes);
-      app.use('/api/dashboard', dashboardRoutes);
+      mountRoutes(app);
       return true;
     }
     
     return false; // Signal failed initialization
-  }
-};
-
-// Separate function to check and create admin user
-const checkAndCreateAdmin = async () => {
-  try {
-    console.log('Checking for existing admin users...');
-    
-    // Handle possible model initialization issues
-    if (!User || typeof User.countDocuments !== 'function') {
-      throw new Error('User model not properly initialized');
-    }
-    
-    // Check database connection first
-    if (mongoose.connection.readyState !== 1) {
-      throw new Error('Cannot create admin user: Database not connected');
-    }
-    
-    // Count existing admins with retry logic
-    let adminCount = 0;
-    let retries = 3;
-    
-    while (retries > 0) {
-      try {
-        adminCount = await User.countDocuments({ role: 'admin' });
-        console.log(`Found ${adminCount} admin users in database`);
-        break;
-      } catch (err) {
-        retries--;
-        console.error(`Error counting admin users (retries left: ${retries}):`, err.message);
-        if (retries === 0) throw err;
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
-      }
-    }
-
-    if (adminCount === 0) {
-      // Validate admin credentials from env
-      const adminFullName = process.env.ADMIN_FULL_NAME || 'Admin User';
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-
-      if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
-        throw new Error('Invalid admin email format');
-      }
-      if (!adminPassword || adminPassword.length < 8) {
-        throw new Error('Admin password must be at least 8 characters long');
-      }
-
-      console.log('No admin user found. Creating default admin account...');
-      
-      // Hash password with proper error handling
-      let hashedPassword;
-      try {
-        hashedPassword = await bcrypt.hash(adminPassword, 12);
-      } catch (err) {
-        console.error('Failed to hash admin password:', err);
-        throw new Error('Admin creation failed: Password hashing error');
-      }
-      
-      // Create the admin user with retry logic
-      let admin = null;
-      retries = 3;
-      
-      while (retries > 0 && !admin) {
-        try {
-          admin = await User.create({
-            fullName: adminFullName,
-            email: adminEmail,
-            password: hashedPassword,
-            role: 'admin'
-          });
-          break;
-        } catch (err) {
-          retries--;
-          if (err.code === 11000) {
-            // Duplicate key error - admin might exist but query failed earlier
-            console.warn('Admin user appears to exist (duplicate key error). Rechecking...');
-            const existingAdmin = await User.findOne({ email: adminEmail });
-            if (existingAdmin) {
-              console.log('Admin user found on recheck:', {
-                fullName: existingAdmin.fullName,
-                email: existingAdmin.email,
-                role: existingAdmin.role
-              });
-              return; // Exit function if admin exists
-            }
-          }
-          
-          console.error(`Failed to create admin user (retries left: ${retries}):`, err.message);
-          if (retries === 0) throw err;
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
-        }
-      }
-      
-      if (admin) {
-        console.log('✅ Admin user created successfully:', {
-          fullName: admin.fullName,
-          email: admin.email,
-          role: admin.role
-        });
-      } else {
-        throw new Error('Failed to create admin user after multiple attempts');
-      }
-    } else {
-      console.log('Admin user already exists, skipping creation.');
-      try {
-        const existingAdmin = await User.findOne({ role: 'admin' });
-        if (existingAdmin) {
-          console.log('Existing admin details:', {
-            fullName: existingAdmin.fullName,
-            email: existingAdmin.email,
-            role: existingAdmin.role,
-          });
-        } else {
-          console.warn('Admin count is non-zero but findOne returned no results. This is unexpected.');
-        }
-      } catch (err) {
-        console.error('Error fetching existing admin details:', err.message);
-        // Don't throw here, as admin exists and this is just informational
-      }
-    }
-  } catch (error) {
-    console.error('⚠️ Admin initialization error:', error.message);
-    console.error(error.stack);
-    // Don't throw the error, but log that server will continue without admin
-    console.warn('Server continuing without admin initialization. Admin features may not work correctly.');
   }
 };
 

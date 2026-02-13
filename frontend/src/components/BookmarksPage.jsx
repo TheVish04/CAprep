@@ -23,7 +23,7 @@ const BookmarksPage = () => {
             setFolderLoading(true);
             setFolderError(null);
             try {
-                const res = await api.get('/api/users/me/bookmark-folders');
+                const res = await api.get('/users/me/bookmark-folders');
                 setBookmarkFolders(res.data.bookmarkFolders || []);
             } catch (err) {
                 setFolderError(err.response?.data?.error || 'Failed to load bookmark folders');
@@ -39,7 +39,7 @@ const BookmarksPage = () => {
         if (!newFolderName.trim()) return;
         try {
             setFolderLoading(true);
-            const res = await api.post('/api/users/me/bookmark-folders', { name: newFolderName, type: newFolderType });
+            const res = await api.post('/users/me/bookmark-folders', { name: newFolderName, type: newFolderType });
             setBookmarkFolders(res.data.bookmarkFolders);
             setNewFolderName('');
         } catch (err) {
@@ -53,7 +53,7 @@ const BookmarksPage = () => {
         if (!editingFolderName.trim()) return;
         try {
             setFolderLoading(true);
-            const res = await api.put(`/api/users/me/bookmark-folders/${folderId}`, { name: editingFolderName });
+            const res = await api.put(`/users/me/bookmark-folders/${folderId}`, { name: editingFolderName });
             setBookmarkFolders(res.data.bookmarkFolders);
             setEditingFolderId(null);
             setEditingFolderName('');
@@ -78,7 +78,7 @@ const BookmarksPage = () => {
                 return;
             }
             
-            const res = await api.delete(`/api/users/me/bookmark-folders/${folderId}`);
+            const res = await api.delete(`/users/me/bookmark-folders/${folderId}`);
             
             // Update the local state with the response data
             setBookmarkFolders(res.data.bookmarkFolders);
@@ -110,7 +110,7 @@ const BookmarksPage = () => {
         try {
             setFolderLoading(true);
             const note = noteEdit[itemId] || '';
-            const res = await api.put(`/api/users/me/bookmark-folders/${folderId}/items/${itemId}/note`, { note });
+            const res = await api.put(`/users/me/bookmark-folders/${folderId}/items/${itemId}/note`, { note });
             setBookmarkFolders(folders => folders.map(f => f._id === folderId ? res.data.folder : f));
             setNoteEdit(prev => ({ ...prev, [itemId]: undefined }));
         } catch (err) {

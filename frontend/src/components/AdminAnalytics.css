@@ -56,6 +56,12 @@
     margin: 1rem 0;
 }
 
+.admin-analytics-chart {
+    height: 280px;
+    margin-top: 0.5rem;
+    position: relative;
+}
+
 /* Loading/Error/Info states */
 .loading-indicator, 
 .error-message, 

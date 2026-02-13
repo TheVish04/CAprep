@@ -7,4 +7,6 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // Vite copies public/ to dist/ by default - sw.js and manifest.json are included
+  publicDir: 'public',
 });

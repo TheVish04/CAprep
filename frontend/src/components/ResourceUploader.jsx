@@ -3,6 +3,8 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import './ResourceUploader.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
+
 const ResourceUploader = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -133,9 +135,7 @@ const ResourceUploader = () => {
       const timestamp = new Date().getTime();
       const cacheParam = `cacheBust=${timestamp}`;
       
-      // Use the API URL from environment variables instead of hardcoded URL
-      const API_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
-      const url = `${API_URL}/api/resources${query ? `?${query}&${cacheParam}` : `?${cacheParam}`}`;
+      const url = `${API_BASE}/resources${query ? `?${query}&${cacheParam}` : `?${cacheParam}`}`;
       
       console.log(`Fetching from URL: ${url}`);
       
@@ -149,15 +149,10 @@ const ResourceUploader = () => {
         
         if (response.ok) {
           const data = await response.json();
-          console.log(`Fetched ${Array.isArray(data) ? data.length : 0} resources`);
-          
-          if (Array.isArray(data)) {
-            setResources(data);
-          } else {
-            console.error('API did not return an array:', data);
-            setResources([]);
-          }
-          return; // Exit successfully
+          const list = Array.isArray(data) ? data : (data?.data ?? []);
+          console.log(`Fetched ${Array.isArray(list) ? list.length : 0} resources`);
+          setResources(Array.isArray(list) ? list : []);
+          return;
         }
       } catch (initialError) {
         console.log('Initial fetch attempt failed, trying with cache headers:', initialError);
@@ -173,14 +168,9 @@ const ResourceUploader = () => {
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`Fetched ${Array.isArray(data) ? data.length : 0} resources`);
-        
-        if (Array.isArray(data)) {
-          setResources(data);
-        } else {
-          console.error('API did not return an array:', data);
-          setResources([]);
-        }
+        const list = Array.isArray(data) ? data : (data?.data ?? []);
+        console.log(`Fetched ${Array.isArray(list) ? list.length : 0} resources`);
+        setResources(Array.isArray(list) ? list : []);
       } else {
         console.error('Failed to fetch resources:', response.statusText);
         // Try to get more details from the error response
@@ -346,7 +336,7 @@ const ResourceUploader = () => {
       
       if (isEditMode) {
         // Update existing resource (PUT request)
-        const response = await fetch(`https://caprep.onrender.com/api/resources/${editingResourceId}`, {
+        const response = await fetch(`${API_BASE}/resources/${editingResourceId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -383,7 +373,7 @@ const ResourceUploader = () => {
         // Cache form selections before submission
         cacheFormSelections();
         
-        const response = await fetch('https://caprep.onrender.com/api/resources', {
+        const response = await fetch(`${API_BASE}/resources`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -394,7 +384,7 @@ const ResourceUploader = () => {
         if (response.ok) {
           // Clear server cache via admin endpoint
           try {
-            await fetch('https://caprep.onrender.com/api/admin/clear-cache', {
+            await fetch(`${API_BASE}/admin/clear-cache`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -446,7 +436,7 @@ const ResourceUploader = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const response = await fetch(`https://caprep.onrender.com/api/resources/${id}`, {
+      const response = await fetch(`${API_BASE}/resources/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

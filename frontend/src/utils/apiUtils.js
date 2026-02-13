@@ -18,29 +18,28 @@ const apiUtils = {
   },
 
   /**
-   * Get the authentication token from localStorage
+   * Get the authentication token from localStorage.
+   * Tries 'auth' object first (token + expires); falls back to 'token' key (used by Login).
    * @returns {string|null} The JWT token or null if not available
    */
   getAuthToken: () => {
     const authData = localStorage.getItem('auth');
-    if (!authData) return null;
-    
-    try {
-      const { token, expires } = JSON.parse(authData);
-      
-      // Check if token is expired
-      if (expires && new Date(expires) < new Date()) {
-        console.warn('Auth token expired, clearing local storage');
+    if (authData) {
+      try {
+        const { token, expires } = JSON.parse(authData);
+        if (expires && new Date(expires) < new Date()) {
+          console.warn('Auth token expired, clearing local storage');
+          localStorage.removeItem('auth');
+          return null;
+        }
+        if (token) return token;
+      } catch (err) {
+        console.error('Error parsing auth data', err);
         localStorage.removeItem('auth');
-        return null;
       }
-      
-      return token;
-    } catch (err) {
-      console.error('Error parsing auth data', err);
-      localStorage.removeItem('auth');
-      return null;
     }
+    // Fallback: Login stores token only in 'token' key
+    return localStorage.getItem('token');
   },
   
   /**
@@ -57,10 +56,11 @@ const apiUtils = {
   },
   
   /**
-   * Clear the authentication token from localStorage
+   * Clear the authentication token from localStorage (auth object and token key)
    */
   clearAuthToken: () => {
     localStorage.removeItem('auth');
+    localStorage.removeItem('token');
   },
   
   /**
@@ -112,7 +112,7 @@ const apiUtils = {
     
     try {
       const apiUrl = apiUtils.getApiBaseUrl();
-      const url = `${apiUrl}/api/auth/refresh-token`;
+      const url = `${apiUrl}/auth/refresh-token`;
       
       const response = await axios.post(url, {}, {
         headers: apiUtils.getHeaders(),
@@ -218,23 +218,24 @@ const apiUtils = {
   },
 
   /**
-   * Handle and standardize error responses
+   * Handle and standardize error responses.
+   * Returns an Error instance so Error boundaries and catch blocks work correctly.
+   * The error object has apiError property with full details (status, data, code, redirect, etc.).
    * @param {Error} error - The error from axios
-   * @returns {Object} - Standardized error object
+   * @returns {Error} - Error instance with apiError property for full details
    */
   handleError: (error) => {
+    let apiError;
     // Network or connection error
     if (error.code === 'ERR_NETWORK') {
-      return {
+      apiError = {
         isNetworkError: true,
         message: 'Network error. Please check your internet connection and try again.',
         originalError: error
       };
-    }
-    
-    // Server responded with an error
-    if (error.response) {
-      return {
+    } else if (error.response) {
+      // Server responded with an error
+      apiError = {
         status: error.response.status,
         data: error.response.data,
         message: error.response.data?.error || 'Server error occurred',
@@ -242,23 +243,23 @@ const apiUtils = {
         redirect: error.response.data?.redirect,
         originalError: error
       };
-    }
-    
-    // Request was made but no response received (timeout, etc)
-    if (error.request) {
-      return {
+    } else if (error.request) {
+      // Request was made but no response received (timeout, etc)
+      apiError = {
         isRequestError: true,
         message: 'No response received from server. Please try again later.',
         originalError: error
       };
+    } else {
+      apiError = {
+        isUnknownError: true,
+        message: error.message || 'An unknown error occurred',
+        originalError: error
+      };
     }
-    
-    // Something else happened while setting up the request
-    return {
-      isUnknownError: true,
-      message: error.message || 'An unknown error occurred',
-      originalError: error
-    };
+    const err = new Error(apiError.message);
+    err.apiError = apiError;
+    return err;
   }
 };
 

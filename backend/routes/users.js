@@ -398,8 +398,6 @@ router.delete('/me', authMiddleware, async (req, res) => {
     }
 });
 
-module.exports = router;
-
 // --- Bookmark Folders and Notes ---
 
 // GET all bookmark folders (questions/resources)
@@ -582,3 +580,5 @@ router.post('/me/bookmark-folders/:folderId/items/:itemId/move', authMiddleware,
     res.status(500).json({ error: 'Failed to move bookmark' });
   }
 });
+
+module.exports = router;

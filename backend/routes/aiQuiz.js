@@ -331,8 +331,8 @@ Use these examples to refine the quality and relevance of the questions you gene
   }
 });
 
-// POST /api/ai-quiz/ask - Answer CA-related questions using AI
-router.post('/ask', async (req, res) => {
+// POST /api/ai-quiz/ask - Answer CA-related questions using AI (auth required)
+router.post('/ask', authMiddleware, async (req, res) => {
   try {
     const { question, examStage, subject, conversationHistory = [] } = req.body;
     

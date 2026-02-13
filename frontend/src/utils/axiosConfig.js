@@ -1,4 +1,5 @@
 import axios from 'axios';
+import apiUtils from './apiUtils';
 
 // Use API URL from environment variables with fallback
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
@@ -10,48 +11,84 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 30000, // 30 seconds timeout (increased from 15 seconds)
-  withCredentials: true // Important for CORS with credentials
+  timeout: 30000,
+  withCredentials: true
 });
 
-// Request interceptor
+// Request interceptor: use apiUtils so token + auth object are both supported
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    
-    // If token exists, add to headers
+    const token = apiUtils.getAuthToken();
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+    }
     return config;
   },
-  (error) => {
-    console.error('[API Request Error]', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// Auth redirect handler - set by App to use navigate() (preserves SPA state)
+let authRedirectHandler = null;
+export function setAuthRedirectHandler(handler) {
+  authRedirectHandler = handler;
+}
+
+// Response interceptor: on 401 try refresh then retry; on failure redirect to login
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (err, token = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (err) reject(err);
+    else resolve(token);
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    console.error('[API Response Error]', error);
-    
-    // Handle token expiration
-    if (error.response && error.response.status === 401) {
-      // Check if error is due to invalid token
-      if (error.response.data.message === 'Invalid token' || 
-          error.response.data.message === 'Token expired') {
-        localStorage.removeItem('token');
-        window.location.href = '/login?expired=true';
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const isRefreshEndpoint = originalRequest.url?.includes('/auth/refresh-token');
+      const isAuthFailure = error.response?.data?.code === 'TOKEN_EXPIRED' ||
+        error.response?.data?.code === 'INVALID_TOKEN' ||
+        error.response?.data?.error?.includes('Token') ||
+        error.response?.data?.message?.includes('Token');
+
+      if (!isRefreshEndpoint && isAuthFailure) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          }).then((newToken) => {
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+            return api(originalRequest);
+          }).catch((e) => Promise.reject(e));
+        }
+        originalRequest._retry = true;
+        isRefreshing = true;
+        const refreshed = await apiUtils.refreshToken();
+        isRefreshing = false;
+        if (refreshed) {
+          const token = apiUtils.getAuthToken();
+          processQueue(null, token);
+          originalRequest.headers['Authorization'] = `Bearer ${token}`;
+          return api(originalRequest);
+        }
+        processQueue(error, null);
+        apiUtils.clearAuthToken();
+        if (authRedirectHandler) {
+          authRedirectHandler();
+        } else {
+          window.location.href = '/login?expired=true';
+        }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

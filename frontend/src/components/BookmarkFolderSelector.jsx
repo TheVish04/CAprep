@@ -18,7 +18,7 @@ const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
             setLoading(true);
             setError(null);
             try {
-                const res = await api.get('/api/users/me/bookmark-folders');
+                const res = await api.get('/users/me/bookmark-folders');
                 // Filter folders by type (question or resource)
                 const filteredFolders = res.data.bookmarkFolders.filter(folder => folder.type === itemType);
                 setFolders(filteredFolders || []);
@@ -37,7 +37,7 @@ const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
         
         try {
             setLoading(true);
-            const res = await api.post('/api/users/me/bookmark-folders', { 
+            const res = await api.post('/users/me/bookmark-folders', { 
                 name: newFolderName, 
                 type: itemType 
             });
@@ -60,7 +60,7 @@ const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
         if (showCreateNew && newFolderName.trim()) {
             try {
                 setLoading(true);
-                const res = await api.post('/api/users/me/bookmark-folders', { 
+                const res = await api.post('/users/me/bookmark-folders', { 
                     name: newFolderName, 
                     type: itemType 
                 });
@@ -72,16 +72,16 @@ const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
                     setSelectedFolderId(newFolder._id);
                     
                     // Add the bookmark to the new folder
-                    await api.post(`/api/users/me/bookmark-folders/${newFolder._id}/items`, {
+                    await api.post(`/users/me/bookmark-folders/${newFolder._id}/items`, {
                         itemId,
                         note
                     });
                     
                     // Also add to general bookmarks based on item type
                     if (itemType === 'question') {
-                        await api.post(`/api/users/me/bookmarks/${itemId}`, {});
+                        await api.post(`/users/me/bookmarks/${itemId}`, {});
                     } else if (itemType === 'resource') {
-                        await api.post(`/api/users/me/bookmarks/resource/${itemId}`, {});
+                        await api.post(`/users/me/bookmarks/resource/${itemId}`, {});
                     }
                     
                     onSuccess && onSuccess();
@@ -106,16 +106,16 @@ const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
         try {
             setLoading(true);
             // Add the bookmark to the folder
-            await api.post(`/api/users/me/bookmark-folders/${selectedFolderId}/items`, {
+            await api.post(`/users/me/bookmark-folders/${selectedFolderId}/items`, {
                 itemId,
                 note
             });
             
             // Also add to general bookmarks based on item type
             if (itemType === 'question') {
-                await api.post(`/api/users/me/bookmarks/${itemId}`, {});
+                await api.post(`/users/me/bookmarks/${itemId}`, {});
             } else if (itemType === 'resource') {
-                await api.post(`/api/users/me/bookmarks/resource/${itemId}`, {});
+                await api.post(`/users/me/bookmarks/resource/${itemId}`, {});
             }
             
             onSuccess && onSuccess();

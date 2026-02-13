@@ -4,6 +4,8 @@ import axios from 'axios';
 import Navbar from './Navbar';
 import './ForgotPassword.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
+
 const ResetPassword = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -63,7 +65,7 @@ const ResetPassword = () => {
         originalOtp: formData.otp
       });
       
-      const response = await axios.post('https://caprep.onrender.com/api/auth/verify-reset-otp', {
+      const response = await axios.post(`${API_BASE}/auth/verify-reset-otp`, {
         email: formData.email.trim(),
         otp: cleanOtp
       });
@@ -104,7 +106,7 @@ const ResetPassword = () => {
 
       console.log('Resetting password for:', { email: formData.email });
       
-      const response = await axios.post('https://caprep.onrender.com/api/auth/reset-password', {
+      const response = await axios.post(`${API_BASE}/auth/reset-password`, {
         email: formData.email,
         otp: formData.otp,
         newPassword: formData.newPassword

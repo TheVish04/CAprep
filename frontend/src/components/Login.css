@@ -82,6 +82,18 @@
   box-shadow: none;
 }
 
+.input-error {
+  border-color: #e57373 !important;
+  box-shadow: 0 0 0 1px rgba(229, 115, 115, 0.3);
+}
+
+.inline-error {
+  color: #e57373;
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0;
+}
+
 .error {
   color: #e57373;
   text-align: center;

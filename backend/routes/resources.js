@@ -33,46 +33,56 @@ const upload = multer({
 // Import cloudinary configuration
 const cloudinary = require('../config/cloudinary');
 
-// GET all resources with optional filtering
+// GET all resources with optional filtering and pagination
 router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
   try {
-    const { subject, paperType, examStage, year, month, search, bookmarked } = req.query;
+    const { subject, paperType, examStage, year, month, search, bookmarked, page, limit } = req.query;
     const filters = {};
     
-    // Apply standard filters
     if (subject) filters.subject = subject;
     if (paperType) filters.paperType = paperType;
     if (examStage) filters.examStage = examStage;
     if (year) filters.year = year;
     if (month) filters.month = month;
     
-    // Text search
     if (search) {
       filters.$or = [
         { title: { $regex: search, $options: 'i' } }
       ];
     }
     
-    // Bookmark filter
     if (bookmarked === 'true') {
-        const user = await User.findById(req.user.id).select('bookmarkedResources');
-        if (!user) {
-            return res.status(404).json({ error: 'User not found for bookmark filtering' });
-        }
-        // Ensure user.bookmarkedResources is an array, even if empty
-        const bookmarkedIds = user.bookmarkedResources || []; 
-        // If filtering by bookmarks, the resource _id must be in the user's list
-        filters._id = { $in: bookmarkedIds }; 
+      const user = await User.findById(req.user.id).select('bookmarkedResources');
+      if (!user) {
+        return res.status(404).json({ error: 'User not found for bookmark filtering' });
+      }
+      const bookmarkedIds = user.bookmarkedResources || [];
+      filters._id = { $in: bookmarkedIds };
     }
     
-    const resources = await Resource.find(filters).sort({ createdAt: -1 });
+    const limitNum = Math.min(parseInt(limit, 10) || 20, 100);
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [resources, total] = await Promise.all([
+      Resource.find(filters).sort({ createdAt: -1 }).skip(skip).limit(limitNum),
+      Resource.countDocuments(filters)
+    ]);
     
-    res.status(200).json(resources);
+    res.status(200).json({
+      data: resources,
+      pagination: {
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum),
+        limit: limitNum
+      }
+    });
   } catch (error) {
     if (typeof logger !== 'undefined' && logger.error) {
-         logger.error(`Error retrieving resources: ${error.message}`);
+      logger.error(`Error retrieving resources: ${error.message}`);
     } else {
-        console.error(`Error retrieving resources: ${error.message}`);
+      console.error(`Error retrieving resources: ${error.message}`);
     }
     res.status(500).json({ error: 'Failed to retrieve resources' });
   }
@@ -102,6 +112,40 @@ router.get('/:id', [authMiddleware, cacheMiddleware(3600)], async (req, res) => 
   } catch (error) {
     logger.error(`Error retrieving resource: ${error.message}`);
     res.status(500).json({ error: 'Failed to retrieve resource' });
+  }
+});
+
+// POST - Rate a resource (auth required)
+router.post('/:id/rate', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating } = req.body;
+    
+    if (rating == null || typeof rating !== 'number') {
+      return res.status(400).json({ error: 'Rating (1-5) is required' });
+    }
+    
+    const resource = await Resource.findById(id);
+    if (!resource) {
+      return res.status(404).json({ error: 'Resource not found' });
+    }
+    
+    await resource.addRating(rating);
+    clearCache([`/api/resources/${id}`, '/api/resources']);
+    
+    res.status(200).json({
+      success: true,
+      rating: {
+        average: resource.rating.average,
+        count: resource.rating.count,
+      },
+    });
+  } catch (error) {
+    if (error.message?.includes('Rating must be between 1 and 5')) {
+      return res.status(400).json({ error: error.message });
+    }
+    logger.error(`Error rating resource: ${error.message}`);
+    res.status(500).json({ error: 'Failed to rate resource' });
   }
 });
 
@@ -137,18 +181,12 @@ router.post('/', authMiddleware, adminMiddleware, upload.single('file'), async (
     const uniqueId = `${uuidv4().substring(0, 8)}-${cleanFilename}`;
     
     const uploadOptions = {
-      resource_type: 'image',  // 'image' handles PDFs better than 'raw' or 'auto'
+      resource_type: 'raw',  // Use 'raw' for PDFs (image type is for images only)
       folder: 'ca-exam-platform/resources',
       public_id: uniqueId,
-      format: 'pdf',
       type: 'upload',
       access_mode: 'public',
-      // Optimize PDF for viewing and downloading
-      transformation: [
-        { fetch_format: 'auto' },
-        { quality: 'auto' }
-      ],
-      invalidate: true,  // Invalidate any cached versions
+      invalidate: true,
       use_filename: true,
       unique_filename: true,
       overwrite: true

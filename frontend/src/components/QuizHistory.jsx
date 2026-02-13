@@ -9,7 +9,7 @@ const QuizHistory = () => {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://caprep.onrender.com';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -22,7 +22,7 @@ const QuizHistory = () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/users/me/quiz-history`, {
+                const response = await axios.get(`${API_BASE_URL}/users/me/quiz-history`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -124,7 +124,7 @@ const QuizHistory = () => {
             
             // For standard quizzes, fetch complete questions data for the attempted questions
             const questionIds = quizAttempt.questionsAttempted.map(q => q.questionId);
-            const response = await axios.post(`${API_BASE_URL}/api/questions/batch`, 
+            const response = await axios.post(`${API_BASE_URL}/questions/batch`, 
                 { questionIds },
                 {
                     headers: {

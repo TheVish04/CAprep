@@ -5,6 +5,23 @@ const User = require('../models/UserModel');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const mongoose = require('mongoose');
 
+// Get all discussions for a user (MUST be before /:itemType/:itemId to avoid route shadowing)
+router.get('/user/me', authMiddleware, async (req, res) => {
+  try {
+    const discussions = await Discussion.find({
+      participants: req.user.id
+    })
+    .select('itemType itemId updatedAt messages')
+    .sort('-updatedAt')
+    .limit(10);
+    
+    res.json(discussions);
+  } catch (error) {
+    console.error('Error fetching user discussions:', error);
+    res.status(500).json({ error: 'Failed to fetch discussions' });
+  }
+});
+
 // Get discussion for a specific item
 router.get('/:itemType/:itemId', authMiddleware, async (req, res) => {
   try {
@@ -326,23 +343,6 @@ router.delete('/:discussionId/message/:messageId', authMiddleware, async (req, r
       error: 'Failed to delete message',
       message: error.message
     });
-  }
-});
-
-// Get all discussions for a user (for notification/activity purposes)
-router.get('/user/me', authMiddleware, async (req, res) => {
-  try {
-    const discussions = await Discussion.find({
-      participants: req.user.id
-    })
-    .select('itemType itemId updatedAt messages')
-    .sort('-updatedAt')
-    .limit(10);
-    
-    res.json(discussions);
-  } catch (error) {
-    console.error('Error fetching user discussions:', error);
-    res.status(500).json({ error: 'Failed to fetch discussions' });
   }
 });
 

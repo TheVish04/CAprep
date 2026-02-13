@@ -51,7 +51,7 @@ const AdminAnnouncements = () => {
       }
 
       // Use the admin endpoint instead, which should return all announcements
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/announcements`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/announcements`, {
         headers: {
           Authorization: `Bearer ${token}`
         },
@@ -127,14 +127,14 @@ const AdminAnnouncements = () => {
       if (editingId) {
         // Update existing announcement
         response = await axios.put(
-          `${import.meta.env.VITE_API_URL}/api/admin/announcements/${editingId}`,
+          `${import.meta.env.VITE_API_URL}/admin/announcements/${editingId}`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         // Create new announcement
         response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/admin/announcements`,
+          `${import.meta.env.VITE_API_URL}/admin/announcements`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -195,7 +195,7 @@ const AdminAnnouncements = () => {
       }
       
       const response = await axios.delete(
-        `${import.meta.env.VITE_API_URL}/api/admin/announcements/${id}`,
+        `${import.meta.env.VITE_API_URL}/admin/announcements/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
