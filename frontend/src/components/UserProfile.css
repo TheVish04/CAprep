@@ -1,0 +1,770 @@
+/* UserProfile.css */
+
+/* .user-profile-page {
+    /* Uses .page-wrapper styles for overall background */
+ */
+
+.profile-container {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    padding: 30px 40px; /* Adjusted padding */
+    width: 90%;
+    max-width: 750px; /* Slightly wider */
+    margin: 120px auto 40px;
+    box-sizing: border-box;
+    color: #e0e0e0;
+}
+
+.profile-container h1 {
+    color: #03a9f4;
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.profile-container h2 {
+    color: #03a9f4;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #333;
+    font-size: 1.5rem;
+}
+
+.card {
+    background-color: #252525; /* Slightly darker card background for better contrast */
+    border: 1px solid #333; /* Subtle border for distinction */
+    border-radius: 8px; /* Match container rounding */
+    padding: 25px; /* Increased padding */
+    margin-bottom: 30px; /* Increased spacing */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.profile-details p,
+.profile-summary p {
+    margin-bottom: 12px; /* Slightly more space between lines */
+    line-height: 1.7;
+    color: #ccc;
+}
+
+.profile-details p strong,
+.profile-summary p strong {
+    color: #e0e0e0;
+    margin-right: 8px;
+    display: inline-block;
+    min-width: 100px; /* Align keys */
+}
+
+/* Profile header with picture and info */
+.profile-header {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.profile-picture-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #03a9f4;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.change-picture-btn {
+    background-color: #2a2a2a;
+    color: #03a9f4;
+    border: 1px solid #03a9f4;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.change-picture-btn:hover {
+    background-color: #03a9f4;
+    color: #fff;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-actions-inline {
+    margin-top: 15px;
+}
+
+.profile-summary .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0; /* Increased padding */
+    border-bottom: 1px solid #3a3a3a;
+}
+
+.profile-summary .summary-item:last-child {
+    border-bottom: none;
+}
+
+.profile-summary .summary-item p {
+    margin: 0;
+}
+
+.profile-link {
+    display: inline-block;
+    padding: 8px 15px; /* Slightly larger padding */
+    background-color: #03a9f4;
+    color: #fff;
+    border-radius: 5px; /* Slightly more rounded */
+    text-decoration: none;
+    font-size: 0.95em; /* Slightly larger font */
+    font-weight: 600; /* Bolder */
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-left: 15px; /* Space between text and link */
+    border: none;
+    cursor: pointer;
+}
+
+.profile-link:hover {
+    background-color: #0288d1;
+    transform: translateY(-1px); /* Subtle lift effect */
+}
+
+.profile-link.full-width-link {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-left: 0;
+    margin-top: 10px; /* Add space when it's full width */
+    padding: 10px 15px;
+}
+
+.profile-link:hover {
+    background-color: #0288d1;
+}
+
+.profile-actions {
+    margin-top: 30px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.logout-button, .delete-account-button {
+    padding: 10px 25px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.logout-button {
+    background-color: #f44336; /* Red for logout */
+}
+
+.logout-button:hover {
+    background-color: #d32f2f;
+}
+
+.delete-account-button {
+    background-color: #9e9e9e; /* Gray for delete account */
+}
+
+.delete-account-button:hover {
+    background-color: #757575;
+}
+
+/* Delete Account Modal */
+.delete-account-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.delete-account-content {
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    color: #e0e0e0;
+}
+
+.delete-account-content h2 {
+    color: #f44336;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.warning-text {
+    color: #ff9800;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.delete-button {
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.delete-button:hover {
+    background-color: #d32f2f;
+}
+
+.edit-profile-btn {
+    padding: 8px 16px;
+    background-color: #03a9f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.edit-profile-btn:hover {
+    background-color: #0288d1;
+}
+
+.loading-message,
+.error-message {
+    text-align: center;
+    padding: 30px;
+    font-size: 1.1em;
+    color: #aaa;
+}
+
+.error-message {
+    color: #f44336;
+}
+
+/* Remove empty ruleset and merge with existing .profile-contribution styles */
+    /* Add any specific card styling if needed */
+    /* Example: background-color: #f9f9f9; */
+
+
+.profile-contribution h2 {
+    margin-bottom: 1rem; /* Add space below heading */
+}
+
+/* Styling for the prompt when no donation is made */
+.profile-contribution .contribution-prompt {
+    display: flex;
+    flex-direction: column; /* Stack text and button vertically */
+    align-items: center;   /* Center items horizontally */
+    text-align: center;    /* Center the text itself */
+    gap: 1rem;             /* Add space between the text and the button */
+    padding: 1rem 0;       /* Add some vertical padding inside the prompt */
+}
+
+.profile-contribution .contribution-prompt p {
+    margin-bottom: 0; /* Remove default bottom margin if needed */
+    max-width: 80%;   /* Optional: constrain text width */
+}
+
+/* Adjust DonationButton specific styles if necessary within this context */
+.profile-contribution .contribution-prompt .donation-button-container button {
+    /* Example: Increase button size or add more margin */
+     padding: 12px 24px; /* Make button slightly larger */
+     font-size: 1rem;
+}
+
+/* Styling for the thank you message when donation is made */
+.profile-contribution p strong {
+    color: var(--accent-color, #007bff); /* Use accent color for emphasis */
+}
+
+.retention-message {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: #b0b0b0;
+  font-style: italic;
+  line-height: 1.5;
+  font-size: 0.95rem;
+  border-left: 3px solid #03a9f4;
+  padding-left: 15px;
+  background-color: rgba(3, 169, 244, 0.05);
+  padding: 10px 15px;
+  border-radius: 4px;
+}
+
+.profile-contribution {
+  position: relative;
+  padding-bottom: 25px;
+}
+
+.profile-contribution .donation-button {
+  background-color: #0288d1;
+  transition: all 0.3s ease;
+}
+
+.profile-contribution .donation-button:hover {
+  background-color: #03a9f4;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(3, 169, 244, 0.3);
+}
+
+
+/* Delete Account Modal - Enhanced Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* Darker overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.delete-confirmation-modal {
+    background-color: #2a2a2a; /* Match card background */
+    border-radius: 8px;
+    padding: 30px 40px; /* Consistent padding */
+    width: 90%;
+    max-width: 450px; /* Slightly smaller max-width */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    color: #e0e0e0;
+    border: 1px solid #444; /* Subtle border */
+}
+
+.delete-confirmation-modal h2 {
+    color: #f44336; /* Red for destructive action */
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1.8rem; /* Slightly larger title */
+    border-bottom: 1px solid #555;
+    padding-bottom: 10px;
+}
+
+.delete-confirmation-modal p {
+    margin-bottom: 20px;
+    text-align: center;
+    line-height: 1.6;
+    color: #ccc;
+}
+
+.delete-password-input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border: 1px solid #555;
+    border-radius: 5px;
+    background-color: #333;
+    color: #e0e0e0;
+    font-size: 1rem;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.delete-password-input:focus {
+    outline: none;
+    border-color: #03a9f4;
+    box-shadow: 0 0 0 2px rgba(3, 169, 244, 0.3);
+}
+
+.delete-confirmation-modal .error-message {
+    color: #ff9800; /* Orange for errors/warnings in modal */
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-around; /* Space out buttons */
+    margin-top: 25px;
+}
+
+.modal-actions button {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.confirm-delete-btn {
+    background-color: #f44336; /* Red */
+    color: white;
+}
+
+.confirm-delete-btn:hover {
+    background-color: #d32f2f;
+    transform: translateY(-1px);
+}
+
+.cancel-delete-button {
+    background-color: #666; /* Darker gray */
+    color: #e0e0e0;
+}
+
+.cancel-delete-button:hover {
+    background-color: #757575;
+}
+
+/* Bookmark Folders */
+.profile-bookmark-folders {
+    margin-top: 30px;
+}
+
+.profile-bookmark-folders h2 {
+    margin-bottom: 20px;
+}
+
+.bookmark-folder-create {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.bookmark-folder-create input {
+    flex: 2;
+    padding: 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background-color: #252525;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.bookmark-folder-create input:focus {
+    border-color: #03a9f4;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(3, 169, 244, 0.2);
+}
+
+.bookmark-folder-create select {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background-color: #252525;
+    color: #e0e0e0;
+    font-size: 14px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0b0b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 1em;
+}
+
+.bookmark-folder-create select:focus {
+    border-color: #03a9f4;
+    outline: none;
+}
+
+.bookmark-folder-create button {
+    padding: 12px 20px;
+    background-color: #03a9f4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.bookmark-folder-create button:hover {
+    background-color: #0288d1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.bookmark-folder-create button:active {
+    transform: translateY(0);
+}
+
+.bookmark-folder-create button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
+
+.bookmark-folder-list {
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #2a2a2a;
+}
+
+.bookmark-folder-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #444;
+    transition: all 0.2s ease;
+}
+
+.bookmark-folder-item:last-child {
+    border-bottom: none;
+}
+
+.bookmark-folder-item:hover {
+    background-color: #333;
+    transform: translateX(3px);
+}
+
+.bookmark-folder-item.selected {
+    background-color: rgba(3, 169, 244, 0.1);
+    border-left: 3px solid #03a9f4;
+}
+
+.folder-name {
+    flex: 1;
+    cursor: pointer;
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.bookmark-folder-item button {
+    padding: 8px 12px;
+    margin-left: 8px;
+    background-color: #333;
+    color: #ccc;
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s ease;
+}
+
+.bookmark-folder-item button:hover {
+    background-color: #444;
+    color: #fff;
+}
+
+.bookmark-folder-details {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background-color: #2a2a2a;
+}
+
+.bookmark-folder-details h3 {
+    color: #03a9f4;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.bookmark-folder-details button {
+    padding: 8px 15px;
+    background-color: #333;
+    color: #ccc;
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s ease;
+}
+
+.bookmark-folder-details button:hover {
+    background-color: #444;
+    color: #fff;
+}
+
+.bookmark-items-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.bookmark-item {
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background-color: #333;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.bookmark-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.bookmark-item span {
+    display: block;
+    margin-bottom: 8px;
+    color: #ccc;
+}
+
+.bookmark-item-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.bookmark-item-header h4 {
+    margin: 0;
+    color: #03a9f4;
+    font-size: 16px;
+}
+
+.bookmark-date {
+    font-size: 12px;
+    color: #888;
+}
+
+.bookmark-item-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.view-bookmark-btn {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: #03a9f4;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.view-bookmark-btn:hover {
+    background-color: #0288d1;
+    transform: translateY(-1px);
+}
+
+.bookmark-note-section {
+    margin-top: 10px;
+}
+
+.bookmark-note-section textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    font-size: 14px;
+    min-height: 80px;
+    resize: vertical;
+    margin-bottom: 10px;
+}
+
+.bookmark-note-section textarea:focus {
+    border-color: #03a9f4;
+    outline: none;
+}
+
+.bookmark-note-section button {
+    padding: 8px 15px;
+    background-color: #03a9f4;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.bookmark-note-section button:hover {
+    background-color: #0288d1;
+}
+
+.bookmark-note-section button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
+
+/* Enhanced Bookmark Modal Buttons */
+.create-folder-btn {
+    padding: 10px 18px;
+    background-color: #f44336; /* Red accent color matching logout button */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95em;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.create-folder-btn:hover {
+    background-color: #d32f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.create-folder-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.back-to-selection-btn {
+    padding: 10px 18px;
+    background-color: #424242;
+    color: #e0e0e0;
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95em;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.back-to-selection-btn:hover {
+    background-color: #616161;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.back-to-selection-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}

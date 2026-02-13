@@ -1,0 +1,324 @@
+/* Page Wrapper */
+.page-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  background-color: #121212;
+}
+
+.content-container {
+  padding-top: 80px; /* Space for navbar */
+  width: 100%; /* Take full width */
+  margin: 0 auto;
+  padding-bottom: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center content horizontally */
+}
+
+.hero {
+  background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
+  padding: 60px 20px;
+  text-align: center;
+  color: #f5f5f5;
+  margin-bottom: 40px;
+  width: 100%; /* Take full width */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border-radius: 0; /* Remove border radius for full width appearance */
+  display: flex;
+  justify-content: center; /* Center hero content horizontally */
+}
+
+.hero-content {
+  background-color: rgba(30, 30, 30, 0.7);
+  color: #f5f5f5;
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 800px;
+  width: 100%;
+  border: 1px solid #2d2d2d;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.hero-content h1 {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  color: #03a9f4;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.content-section {
+  padding: 0 20px;
+  width: 100%;
+  max-width: 1200px; /* Increased max-width */
+  margin: 0 auto; /* Center the section */
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  border: 1px solid #2d2d2d;
+}
+
+.content-section h2 {
+  color: #03a9f4;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  font-size: 1.8rem;
+}
+
+.content-section h3 {
+  color: #03a9f4;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 1.4rem;
+}
+
+.content-section p {
+  margin-bottom: 15px;
+  line-height: 1.6;
+  color: #f5f5f5;
+}
+
+.content-section ul {
+  margin-bottom: 20px;
+  padding-left: 20px;
+}
+
+.content-section ul li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  color: #b0b0b0;
+}
+
+/* ContactUs page specific styles */
+.contact-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin: 30px 0;
+}
+
+.contact-item {
+  flex: 1;
+  min-width: 250px;
+  padding: 20px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  border: 1px solid #2d2d2d;
+}
+
+.contact-item h3 {
+  margin-top: 0;
+  color: #03a9f4;
+}
+
+.contact-item a {
+  color: #03a9f4;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.contact-item a:hover {
+  color: #239ecf;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .hero-content h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-content p {
+    font-size: 1rem;
+  }
+  
+  .contact-details {
+    flex-direction: column;
+  }
+}
+
+.section-card {
+  box-shadow: none;
+  border: 1px solid #03a9f4;
+}
+
+.section-title {
+  color: #239ecf;
+}
+
+.chapter-link {
+  color: #239ecf;
+}
+
+.chapter-content {
+  box-shadow: none;
+  border: 1px solid #03a9f4;
+}
+
+.chapter-heading {
+  color: #239ecf;
+  border: 1px solid #03a9f4;
+}
+
+.actions button {
+  color: #239ecf;
+  border: 1px solid #03a9f4;
+}
+
+.actions button.active {
+  background-color: #03a9f4;
+  color: #ffffff;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #03a9f4;
+  margin-bottom: 1rem;
+}
+
+.content-subtitle {
+  color: #03a9f4;
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.content-link {
+  color: #03a9f4;
+  text-decoration: underline;
+}
+
+.social-icons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  color: #03a9f4;
+}
+
+.about-content h3 {
+  color: #03a9f4;
+  margin-bottom: 1rem;
+}
+
+.faq-title {
+  color: #03a9f4;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Adding support section styling for donation area */
+.support-section {
+  margin-top: 40px;
+  padding: 30px;
+  background-color: #1e1e1e;
+  border-radius: var(--border-radius);
+  border: 1px solid #2d2d2d;
+  border-left: 5px solid var(--primary-color);
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+}
+
+.support-section:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+}
+
+.support-section h2, .support-section h3 {
+  color: #03a9f4;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+.support-section p {
+  color: var(--light-color);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+/* Report Section Styles */
+.report-section {
+  margin: 40px 0;
+  padding: 30px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border: 1px solid #2d2d2d;
+  border-left: 5px solid #03a9f4;
+}
+
+.report-form {
+  margin-top: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #f5f5f5;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #03a9f4;
+  box-shadow: 0 0 0 2px rgba(3, 169, 244, 0.1);
+}
+
+.submit-button {
+  background-color: #03a9f4;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+  background-color: #0288d1;
+}
+
+.status-message {
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.status-message.success {
+  background-color: rgba(46, 125, 50, 0.1);
+  color: #4caf50;
+  border-left: 4px solid #4caf50;
+}
+
+.status-message.error {
+  background-color: rgba(211, 47, 47, 0.1);
+  color: #f44336;
+  border-left: 4px solid #f44336;
+}

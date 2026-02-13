@@ -1,0 +1,660 @@
+.page-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  background: #121212;
+}
+
+.resources-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 120px 20px 40px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.resources-container {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  padding: 40px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.resources-container h1 {
+  color: #03a9f4;
+  margin-bottom: 30px;
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  position: relative;
+  padding-bottom: 15px;
+  width: 100%;
+}
+
+.resources-container h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 4px;
+  background: #03a9f4;
+  border-radius: 4px;
+}
+
+.resources-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.search-bar {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #121212;
+  color: #b0b0b0;
+}
+
+.search-bar input:focus {
+  border-color: #03a9f4;
+  outline: none;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #121212;
+  border-radius: 8px;
+  border: 1px solid #333;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  flex: 1;
+}
+
+.filter-group label {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #b0b0b0;
+}
+
+.filter-group select {
+  padding: 10px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background-color: #1e1e1e;
+  color: #b0b0b0;
+  font-size: 14px;
+  width: 100%;
+  max-width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b0b0b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 1em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filter-group select:focus {
+  border-color: #03a9f4;
+  outline: none;
+}
+
+.resources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.resource-card {
+  background-color: #2a2a2a;
+  border-radius: 12px;
+  padding: 25px;
+  padding-top: 18px;
+  margin-bottom: 20px;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.resource-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.resource-header {
+  margin-bottom: 0.75rem;
+}
+
+.resource-title {
+  color: var(--primary-color, #03a9f4);
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.bookmark-btn.resource-top-right-bookmark {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  color: var(--text-color-secondary);
+  line-height: 0;
+}
+
+.bookmark-btn.resource-top-right-bookmark svg {
+  width: 24px;
+  height: 24px;
+  transition: fill 0.2s ease, transform 0.2s ease;
+}
+
+.bookmark-btn.resource-top-right-bookmark:hover svg {
+  fill: var(--primary-color, #03a9f4);
+  transform: scale(1.1);
+}
+
+.resource-info {
+  flex: 1;
+}
+
+.resource-info h3 {
+  margin: 0 0 10px 0;
+  color: #239ecf;
+  font-size: 18px;
+}
+
+.resource-description {
+  color: #b0b0b0;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.resource-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.resource-meta span {
+  background-color: #121212;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #b0b0b0;
+  border: 1px solid #333;
+}
+
+.resource-meta span strong {
+  color: #03a9f4;
+}
+
+.resource-actions {
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.resource-bookmark {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+}
+
+.download-btn {
+  background-color: #03a9f4;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.download-btn:hover {
+  background-color: #0288d1;
+  transform: translateY(-2px);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  gap: 8px;
+}
+
+.pagination button {
+  border: 1px solid #333;
+  background-color: #1e1e1e;
+  color: #b0b0b0;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.pagination button:hover {
+  background-color: #121212;
+  border-color: #03a9f4;
+}
+
+.pagination button.active {
+  background-color: #03a9f4;
+  color: #fff;
+  border-color: #03a9f4;
+}
+
+.loading, .no-resources, .error {
+  padding: 30px;
+  text-align: center;
+  color: #b0b0b0;
+  background-color: #121212;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.error {
+  color: #e57373;
+  font-weight: 500;
+  border: 1px solid #e57373;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .resources-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .search-bar {
+    max-width: 100%;
+  }
+  
+  .filter-group {
+    min-width: 100%;
+  }
+  
+  .resource-card {
+    flex-direction: column;
+  }
+  
+  .resource-actions {
+    margin-left: 0;
+    margin-top: 15px;
+    justify-content: flex-end;
+  }
+  
+  .resource-top-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .view-pdf-btn {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+}
+
+/* Fix navbar positioning */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.resource-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.resource-title {
+  margin: 0;
+  color: #eee;
+  flex-grow: 1;
+  padding-right: 10px;
+}
+
+.resource-bookmark-btn {
+  flex-shrink: 0;
+  margin-top: -2px;
+}
+
+.resource-description {
+  color: #ccc;
+  margin-bottom: 15px;
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+.resource-meta {
+  font-size: 0.85em;
+  color: #888;
+  margin-bottom: 15px;
+}
+
+.resource-meta span {
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+.resource-meta span:first-child {
+  margin-left: 0;
+}
+
+.resource-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #333;
+  padding-top: 10px;
+  margin-top: 15px;
+}
+
+.file-size {
+  font-size: 0.8em;
+  color: #aaa;
+}
+
+.download-btn {
+  background-color: #03a9f4;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+}
+
+.download-btn:hover {
+  background-color: #0288d1;
+}
+
+/* Re-use bookmark filter styles from Questions.css if needed */
+/* Or copy relevant styles here */
+.filter-group-bookmark {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  min-width: auto;
+  padding-left: 20px;
+}
+
+.bookmark-filter-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #b0b0b0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.bookmark-checkbox {
+  margin-right: 8px;
+  cursor: pointer;
+  appearance: none;
+  background-color: #333;
+  border: 1px solid #555;
+  padding: 8px;
+  border-radius: 3px;
+  display: inline-block;
+  position: relative;
+}
+
+.bookmark-checkbox:checked {
+  background-color: #03a9f4;
+  border-color: #03a9f4;
+}
+
+.bookmark-checkbox:checked::after {
+  content: '\2714';
+  font-size: 12px;
+  color: white;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin: 20px 0;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Update existing bookmark button styles if needed */
+.bookmark-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.bookmark-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.resource-top-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.view-pdf-btn {
+  margin-left: auto;
+}
+
+/* Remove the existing paper-header styles */
+.paper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0;
+}
+
+.paper-header h1,
+.paper-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #03a9f4;
+  text-align: left;
+}
+
+/* Direct target for the specific layout in the image */
+.paper-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px 20px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.paper-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #03a9f4;
+  font-weight: 600;
+}
+
+/* Target for resource card top section */
+.resource-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .paper-header,
+  .paper-title-container,
+  .resource-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .paper-header .view-pdf-btn,
+  .paper-title-container .view-pdf-btn {
+    margin-left: 0;
+    align-self: flex-end;
+  }
+}
+
+/* Specific target for the paper title and View PDF layout shown in the image */
+.paper-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background-color: transparent;
+  padding: 0;
+  margin-bottom: 10px;
+  border-radius: 0;
+}
+
+.paper-view-title {
+  font-size: 1.8rem;
+  color: #03a9f4;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.paper-view-header .view-pdf-btn {
+  white-space: nowrap;
+  margin-left: 20px;
+  margin-top: 15px;
+  align-self: flex-end;
+}
+
+.paper-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.paper-tag {
+  background-color: #222;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .paper-view-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .paper-view-header .view-pdf-btn {
+    margin-left: 0;
+    margin-top: 10px;
+    align-self: flex-end;
+  }
+}
+
+.resource-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 10;
+}
+
+.resource-top-actions .bookmark-btn,
+.resource-top-actions .more-menu-wrapper {
+  z-index: 5;
+} 
