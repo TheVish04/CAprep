@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
+import apiUtils from '../utils/apiUtils';
 import './DiscussionModal.css';
 
 const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
@@ -12,7 +13,6 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
   
   // Add state variables for editing messages
   const [editingMessage, setEditingMessage] = useState(null);
@@ -47,7 +47,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const response = await axios.get(`${API_URL}/users/me`, {
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -70,9 +70,9 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
         return;
       }
       
-      console.log(`Fetching discussion: ${API_URL}/discussions/${itemType}/${itemId}`);
+      console.log(`Fetching discussion: ${apiUtils.getApiBaseUrl()}/discussions/${itemType}/${itemId}`);
       const response = await axios.get(
-        `${API_URL}/discussions/${itemType}/${itemId}`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${itemType}/${itemId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -111,7 +111,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       });
       
       const response = await axios.post(
-        `${API_URL}/discussions/${itemType}/${itemId}/message`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${itemType}/${itemId}/message`,
         { 
           content: newMessage,
           parentMessageId: replyingTo ? replyingTo._id : null
@@ -140,14 +140,14 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       
       // First get the discussion ID
       const discussionResponse = await axios.get(
-        `${API_URL}/discussions/${itemType}/${itemId}`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${itemType}/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const discussionId = discussionResponse.data._id;
       
       const response = await axios.post(
-        `${API_URL}/discussions/${discussionId}/message/${messageId}/like`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${discussionId}/message/${messageId}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -198,14 +198,14 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       
       // First get the discussion ID
       const discussionResponse = await axios.get(
-        `${API_URL}/discussions/${itemType}/${itemId}`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${itemType}/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const discussionId = discussionResponse.data._id;
       
       const response = await axios.put(
-        `${API_URL}/discussions/${discussionId}/message/${editingMessage._id}`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${discussionId}/message/${editingMessage._id}`,
         { content: editContent },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -240,14 +240,14 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
       
       // First get the discussion ID
       const discussionResponse = await axios.get(
-        `${API_URL}/discussions/${itemType}/${itemId}`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${itemType}/${itemId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       const discussionId = discussionResponse.data._id;
       
       const response = await axios.delete(
-        `${API_URL}/discussions/${discussionId}/message/${messageId}`,
+        `${apiUtils.getApiBaseUrl()}/discussions/${discussionId}/message/${messageId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

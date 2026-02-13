@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from './Navbar';
+import apiUtils from '../utils/apiUtils';
 import './AdminAnnouncements.css';
 import { format } from 'date-fns';
 
@@ -51,7 +52,7 @@ const AdminAnnouncements = () => {
       }
 
       // Use the admin endpoint instead, which should return all announcements
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/announcements`, {
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/admin/announcements`, {
         headers: {
           Authorization: `Bearer ${token}`
         },
@@ -127,14 +128,14 @@ const AdminAnnouncements = () => {
       if (editingId) {
         // Update existing announcement
         response = await axios.put(
-          `${import.meta.env.VITE_API_URL}/admin/announcements/${editingId}`,
+          `${apiUtils.getApiBaseUrl()}/admin/announcements/${editingId}`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         // Create new announcement
         response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/admin/announcements`,
+          `${apiUtils.getApiBaseUrl()}/admin/announcements`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -195,7 +196,7 @@ const AdminAnnouncements = () => {
       }
       
       const response = await axios.delete(
-        `${import.meta.env.VITE_API_URL}/admin/announcements/${id}`,
+        `${apiUtils.getApiBaseUrl()}/admin/announcements/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       

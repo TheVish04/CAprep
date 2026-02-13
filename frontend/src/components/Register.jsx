@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from './Navbar';
+import apiUtils from '../utils/apiUtils';
 import './Register.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
 const Register = () => {
   // Step tracking
@@ -72,7 +71,7 @@ const Register = () => {
     setOtpError('');
     
     try {
-      const response = await axios.post(`${API_BASE}/auth/send-otp`, 
+      const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/send-otp`, 
         { email: email.trim() },
         {
           headers: {
@@ -131,7 +130,7 @@ const Register = () => {
     try {
       console.log(`Sending OTP verification request to caprep.onrender.com for email: ${email.trim()}`);
       
-      const response = await axios.post(`${API_BASE}/auth/verify-otp`, 
+      const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/verify-otp`, 
         { 
           email: email.trim(),
           otp: otp.trim() 
@@ -285,7 +284,7 @@ const Register = () => {
       
       console.log('Sending registration data:', {...dataToSend, password: '***HIDDEN***'});
       
-      const response = await axios.post(`${API_BASE}/auth/register`, 
+      const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/register`, 
         dataToSend,
         {
           headers: {

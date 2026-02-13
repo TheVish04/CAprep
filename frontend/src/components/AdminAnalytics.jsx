@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import apiUtils from '../utils/apiUtils';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import './AdminAnalytics.css';
@@ -34,7 +35,6 @@ const AdminAnalytics = () => {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
     useEffect(() => {
         const fetchAnalytics = async () => {
@@ -48,7 +48,7 @@ const AdminAnalytics = () => {
             }
 
             try {
-                const response = await axios.get(`${API_BASE_URL}/admin/analytics`, {
+                const response = await axios.get(`${apiUtils.getApiBaseUrl()}/admin/analytics`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 setAnalytics(response.data);
@@ -61,7 +61,7 @@ const AdminAnalytics = () => {
         };
 
         fetchAnalytics();
-    }, [API_BASE_URL]);
+    }, []);
 
     if (loading) return <div className="loading-indicator">Loading Analytics...</div>;
     if (error) return <div className="error-message">Error: {error}</div>;

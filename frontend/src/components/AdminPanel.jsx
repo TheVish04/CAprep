@@ -6,9 +6,8 @@ import DOMPurify from 'dompurify';
 import AdminAnalytics from './AdminAnalytics';
 import ResourceUploader from './ResourceUploader';
 import authUtils from '../utils/authUtils';
+import apiUtils from '../utils/apiUtils';
 import './AdminPanel.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -63,7 +62,7 @@ const AdminPanel = () => {
 
   const fetchQuestions = useCallback(async (token, query = '') => {
     try {
-      const response = await fetch(`${API_BASE}/questions${query ? `?${query}` : ''}`, {
+      const response = await fetch(`${apiUtils.getApiBaseUrl()}/questions${query ? `?${query}` : ''}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Cache-Control': 'no-cache',
@@ -461,7 +460,7 @@ const AdminPanel = () => {
       const cleanedSubQuestions = cleanSubQuestions(questionData.subQuestions);
       questionData.subQuestions = cleanedSubQuestions;
       
-      const response = await fetch(`${API_BASE}/questions`, {
+      const response = await fetch(`${apiUtils.getApiBaseUrl()}/questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -554,7 +553,7 @@ const AdminPanel = () => {
       const cleanedSubQuestions = cleanSubQuestions(questionData.subQuestions);
       questionData.subQuestions = cleanedSubQuestions;
       
-      const response = await fetch(`${API_BASE}/questions/${editingQuestionId}`, {
+      const response = await fetch(`${apiUtils.getApiBaseUrl()}/questions/${editingQuestionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -657,7 +656,7 @@ const AdminPanel = () => {
     if (!confirmDelete) return;
     
     try {
-      const response = await fetch(`${API_BASE}/questions/${id}`, {
+      const response = await fetch(`${apiUtils.getApiBaseUrl()}/questions/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

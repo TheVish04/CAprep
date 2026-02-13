@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import './Resources.css';
 import axios from 'axios';
+import apiUtils from '../utils/apiUtils';
 import MoreMenu from './MoreMenu';
 import DiscussionModal from './DiscussionModal';
 import BookmarkFolderSelector from './BookmarkFolderSelector';
@@ -58,7 +59,6 @@ const Resources = () => {
   const [serverPagination, setServerPagination] = useState({ total: 0, page: 1, pages: 1, limit: 10 });
   const [bookmarkedResourceIds, setBookmarkedResourceIds] = useState(new Set());
   const resourcesPerPage = 10;
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
   const [currentDiscussionResource, setCurrentDiscussionResource] = useState(null);
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
   const [showBookmarkFolderSelector, setShowBookmarkFolderSelector] = useState(false);
@@ -75,7 +75,7 @@ const Resources = () => {
       
       // First track the resource view
       try {
-        await axios.post(`${API_BASE_URL}/dashboard/resource-view`, {
+        await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/resource-view`, {
           resourceId: resource._id
         }, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -87,7 +87,7 @@ const Resources = () => {
       
       // Then increment the download count
       try {
-        await axios.post(`${API_BASE_URL}/resources/${resource._id}/download`, {}, {
+        await axios.post(`${apiUtils.getApiBaseUrl()}/resources/${resource._id}/download`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
       } catch (countError) {
@@ -106,12 +106,12 @@ const Resources = () => {
     } finally {
       setDownloadingResource(null);
     }
-  }, [API_BASE_URL, navigate]);
+  }, [apiUtils.getApiBaseUrl(), navigate]);
 
   // --- Fetch Bookmarked Resource IDs --- 
   const fetchBookmarkIds = useCallback(async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/resources/ids`, {
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/resources/ids`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
       if (response.data && response.data.bookmarkedResourceIds) {
@@ -120,7 +120,7 @@ const Resources = () => {
     } catch (err) {
       console.error('Error fetching resource bookmark IDs:', err);
     }
-  }, [API_BASE_URL]);
+  }, [apiUtils.getApiBaseUrl()]);
 
   // --- Fetch Resources based on filters (with pagination) --- 
   const fetchResources = useCallback(async (token, currentFilters, page = 1) => {
@@ -134,7 +134,7 @@ const Resources = () => {
       params.append('page', String(page));
       params.append('limit', String(resourcesPerPage));
 
-      const response = await axios.get(`${API_BASE_URL}/resources`, {
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/resources`, {
         headers: { 'Authorization': `Bearer ${token}` },
         params: params
       });
@@ -151,7 +151,7 @@ const Resources = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL, resourcesPerPage]);
+  }, [apiUtils.getApiBaseUrl(), resourcesPerPage]);
 
   // --- Initial Load --- 
   useEffect(() => {
@@ -212,7 +212,7 @@ const Resources = () => {
         // Resource not in current list, fetch it specifically
         const fetchSpecificResource = async () => {
           try {
-            const response = await axios.get(`${API_BASE_URL}/resources/${resourceId}`, {
+            const response = await axios.get(`${apiUtils.getApiBaseUrl()}/resources/${resourceId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -238,7 +238,7 @@ const Resources = () => {
         fetchSpecificResource();
       }
     }
-  }, [location.state?.preSelectedResource, navigate, handleDownload, API_BASE_URL]); // Only depend on preSelectedResource, not resources or loading
+  }, [location.state?.preSelectedResource, navigate, handleDownload, apiUtils.getApiBaseUrl()]); // Only depend on preSelectedResource, not resources or loading
 
   // --- Fetch on Filter or Page Change --- 
   useEffect(() => {
@@ -279,7 +279,7 @@ const Resources = () => {
     
     if (isCurrentlyBookmarked) {
       // If already bookmarked, remove the bookmark
-      const url = `${API_BASE_URL}/users/me/bookmarks/resource/${resourceId}`;
+      const url = `${apiUtils.getApiBaseUrl()}/users/me/bookmarks/resource/${resourceId}`;
       
       try {
         const response = await axios.delete(url, {
@@ -316,7 +316,7 @@ const Resources = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/resources/ids`, {
+        const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/resources/ids`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (response.data && response.data.bookmarkedResourceIds) {

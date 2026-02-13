@@ -4,11 +4,11 @@ import DOMPurify from 'dompurify';
 import Navbar from './Navbar';
 import './Quiz.css';
 import axios from 'axios';
+import apiUtils from '../utils/apiUtils';
 
 const Quiz = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // Add useLocation hook
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
+  const location = useLocation();
   
   // State for quiz setup
   const [step, setStep] = useState('setup'); // setup, quiz, result
@@ -73,8 +73,8 @@ const Quiz = () => {
         
         // For AI quizzes, fetch all subjects even if they don't have MCQs
         const endpoint = quizMode === 'ai' 
-          ? `${API_BASE_URL}/questions/all-subjects?examStage=${encodeURIComponent(examStage)}`
-          : `${API_BASE_URL}/questions/available-subjects?examStage=${encodeURIComponent(examStage)}`;
+          ? `${apiUtils.getApiBaseUrl()}/questions/all-subjects?examStage=${encodeURIComponent(examStage)}`
+          : `${apiUtils.getApiBaseUrl()}/questions/available-subjects?examStage=${encodeURIComponent(examStage)}`;
         
         const response = await axios.get(endpoint, {
           headers: {
@@ -103,7 +103,7 @@ const Quiz = () => {
     };
     
     fetchAvailableSubjects();
-  }, [examStage, API_BASE_URL, quizMode]); // Added quizMode as dependency
+  }, [examStage, quizMode]);
   
   // Save Quiz History
   const saveQuizHistory = useCallback(async (quizResult) => {
@@ -111,7 +111,7 @@ const Quiz = () => {
     if (!token) return;
 
     try {
-      await axios.post(`${API_BASE_URL}/users/me/quiz-history`, quizResult, {
+      await axios.post(`${apiUtils.getApiBaseUrl()}/users/me/quiz-history`, quizResult, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -121,7 +121,7 @@ const Quiz = () => {
     } catch (error) {
       console.error('Error saving quiz history:', error);
     }
-  }, [API_BASE_URL]);
+  }, []);
   
   // Calculate Score and Prepare Review Data
   const calculateAndFinalizeQuiz = useCallback(() => {
@@ -250,7 +250,7 @@ const Quiz = () => {
       if (quizMode === 'standard') {
         // Standard quiz - fetch questions from database
         const response = await axios.get(
-          `${API_BASE_URL}/questions/quiz?examStage=${encodeURIComponent(examStage)}&subject=${encodeURIComponent(subject)}&limit=${questionCount}`,
+          `${apiUtils.getApiBaseUrl()}/questions/quiz?examStage=${encodeURIComponent(examStage)}&subject=${encodeURIComponent(subject)}&limit=${questionCount}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -261,7 +261,7 @@ const Quiz = () => {
       } else {
         // AI-generated quiz
         const response = await axios.post(
-          `${API_BASE_URL}/ai-quiz/generate`,
+          `${apiUtils.getApiBaseUrl()}/ai-quiz/generate`,
           {
             examStage,
             subject,

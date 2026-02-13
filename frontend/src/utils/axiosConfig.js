@@ -1,8 +1,8 @@
 import axios from 'axios';
 import apiUtils from './apiUtils';
 
-// Use API URL from environment variables with fallback
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com/api';
+// Use apiUtils to ensure base URL always includes /api (fixes 404 when VITE_API_URL lacks /api)
+const API_BASE_URL = apiUtils.getApiBaseUrl();
 
 // Create axios instance with default config
 const api = axios.create({

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from './Navbar';
+import apiUtils from '../utils/apiUtils';
 import { DashboardSkeleton } from './Skeleton';
 import './Dashboard.css';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -42,7 +43,7 @@ const Dashboard = () => {
           return;
         }
 
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/dashboard`, {
+        const response = await axios.get(`${apiUtils.getApiBaseUrl()}/dashboard`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Cache-Control': 'no-cache', // Prevent caching issues
@@ -142,7 +143,7 @@ const Dashboard = () => {
       }
       
       // Record study session (25 min = 0.42 hours)
-      await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/study-session`, {
+      await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/study-session`, {
         hours: 0.42, // 25 minutes in hours
         subject: pomodoroSubject || null,
         examStage: pomodoroExamStage || null
@@ -190,7 +191,7 @@ const Dashboard = () => {
       if (!token) return;
       
       // Track the resource view on the backend
-      await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/resource-view`, {
+      await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/resource-view`, {
         resourceId
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -213,7 +214,7 @@ const Dashboard = () => {
       
       // Increment download count
       try {
-        await axios.post(`${import.meta.env.VITE_API_URL}/resources/${resourceId}/download`, {}, {
+        await axios.post(`${apiUtils.getApiBaseUrl()}/resources/${resourceId}/download`, {}, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
       } catch (countError) {
@@ -221,7 +222,7 @@ const Dashboard = () => {
       }
       
       // Get the resource data
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/resources/${resourceId}`, {
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/resources/${resourceId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -243,7 +244,7 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      await axios.post(`${import.meta.env.VITE_API_URL}/dashboard/question-view`, {
+      await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/question-view`, {
         questionId
       }, {
         headers: { Authorization: `Bearer ${token}` }

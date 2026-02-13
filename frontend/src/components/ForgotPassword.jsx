@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from './Navbar';
+import apiUtils from '../utils/apiUtils';
 import './ForgotPassword.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -25,7 +24,7 @@ const ForgotPassword = () => {
         return;
       }
 
-      const response = await axios.post(`${API_BASE}/auth/forgot-password`, { email });
+      const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/forgot-password`, { email });
       
       console.log('Forgot password response:', response.data);
       setSuccess(true);

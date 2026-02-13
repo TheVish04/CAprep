@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
+import apiUtils from '../utils/apiUtils';
 import './ResourceUploader.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
 const ResourceUploader = () => {
   const navigate = useNavigate();
@@ -135,7 +134,7 @@ const ResourceUploader = () => {
       const timestamp = new Date().getTime();
       const cacheParam = `cacheBust=${timestamp}`;
       
-      const url = `${API_BASE}/resources${query ? `?${query}&${cacheParam}` : `?${cacheParam}`}`;
+      const url = `${apiUtils.getApiBaseUrl()}/resources${query ? `?${query}&${cacheParam}` : `?${cacheParam}`}`;
       
       console.log(`Fetching from URL: ${url}`);
       
@@ -336,7 +335,7 @@ const ResourceUploader = () => {
       
       if (isEditMode) {
         // Update existing resource (PUT request)
-        const response = await fetch(`${API_BASE}/resources/${editingResourceId}`, {
+        const response = await fetch(`${apiUtils.getApiBaseUrl()}/resources/${editingResourceId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -373,7 +372,7 @@ const ResourceUploader = () => {
         // Cache form selections before submission
         cacheFormSelections();
         
-        const response = await fetch(`${API_BASE}/resources`, {
+        const response = await fetch(`${apiUtils.getApiBaseUrl()}/resources`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -384,7 +383,7 @@ const ResourceUploader = () => {
         if (response.ok) {
           // Clear server cache via admin endpoint
           try {
-            await fetch(`${API_BASE}/admin/clear-cache`, {
+            await fetch(`${apiUtils.getApiBaseUrl()}/admin/clear-cache`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -436,7 +435,7 @@ const ResourceUploader = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const response = await fetch(`${API_BASE}/resources/${id}`, {
+      const response = await fetch(`${apiUtils.getApiBaseUrl()}/resources/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

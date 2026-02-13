@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import apiUtils from '../utils/apiUtils';
 import './EditProfile.css';
 
 const EditProfile = ({ userData, onClose, onUpdate }) => {
@@ -12,7 +13,6 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     const [error, setError] = useState(null);
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
 
     useEffect(() => {
         if (userData) {
@@ -64,7 +64,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 formData.append('profileImage', file);
 
                 const uploadResponse = await axios.post(
-                    `${API_BASE_URL}/users/me/profile-image`,
+                    `${apiUtils.getApiBaseUrl()}/users/me/profile-image`,
                     formData,
                     {
                         headers: {
@@ -79,7 +79,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
 
             // Update user profile
             const response = await axios.put(
-                `${API_BASE_URL}/users/me`,
+                `${apiUtils.getApiBaseUrl()}/users/me`,
                 updatedData,
                 {
                     headers: { 'Authorization': `Bearer ${token}` }

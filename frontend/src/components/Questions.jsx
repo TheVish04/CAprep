@@ -5,6 +5,7 @@ import Navbar from './Navbar';
 import { generateQuestionsPDF, savePDF } from '../utils/pdfGenerator';
 import './Questions.css';
 import axios from 'axios';
+import apiUtils from '../utils/apiUtils';
 import MoreMenu from './MoreMenu';
 import DiscussionModal from './DiscussionModal';
 import BookmarkFolderSelector from './BookmarkFolderSelector';
@@ -42,7 +43,6 @@ const Questions = () => {
   const [individualShowAnswers, setIndividualShowAnswers] = useState({});
   const [bookmarkedQuestionIds, setBookmarkedQuestionIds] = useState(new Set());
   const questionsPerPage = 10;
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
   const [currentDiscussionQuestion, setCurrentDiscussionQuestion] = useState(null);
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
   const [showBookmarkFolderSelector, setShowBookmarkFolderSelector] = useState(false);
@@ -51,7 +51,7 @@ const Questions = () => {
   // --- Fetch Bookmarked Question IDs --- 
   const fetchBookmarkIds = useCallback(async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/ids`, {
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/ids`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -62,7 +62,7 @@ const Questions = () => {
     } catch (err) {
       console.error('Error fetching bookmark IDs:', err);
     }
-  }, [API_BASE_URL]);
+  }, []);
 
   // --- Fetch Questions based on filters (with pagination) --- 
   const fetchQuestions = useCallback(async (token, currentFilters, page = 1) => {
@@ -78,7 +78,7 @@ const Questions = () => {
       params.append('page', String(page));
       params.append('limit', String(questionsPerPage));
 
-      const response = await axios.get(`${API_BASE_URL}/questions`, {
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/questions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -98,7 +98,7 @@ const Questions = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_BASE_URL, questionsPerPage]);
+  }, [questionsPerPage]);
 
   // --- Initial Load: Check Token, Fetch Bookmarks --- 
   useEffect(() => {
@@ -132,7 +132,7 @@ const Questions = () => {
       const trackQuestionView = async () => {
         try {
           // Call the API endpoint to track question view
-          await axios.post(`${API_BASE_URL}/dashboard/question-view`, {
+          await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/question-view`, {
             questionId
           }, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -182,7 +182,7 @@ const Questions = () => {
       
       trackQuestionView();
     }
-  }, [location.state?.preSelectedQuestion, questions, loading, API_BASE_URL, navigate]);
+  }, [location.state?.preSelectedQuestion, questions, loading, navigate]);
 
   // --- Handle Filter Changes: refetch page 1 when filters change --- 
   useEffect(() => {
@@ -254,7 +254,7 @@ const Questions = () => {
     
     if (isCurrentlyBookmarked) {
       // If already bookmarked, remove the bookmark
-      const url = `${API_BASE_URL}/users/me/bookmarks/${questionId}`;
+      const url = `${apiUtils.getApiBaseUrl()}/users/me/bookmarks/${questionId}`;
       const config = {
           headers: { 'Authorization': `Bearer ${token}` }
       };
@@ -296,7 +296,7 @@ const Questions = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const response = await axios.get(`${API_BASE_URL}/users/me/bookmarks/ids`, {
+        const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/ids`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (response.data && response.data.bookmarkedQuestionIds) {
