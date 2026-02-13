@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/axiosConfig';
+import apiUtils from '../utils/apiUtils';
 import './ChatBotPage.css';
+
+const getChatHistoryStorageKey = () => {
+  const userId = apiUtils.getAuthUserId();
+  return userId ? `ca_assistant_chat_history_${userId}` : 'ca_assistant_chat_history';
+};
 
 // Typing speed: chars per tick; tick interval in ms (~150-200 chars/sec)
 const STREAM_CHARS_PER_TICK = 5;
@@ -24,9 +30,10 @@ const ChatBotPage = () => {
   const [selectedExamStage, setSelectedExamStage] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
 
-  // Load chat history from localStorage on component mount
+  // Load chat history from localStorage (per user) on component mount
   useEffect(() => {
-    const savedHistory = localStorage.getItem('ca_assistant_chat_history');
+    const key = getChatHistoryStorageKey();
+    const savedHistory = localStorage.getItem(key);
     if (savedHistory) {
       try {
         const parsedHistory = JSON.parse(savedHistory);
@@ -34,8 +41,10 @@ const ChatBotPage = () => {
       } catch (e) {
         console.error('Error parsing chat history:', e);
       }
+    } else {
+      setChatHistory([]);
     }
-  }, []);
+  }, [apiUtils.getAuthUserId()]);
   
   // Auto scroll to bottom of messages (including during streaming)
   useEffect(() => {
@@ -140,7 +149,7 @@ const ChatBotPage = () => {
     
     setChatHistory(newHistory);
     setSelectedConversation(newConvo);
-    localStorage.setItem('ca_assistant_chat_history', JSON.stringify(newHistory));
+    localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(newHistory));
   };
   
   const handleSendMessage = async () => {
@@ -217,7 +226,7 @@ const ChatBotPage = () => {
     if (confirmDelete) {
       const updatedHistory = chatHistory.filter(item => item.id !== historyId);
       setChatHistory(updatedHistory);
-      localStorage.setItem('ca_assistant_chat_history', JSON.stringify(updatedHistory));
+      localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(updatedHistory));
       
       // If the deleted conversation is the currently selected one, create a new chat
       if (selectedConversation && selectedConversation.id === historyId) {

@@ -62,7 +62,43 @@ const apiUtils = {
     localStorage.removeItem('auth');
     localStorage.removeItem('token');
   },
-  
+
+  /**
+   * Get the current user ID from auth (for per-user storage e.g. chat history).
+   * @returns {string|null} User id or null
+   */
+  getAuthUserId: () => {
+    const authData = localStorage.getItem('auth');
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData);
+        if (parsed.user?.id) return String(parsed.user.id);
+        if (parsed.token) {
+          const parts = parsed.token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            if (payload.id) return String(payload.id);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.id) return String(payload.id);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return null;
+  },
+
   /**
    * Get default headers including authorization if token exists
    * @returns {Object} Headers object
