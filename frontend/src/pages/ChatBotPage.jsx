@@ -3,9 +3,9 @@ import Navbar from '../components/Navbar';
 import api from '../utils/axiosConfig';
 import './ChatBotPage.css';
 
-// Typing speed: chars per tick; tick interval in ms (ChatGPT-like ~40-60 chars/sec)
-const STREAM_CHARS_PER_TICK = 2;
-const STREAM_TICK_MS = 35;
+// Typing speed: chars per tick; tick interval in ms (~150-200 chars/sec)
+const STREAM_CHARS_PER_TICK = 5;
+const STREAM_TICK_MS = 25;
 
 const ChatBotPage = () => {
   const [messages, setMessages] = useState([
