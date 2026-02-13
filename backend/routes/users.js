@@ -462,6 +462,26 @@ router.post('/me/profile-image', authMiddleware, upload.single('profileImage'), 
     }
 });
 
+const defaultProfilePicture = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
+
+// DELETE Remove profile picture (reset to default)
+router.delete('/me/profile-image', authMiddleware, async (req, res) => {
+    try {
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            { $set: { profilePicture: defaultProfilePicture } },
+            { new: true }
+        ).select('-password -quizHistory');
+        if (!updatedUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json(updatedUser);
+    } catch (error) {
+        console.error('Error removing profile picture:', error);
+        res.status(500).json({ error: 'Failed to remove profile picture' });
+    }
+});
+
 // DELETE User account
 router.delete('/me', authMiddleware, async (req, res) => {
     try {

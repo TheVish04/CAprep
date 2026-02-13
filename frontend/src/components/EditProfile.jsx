@@ -3,6 +3,8 @@ import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import './EditProfile.css';
 
+const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
+
 const EditProfile = ({ userData, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
         fullName: '',
@@ -18,6 +20,9 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     const [error, setError] = useState(null);
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
+    const [showChangePhotoModal, setShowChangePhotoModal] = useState(false);
+    const [photoActionLoading, setPhotoActionLoading] = useState(false);
+    const fileInputRef = React.useRef(null);
 
     useEffect(() => {
         if (userData) {
@@ -48,13 +53,54 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
         setPasswordData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleFileChange = (e) => {
-        const selectedFile = e.target.files[0];
-        if (selectedFile) {
+    const handleFileChange = async (e) => {
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) return;
+        const fileReader = new FileReader();
+        fileReader.onload = () => setPreviewUrl(fileReader.result);
+        fileReader.readAsDataURL(selectedFile);
+        if (showChangePhotoModal) {
+            setPhotoActionLoading(true);
+            setError(null);
+            try {
+                const fd = new FormData();
+                fd.append('profileImage', selectedFile);
+                const res = await api.post('/users/me/profile-image', fd);
+                setPreviewUrl(res.data.profilePicture || defaultAvatar);
+                setFormData(prev => ({ ...prev, profilePicture: res.data.profilePicture || '' }));
+                setFile(null);
+                if (onUpdate) onUpdate(res.data);
+                setShowChangePhotoModal(false);
+            } catch (err) {
+                setError(err.response?.data?.error || 'Failed to upload photo');
+            } finally {
+                setPhotoActionLoading(false);
+            }
+        } else {
             setFile(selectedFile);
-            const fileReader = new FileReader();
-            fileReader.onload = () => setPreviewUrl(fileReader.result);
-            fileReader.readAsDataURL(selectedFile);
+        }
+        e.target.value = '';
+    };
+
+    const handleUploadPhoto = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleRemovePhoto = async () => {
+        setPhotoActionLoading(true);
+        setError(null);
+        try {
+            const res = await api.delete('/users/me/profile-image');
+            const url = res.data.profilePicture || defaultAvatar;
+            setPreviewUrl(url);
+            setFormData(prev => ({ ...prev, profilePicture: url }));
+            setFile(null);
+            if (onUpdate) onUpdate(res.data);
+            setShowChangePhotoModal(false);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to remove photo');
+        } finally {
+            setPhotoActionLoading(false);
         }
     };
 
@@ -115,22 +161,36 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             <div className="edit-profile-content">
                 <h2>Edit Profile</h2>
                 {error && <div className="error-message">{error}</div>}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    id="profilePicture"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="edit-profile-hidden-file-input"
+                    aria-hidden="true"
+                />
                 <form onSubmit={handleSubmit} className="edit-profile-form">
                     <div className="edit-profile-left">
-                        <div className="form-group">
-                            <label htmlFor="profilePicture">Profile Picture</label>
-                            <div className="profile-picture-preview">
-                                {previewUrl && (
-                                    <img src={previewUrl} alt="Profile Preview" />
-                                )}
+                        <div className="profile-photo-card">
+                            <div className="profile-photo-card-avatar-wrap">
+                                <img
+                                    src={previewUrl || defaultAvatar}
+                                    alt="Profile"
+                                    className="profile-photo-card-avatar"
+                                />
                             </div>
-                            <input
-                                type="file"
-                                id="profilePicture"
-                                name="profilePicture"
-                                onChange={handleFileChange}
-                                accept="image/*"
-                            />
+                            <div className="profile-photo-card-info">
+                                <span className="profile-photo-card-name">{formData.fullName || 'Name'}</span>
+                                <span className="profile-photo-card-meta">{formData.email || ''}</span>
+                            </div>
+                            <button
+                                type="button"
+                                className="profile-photo-card-change-btn"
+                                onClick={() => setShowChangePhotoModal(true)}
+                            >
+                                Change photo
+                            </button>
                         </div>
                     </div>
                     <div className="edit-profile-right">
@@ -206,6 +266,40 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                     </div>
                 </form>
             </div>
+
+            {showChangePhotoModal && (
+                <div className="change-photo-modal-overlay" onClick={() => !photoActionLoading && setShowChangePhotoModal(false)}>
+                    <div className="change-photo-modal" onClick={e => e.stopPropagation()}>
+                        <h3 className="change-photo-modal-title">Change Profile Photo</h3>
+                        <div className="change-photo-modal-actions">
+                            <button
+                                type="button"
+                                className="change-photo-option change-photo-upload"
+                                onClick={handleUploadPhoto}
+                                disabled={photoActionLoading}
+                            >
+                                Upload Photo
+                            </button>
+                            <button
+                                type="button"
+                                className="change-photo-option change-photo-remove"
+                                onClick={handleRemovePhoto}
+                                disabled={photoActionLoading}
+                            >
+                                Remove Current Photo
+                            </button>
+                            <button
+                                type="button"
+                                className="change-photo-option change-photo-cancel"
+                                onClick={() => !photoActionLoading && setShowChangePhotoModal(false)}
+                                disabled={photoActionLoading}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
