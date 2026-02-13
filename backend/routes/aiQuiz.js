@@ -14,8 +14,8 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Default: gemini-1.5-flash (separate free-tier quota from 2.0). If you hit 429, try GEMINI_MODEL=gemini-1.5-flash-8b or wait for reset.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+// Free tier: gemini-2.5-flash-lite (best free limits). See https://ai.google.dev/gemini-api/docs/rate-limits
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 // Configure safety settings (adjust as needed)
 const safetySettings = [
