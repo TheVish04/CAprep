@@ -213,13 +213,13 @@ const LandingPage = () => {
             <p>Find relevant questions instantly using our advanced filtering and search capabilities.</p>
           </div>
           
-          <div className="feature-item" data-aos="fade-up" data-aos-delay="250">
+          {/* <div className="feature-item" data-aos="fade-up" data-aos-delay="250">
             <div className="feature-icon">
               <i className="fas fa-laptop-code animated-icon"></i>
             </div>
             <h3>Digital Experience</h3>
             <p>Enjoy a seamless, intuitive interface designed specifically for CA exam preparation.</p>
-          </div>
+          </div> */}
           
           <div className="feature-item" data-aos="fade-up" data-aos-delay="300">
             <div className="feature-icon">
