@@ -92,6 +92,11 @@
   border-left: 4px solid #e57373;
 }
 
+.auth-link.register-prompt {
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
 .info-message {
   color: #64b5f6;
   text-align: center;

@@ -240,7 +240,10 @@ router.post('/login', async (req, res) => {
       // Update failed attempts for this IP and email combination
       updateLoginAttempts(loginKey, false);
       console.log(`Login failed: user not found for email ${email}`);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({
+        error: 'This email is not registered. Please register as a new user.',
+        code: 'EMAIL_NOT_REGISTERED'
+      });
     }
 
     // Log debugging info

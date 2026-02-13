@@ -7,6 +7,7 @@ import './Login.css';
 const Login = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [isEmailNotRegistered, setIsEmailNotRegistered] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsEmailNotRegistered(false);
     setInfoMessage('');
     setIsLoading(true);
 
@@ -75,6 +77,8 @@ const Login = () => {
       if (err.response) {
         // Server responded with an error status
         console.error('Error response:', err.response.status, err.response.data);
+        const isNotRegistered = err.response.data?.code === 'EMAIL_NOT_REGISTERED';
+        setIsEmailNotRegistered(!!isNotRegistered);
         setError(err.response.data?.error || 'Invalid credentials or server error');
       } else if (err.request) {
         // Request was made but no response
@@ -97,6 +101,11 @@ const Login = () => {
         <div className="auth-form">
           <h2>Login</h2>
           {error && <p className="error">{error}</p>}
+          {isEmailNotRegistered && (
+            <p className="auth-link register-prompt">
+              Please <Link to="/register">register as a new user</Link> to continue.
+            </p>
+          )}
           {infoMessage && <p className="info-message">{infoMessage}</p>}
           <form onSubmit={handleSubmit} id="login-form" aria-labelledby="login-tab">
             <div>
