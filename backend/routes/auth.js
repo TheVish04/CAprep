@@ -107,19 +107,19 @@ router.post('/send-otp', async (req, res) => {
           error: 'The email address does not exist or cannot receive emails',
           field: 'email'
         });
-      } else if (emailResult.transportError === 'EAUTH') {
-        return res.status(500).json({ 
-          error: 'Server email configuration error. Please try again later or contact support.',
-          details: 'Email authentication failed'
+      } else if (emailResult.transportError === 'EAUTH' || emailResult.transportError === 'NO_SENDGRID_KEY' || emailResult.transportError === 'NO_CREDENTIALS') {
+        return res.status(500).json({
+          error: emailResult.error || 'Server email configuration error. Please try again later or contact support.',
+          details: process.env.NODE_ENV === 'development' ? emailResult.details : undefined
         });
       } else {
-        return res.status(500).json({ 
-          error: 'Failed to send OTP email. Please try again later.',
-          details: emailResult.error
+        return res.status(500).json({
+          error: emailResult.error || 'Failed to send OTP email. Please try again later.',
+          details: process.env.NODE_ENV === 'development' ? emailResult.details : undefined
         });
       }
     }
-    
+
     // Set CORS headers explicitly
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -616,18 +616,18 @@ router.post('/forgot-password', async (req, res) => {
         return res.status(400).json({ 
           error: 'The email address does not exist or cannot receive emails'
         });
-      } else if (emailResult.transportError === 'EAUTH') {
-        return res.status(500).json({ 
-          error: 'Server email configuration error. Please try again later or contact support.'
+      } else if (emailResult.transportError === 'EAUTH' || emailResult.transportError === 'NO_SENDGRID_KEY' || emailResult.transportError === 'NO_CREDENTIALS') {
+        return res.status(500).json({
+          error: emailResult.error || 'Server email configuration error. Please try again later or contact support.'
         });
       } else {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: 'Failed to send password reset email. Please try again later.',
           details: emailResult.error
         });
       }
     }
-    
+
     res.status(200).json({ 
       message: 'Password reset instructions sent to your email',
       email 

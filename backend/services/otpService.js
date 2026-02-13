@@ -1,9 +1,22 @@
 const otpGenerator = require('otp-generator');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+
+// SendGrid: email API (no SMTP). Works with Vercel/Render serverless. Single Sender Verification = no DNS required.
+// Get API key at sendgrid.com; verify one sender at Sender Authentication (Single Sender).
+const useSendGrid = () => !!process.env.SENDGRID_API_KEY;
+const getSendGridFrom = () =>
+  process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_FROM || process.env.EMAIL_USER || 'noreply@example.com';
+
+if (useSendGrid()) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log('📧 Email: Using SendGrid API (HTTP) - works with Vercel/Render');
+  console.log(`📧 SendGrid FROM: ${getSendGridFrom()}`);
+}
 
 // Path to store verified emails
 const verifiedEmailsFilePath = path.join(__dirname, '../database/verified_emails.json');
@@ -77,31 +90,67 @@ setInterval(() => {
   }
 }, 60000); // Clean up every minute
 
-// Configure nodemailer with more robust settings
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // use SSL
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  },
-  debug: true, // Enable debug logging
-  logger: true, // Log information about the transport mechanism
-  tls: {
-    rejectUnauthorized: false // Accept self-signed certificates
+// Nodemailer transporter (lazy, only when not using SendGrid)
+let transporter = null;
+const getTransporter = () => {
+  if (!transporter && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.EMAIL_PORT, 10) || 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      },
+      debug: process.env.NODE_ENV === 'development',
+      logger: process.env.NODE_ENV === 'development'
+    });
+    transporter.verify((err) => {
+      if (err) console.error('SMTP verify error:', err.message);
+      else console.log('SMTP server is ready to take our messages');
+    });
   }
-});
+  return transporter;
+};
 
-// Verify connection configuration
-transporter.verify(function(error, success) {
-  if (error) {
-    console.error('SMTP connection error:', error);
-  } else {
-    console.log('SMTP server is ready to take our messages');
+// Send email via SendGrid API (transactional). No DNS required with Single Sender Verification.
+const sendViaSendGrid = async (to, subject, html, text = '') => {
+  try {
+    if (!process.env.SENDGRID_API_KEY) {
+      return {
+        success: false,
+        error: 'Email service configuration error. SENDGRID_API_KEY is missing.',
+        transportError: 'NO_SENDGRID_KEY'
+      };
+    }
+    const from = getSendGridFrom();
+    const msg = {
+      to,
+      from: from.includes('<') ? from : `CAprep Support <${from}>`,
+      subject,
+      html: html || `<p>${text}</p>`,
+      text: text || (html ? html.replace(/<[^>]*>/g, '') : '')
+    };
+    console.log(`SendGrid: Sending email to ${to}`);
+    const [response] = await sgMail.send(msg);
+    if (response && response.statusCode >= 200 && response.statusCode < 300) {
+      console.log(`SendGrid: Email sent successfully to ${to}. Status: ${response.statusCode}`);
+      return { success: true, messageId: response.headers?.['x-message-id'] };
+    }
+    return { success: true, messageId: null };
+  } catch (err) {
+    const body = err.response?.body || {};
+    const message = body.errors?.[0]?.message || err.message || 'Failed to send email via SendGrid';
+    console.error('SendGrid error:', message, body);
+    return {
+      success: false,
+      error: message,
+      transportError: 'SENDGRID_ERROR',
+      details: process.env.NODE_ENV === 'development' ? (body.errors || err.message) : undefined
+    };
   }
-});
+};
 
 // Generate OTP and store it
 const generateOTP = (email) => {
@@ -228,20 +277,35 @@ const removeVerifiedEmail = (email) => {
   saveVerifiedEmailsToDisk(); // Save to disk immediately
 };
 
-// Send OTP via email
+// Send OTP via email (SendGrid when SENDGRID_API_KEY set; else nodemailer/SMTP)
 const sendOTPEmail = async (email, otp) => {
-  // Validate email format first
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     console.error(`Invalid email format: ${email}`);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: 'Invalid email format',
       transportError: 'INVALID_EMAIL'
     };
   }
 
-  // Check if email exists using a simple regex validation
-  // More comprehensive validation would require API calls to email validation services
+  if (useSendGrid()) {
+    return await sendViaSendGrid(
+      email,
+      'Your OTP for CAprep Registration',
+      generateEmailTemplate(email, otp),
+      `Your OTP is ${otp}. Valid for 10 minutes.`
+    );
+  }
+
+  const transport = getTransporter();
+  if (!transport) {
+    return {
+      success: false,
+      error: 'Email service is not configured. Set SENDGRID_API_KEY or EMAIL_USER + EMAIL_PASSWORD.',
+      transportError: 'NO_CREDENTIALS'
+    };
+  }
+
   const mailOptions = {
     from: `"CAprep Support" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -256,8 +320,8 @@ const sendOTPEmail = async (email, otp) => {
   };
 
   try {
-    console.log(`Attempting to send OTP email to: ${email}`);
-    const info = await transporter.sendMail(mailOptions);
+    console.log(`Attempting to send OTP email (SMTP) to: ${email}`);
+    const info = await transport.sendMail(mailOptions);
     console.log(`Email sent successfully to ${email}. Message ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
@@ -303,18 +367,35 @@ const generateEmailTemplate = (name, otp) => {
   `;
 };
 
-// Send password reset email with OTP
+// Send password reset email with OTP (SendGrid when configured; else SMTP)
 const sendPasswordResetEmail = async (email, otp) => {
-  // Validate email format first
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     console.error(`Invalid email format: ${email}`);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: 'Invalid email format',
       transportError: 'INVALID_EMAIL'
     };
   }
-  
+
+  if (useSendGrid()) {
+    return await sendViaSendGrid(
+      email,
+      'Password Reset OTP for CAprep',
+      generatePasswordResetTemplate(email, otp),
+      `Your password reset OTP is ${otp}. Valid for 5 minutes.`
+    );
+  }
+
+  const transport = getTransporter();
+  if (!transport) {
+    return {
+      success: false,
+      error: 'Email service is not configured. Set SENDGRID_API_KEY or EMAIL_USER + EMAIL_PASSWORD.',
+      transportError: 'NO_CREDENTIALS'
+    };
+  }
+
   const mailOptions = {
     from: `"CAprep Support" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -329,8 +410,8 @@ const sendPasswordResetEmail = async (email, otp) => {
   };
 
   try {
-    console.log(`Attempting to send password reset email to: ${email}`);
-    const info = await transporter.sendMail(mailOptions);
+    console.log(`Attempting to send password reset email (SMTP) to: ${email}`);
+    const info = await transport.sendMail(mailOptions);
     console.log(`Password reset email sent successfully to ${email}. Message ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
