@@ -45,7 +45,7 @@ const AdminAnnouncements = () => {
   // Fetch all announcements
   const fetchAnnouncements = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) {
         navigate('/login');
         return;
@@ -117,7 +117,7 @@ const AdminAnnouncements = () => {
     if (!validateForm()) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) {
         navigate('/login');
         return;
@@ -189,7 +189,7 @@ const AdminAnnouncements = () => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) {
         navigate('/login');
         return;

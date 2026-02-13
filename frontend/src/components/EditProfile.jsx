@@ -51,7 +51,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
         setError(null);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = apiUtils.getAuthToken();
             if (!token) {
                 throw new Error('Authentication required');
             }

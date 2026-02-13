@@ -44,7 +44,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
   
   const fetchCurrentUser = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me`, {
@@ -62,7 +62,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
   const fetchDiscussion = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       
       if (!token) {
         setError('You must be logged in to view discussions');
@@ -96,7 +96,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
     if (!newMessage.trim()) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       
       if (!token) {
         setError('You must be logged in to send messages');
@@ -135,7 +135,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
   
   const handleLike = async (messageId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       // First get the discussion ID
@@ -193,7 +193,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
     if (!editContent.trim() || !editingMessage) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       // First get the discussion ID
@@ -235,7 +235,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
     }
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       // First get the discussion ID

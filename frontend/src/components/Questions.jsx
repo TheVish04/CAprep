@@ -102,7 +102,7 @@ const Questions = () => {
 
   // --- Initial Load: Check Token, Fetch Bookmarks --- 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/login');
     } else {
@@ -117,14 +117,14 @@ const Questions = () => {
       initialMount.current = false;
       return;
     }
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) return;
     fetchQuestions(token, filters, currentPage);
   }, [currentPage]);
 
   // --- Handle preSelectedQuestion from location.state ---
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token && location.state?.preSelectedQuestion) {
       const questionId = location.state.preSelectedQuestion;
       
@@ -186,7 +186,7 @@ const Questions = () => {
 
   // --- Handle Filter Changes: refetch page 1 when filters change --- 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token) {
       setCurrentPage(1);
       fetchQuestions(token, filters, 1);
@@ -247,7 +247,7 @@ const Questions = () => {
 
   // --- Handle Bookmark Toggle --- 
   const handleBookmarkToggle = async (questionId) => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) return navigate('/login');
 
     const isCurrentlyBookmarked = bookmarkedQuestionIds.has(questionId);
@@ -293,7 +293,7 @@ const Questions = () => {
   // Handle successful bookmark to folder
   const handleBookmarkSuccess = async () => {
     // Refresh bookmark IDs
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token) {
       try {
         const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/ids`, {

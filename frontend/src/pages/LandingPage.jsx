@@ -30,21 +30,19 @@ const LandingPage = () => {
     setTimeout(() => setIsVisible(true), 100);
     
     // Check if user is logged in
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token) {
       try {
         // Validate token format
         const parts = token.split('.');
         if (parts.length === 3) {
           setIsLoggedIn(true);
-          // Remove the auto-redirect for logged-in users
-          // setShouldRedirect(true); // Redirect logged-in users to dashboard
         } else {
-          localStorage.removeItem('token'); // Clear invalid token
+          apiUtils.clearAuthToken();
         }
       } catch (error) {
         console.error('Error checking token:', error);
-        localStorage.removeItem('token'); // Clear invalid token
+        apiUtils.clearAuthToken();
       }
     }
     

@@ -67,7 +67,7 @@ const Resources = () => {
   // Download a resource and increment download count
   const handleDownload = useCallback(async (resource) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return navigate('/login');
       
       console.log('Starting download process for resource:', resource.title);
@@ -155,7 +155,7 @@ const Resources = () => {
 
   // --- Initial Load --- 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/login'); // Redirect to login if no token
     } else {
@@ -188,7 +188,7 @@ const Resources = () => {
   
   // --- Load specific resource when preSelectedResource is present ---
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token && location.state?.preSelectedResource) {
       const resourceId = location.state.preSelectedResource;
       
@@ -242,7 +242,7 @@ const Resources = () => {
 
   // --- Fetch on Filter or Page Change --- 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token) {
       fetchResources(token, filters, currentPage);
     }
@@ -272,7 +272,7 @@ const Resources = () => {
 
   // --- Handle Bookmark Toggle --- 
   const handleBookmarkToggle = async (resourceId) => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) return navigate('/login');
 
     const isCurrentlyBookmarked = bookmarkedResourceIds.has(resourceId);
@@ -313,7 +313,7 @@ const Resources = () => {
   // Handle successful bookmark to folder
   const handleBookmarkSuccess = async () => {
     // Refresh bookmark IDs
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token) {
       try {
         const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/resources/ids`, {

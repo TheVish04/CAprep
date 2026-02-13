@@ -51,7 +51,7 @@ const Quiz = () => {
   
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/login');
     }
@@ -69,7 +69,7 @@ const Quiz = () => {
       setError(null);
       setWarning(null);
       try {
-        const token = localStorage.getItem('token');
+        const token = apiUtils.getAuthToken();
         
         // For AI quizzes, fetch all subjects even if they don't have MCQs
         const endpoint = quizMode === 'ai' 
@@ -107,7 +107,7 @@ const Quiz = () => {
   
   // Save Quiz History
   const saveQuizHistory = useCallback(async (quizResult) => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) return;
 
     try {
@@ -243,7 +243,7 @@ const Quiz = () => {
     setQuizCompleted(false);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       
       let data;
       

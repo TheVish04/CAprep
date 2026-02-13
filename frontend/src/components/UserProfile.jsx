@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/axiosConfig';
+import apiUtils from '../utils/apiUtils';
 import Navbar from './Navbar';
 import './UserProfile.css';
 import EditProfile from './EditProfile';
@@ -17,7 +18,7 @@ const UserProfile = () => {
     // API base URL is handled by axiosConfig
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = apiUtils.getAuthToken();
         if (!token) {
             navigate('/login');
             return;
@@ -32,7 +33,7 @@ const UserProfile = () => {
             } catch (err) {
                 setError(err.response?.data?.error || "Failed to load profile.");
                 if (err.response?.status === 401) {
-                    localStorage.removeItem('token');
+                    apiUtils.clearAuthToken();
                     navigate('/login', { 
                         state: { 
                             message: 'Your session has expired. Please log in again.',

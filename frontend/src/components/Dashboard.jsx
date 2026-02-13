@@ -37,7 +37,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = apiUtils.getAuthToken();
         if (!token) {
           navigate('/login');
           return;
@@ -136,7 +136,7 @@ const Dashboard = () => {
     setPomodoroActive(false);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) {
         navigate('/login');
         return;
@@ -187,7 +187,7 @@ const Dashboard = () => {
   // Track resource view
   const trackResourceView = async (resourceId, resourceTitle = null) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       // Track the resource view on the backend
@@ -209,7 +209,7 @@ const Dashboard = () => {
   // Download resource directly
   const downloadResource = async (resourceId, resourceTitle = null) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       // Increment download count
@@ -241,7 +241,7 @@ const Dashboard = () => {
   // Track question view
   const trackQuestionView = async (questionId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/question-view`, {

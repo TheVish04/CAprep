@@ -40,7 +40,7 @@ const AdminAnalytics = () => {
         const fetchAnalytics = async () => {
             setLoading(true);
             setError(null);
-            const token = localStorage.getItem('token');
+            const token = apiUtils.getAuthToken();
             if (!token) {
                 setError('Authentication token not found.');
                 setLoading(false);

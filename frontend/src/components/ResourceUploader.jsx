@@ -49,7 +49,7 @@ const ResourceUploader = () => {
 
   // Check admin authentication and fetch existing resources
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/');
       return;
@@ -331,7 +331,7 @@ const ResourceUploader = () => {
     setIsSubmitting(true);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       
       if (isEditMode) {
         // Update existing resource (PUT request)
@@ -432,7 +432,7 @@ const ResourceUploader = () => {
     }
     
     try {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (!token) return;
       
       const response = await fetch(`${apiUtils.getApiBaseUrl()}/resources/${id}`, {
@@ -529,7 +529,7 @@ const ResourceUploader = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const applyFilters = () => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) return;
 
     let queryParams = new URLSearchParams();
@@ -570,7 +570,7 @@ const ResourceUploader = () => {
     
     // Trigger cache update for this resource
     setTimeout(() => {
-      const token = localStorage.getItem('token');
+      const token = apiUtils.getAuthToken();
       if (token) {
         fetchResources(token);
       }
@@ -979,7 +979,7 @@ const ResourceUploader = () => {
                   localStorage.removeItem('resourceFilterSelections');
                   
                   // Fetch all resources without any query parameters
-                  const token = localStorage.getItem('token');
+                  const token = apiUtils.getAuthToken();
                   if (token) {
                     fetchResources(token, '');
                   }

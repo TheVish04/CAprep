@@ -110,7 +110,7 @@ const AdminPanel = () => {
   }, [filters, fetchQuestions]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/');
     } else {
@@ -427,7 +427,7 @@ const AdminPanel = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/login');
       return;
@@ -520,7 +520,7 @@ const AdminPanel = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/login');
       return;
@@ -646,7 +646,7 @@ const AdminPanel = () => {
   };
 
   const handleDelete = async (id) => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (!token) {
       navigate('/login');
       return;
@@ -1235,7 +1235,7 @@ const AdminPanel = () => {
                   />
                 </div>
               </div>
-              <button onClick={() => applyFilters(localStorage.getItem('token'))} className="apply-filter-btn">
+              <button onClick={() => applyFilters(apiUtils.getAuthToken())} className="apply-filter-btn">
                 Apply Filters
               </button>
             </div>

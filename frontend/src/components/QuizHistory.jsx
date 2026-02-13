@@ -12,7 +12,7 @@ const QuizHistory = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = apiUtils.getAuthToken();
         if (!token) {
             navigate('/login');
             return;
@@ -56,7 +56,7 @@ const QuizHistory = () => {
             setLoading(true);
             
             // Get token for authentication
-            const token = localStorage.getItem('token');
+            const token = apiUtils.getAuthToken();
             if (!token) {
                 navigate('/login');
                 return;

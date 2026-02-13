@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import apiUtils from '../utils/apiUtils';
 import NotificationsDropdown from './NotificationsDropdown';
 import './Navbar.css';
 
@@ -14,7 +15,7 @@ const Navbar = () => {
 
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = apiUtils.getAuthToken();
     if (token) {
       setIsLoggedIn(true);
       try {
@@ -27,7 +28,7 @@ const Navbar = () => {
         setIsAdmin(payload.role === 'admin');
       } catch (error) {
         console.error('Error decoding token:', error);
-        localStorage.removeItem('token'); // Clear invalid token
+        apiUtils.clearAuthToken();
         setIsLoggedIn(false);
         setIsAdmin(false);
       }
@@ -38,7 +39,7 @@ const Navbar = () => {
   }, [location]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    apiUtils.clearAuthToken();
     setIsLoggedIn(false);
     setIsAdmin(false);
     navigate('/login'); // Navigate to login after logout
