@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import Navbar from './Navbar';
 import apiUtils from '../utils/apiUtils';
 import './Register.css';
@@ -71,16 +71,7 @@ const Register = () => {
     setOtpError('');
     
     try {
-      const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/send-otp`, 
-        { email: email.trim() },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          withCredentials: true
-        }
-      );
+      const response = await api.post('/auth/send-otp', { email: email.trim() });
       
       console.log("OTP send response:", response.data);
       
@@ -130,19 +121,10 @@ const Register = () => {
     try {
       console.log(`Sending OTP verification request to caprep.onrender.com for email: ${email.trim()}`);
       
-      const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/verify-otp`, 
-        { 
-          email: email.trim(),
-          otp: otp.trim() 
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          withCredentials: true
-        }
-      );
+      const response = await api.post('/auth/verify-otp', {
+        email: email.trim(),
+        otp: otp.trim()
+      });
       
       console.log("OTP verification response:", response.data);
       
@@ -284,22 +266,19 @@ const Register = () => {
       
       console.log('Sending registration data:', {...dataToSend, password: '***HIDDEN***'});
       
-      const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/register`, 
-        dataToSend,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          withCredentials: true
-        }
-      );
+      const response = await api.post('/auth/register', dataToSend);
       
       console.log('Registration response:', response.data);
       
-      // Registration successful
-      alert('Registration successful! Redirecting to login page...');
-      navigate('/login');
+      // Auto-login: use token from response and navigate to dashboard
+      if (response.data?.token) {
+        const { token, expires, user } = response.data;
+        apiUtils.setAuthToken({ token, expires, user });
+        const role = user?.role ?? 'user';
+        navigate(role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       console.error('Registration error:', err.response?.data || err);
       

@@ -297,6 +297,38 @@
   line-height: 1.5;
 }
 
+.announcement-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.announcement-actions .btn-dismiss,
+.announcement-actions .btn-acknowledge {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.announcement-actions .btn-dismiss:hover,
+.announcement-actions .btn-acknowledge:hover {
+  background: #333;
+  color: #fff;
+}
+
+.announcement-actions .btn-acknowledge {
+  border-color: #03a9f4;
+  color: #03a9f4;
+}
+
+.announcement-actions .btn-acknowledge:hover {
+  background: rgba(3, 169, 244, 0.15);
+}
+
 /* Tags */
 .subject-tag, .type-tag, .difficulty-tag {
   display: inline-block;
@@ -454,6 +486,24 @@
 .no-data p {
   font-style: italic;
   margin-bottom: 15px;
+}
+
+.dashboard-cta {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: rgba(3, 169, 244, 0.2);
+  color: #03a9f4;
+  border: 1px solid #03a9f4;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+
+.dashboard-cta:hover {
+  background: #03a9f4;
+  color: #121212;
 }
 
 /* Pomodoro Timer */

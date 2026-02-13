@@ -5,6 +5,7 @@ const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware')
 const Question = require('../models/QuestionModel');
 const User = require('../models/UserModel');
 const { questionSchema } = require('../validators/questionValidator');
+const { logAudit } = require('../utils/auditLog');
 
 router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
@@ -56,6 +57,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const question = await Question.create(questionData);
     clearCache('/api/questions');
+    await logAudit(req.user.id, 'create', 'question', question.id, { subject: question.subject, questionNumber: question.questionNumber });
     console.log('Question created with ID:', question.id);
     res.status(201).json({ id: question.id, ...questionData });
   } catch (error) {
@@ -116,6 +118,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
     await Question.findByIdAndUpdate(id, updatedData, { new: true });
     clearCache([`/api/questions?id=${id}`, '/api/questions']);
+    await logAudit(req.user.id, 'update', 'question', id, { subject: updatedData.subject });
     console.log('Question updated successfully for ID:', id);
     res.json({ message: 'Question updated successfully', id, ...updatedData });
   } catch (error) {
@@ -197,6 +200,7 @@ router.delete('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
     }
     
     clearCache([`/api/questions?id=${id}`, '/api/questions']);
+    await logAudit(req.user.id, 'delete', 'question', id, { subject: question.subject });
     console.log(`Successfully deleted question with ID: ${id}`);
     res.json({ message: 'Question deleted successfully', id });
   } catch (error) {

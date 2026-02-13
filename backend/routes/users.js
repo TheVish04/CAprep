@@ -232,20 +232,37 @@ router.post('/me/quiz-history', authMiddleware, async (req, res) => {
                 $push: {
                     quizHistory: {
                         $each: [newHistoryEntry],
-                        $position: 0 // Add to the beginning
-                        // $slice: -50 // Optional: Keep only the latest 50 entries
+                        $position: 0
                     }
                 }
             },
             { new: true }
-        ).select('quizHistory'); // Select only history to return confirmation
+        ).select('quizHistory');
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Return only the newly added entry for confirmation, or the whole history
-        res.status(201).json(user.quizHistory[0]); // Return the entry just added
+        // Update subject strengths from quiz history (last 30 attempts per subject, average percentage)
+        const bySubject = {};
+        const maxPerSubject = 30;
+        (user.quizHistory || []).forEach((entry) => {
+            if (!entry.subject) return;
+            if (!bySubject[entry.subject]) bySubject[entry.subject] = [];
+            if (bySubject[entry.subject].length < maxPerSubject) {
+                bySubject[entry.subject].push(entry.percentage != null ? entry.percentage : 0);
+            }
+        });
+        const subjectStrengths = Object.entries(bySubject).map(([subject, percentages]) => {
+            const sum = percentages.reduce((a, b) => a + b, 0);
+            const strengthScore = Math.round(sum / percentages.length);
+            return { subject, strengthScore: Math.min(100, Math.max(0, strengthScore)), lastUpdated: new Date() };
+        });
+        if (subjectStrengths.length > 0) {
+            await User.findByIdAndUpdate(req.user.id, { $set: { subjectStrengths } });
+        }
+
+        res.status(201).json(user.quizHistory[0]);
 
     } catch (error) {
         console.error('Error saving quiz history:', error);

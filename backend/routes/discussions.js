@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Discussion = require('../models/DiscussionModel');
 const User = require('../models/UserModel');
+const Notification = require('../models/NotificationModel');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const mongoose = require('mongoose');
+const { sendReplyNotificationEmail } = require('../services/otpService');
 
 // Get all discussions for a user (MUST be before /:itemType/:itemId to avoid route shadowing)
 router.get('/user/me', authMiddleware, async (req, res) => {
@@ -136,7 +138,36 @@ router.post('/:itemType/:itemId/message', authMiddleware, async (req, res) => {
     }
     
     await discussion.save();
-    
+
+    // Create in-app reply notification and optionally send email
+    if (parentMessageId) {
+      const parentMsg = discussion.messages.id(parentMessageId);
+      if (parentMsg && parentMsg.userId && !parentMsg.userId.equals(req.user.id)) {
+        const replyAuthorName = req.user.fullName || 'Someone';
+        const excerpt = content.trim().length > 80 ? content.trim().slice(0, 80) + '...' : content.trim();
+        try {
+          await Notification.create({
+            user: parentMsg.userId,
+            type: 'reply',
+            title: 'New reply in discussion',
+            body: `${replyAuthorName} replied: ${excerpt}`,
+            refId: discussion._id,
+            refType: 'discussion'
+          });
+          // Send email notification (fire-and-forget)
+          User.findById(parentMsg.userId).select('email fullName').lean().then((targetUser) => {
+            if (targetUser?.email) {
+              sendReplyNotificationEmail(targetUser.email, replyAuthorName, itemType, itemId, excerpt).catch((err) => {
+                console.error('Reply notification email failed:', err);
+              });
+            }
+          }).catch((err) => console.error('Failed to fetch user for reply email:', err));
+        } catch (notifErr) {
+          console.error('Failed to create reply notification:', notifErr);
+        }
+      }
+    }
+
     // Return the updated discussion with populated user info
     const updatedDiscussion = await Discussion.findById(discussion._id)
       .populate({

@@ -744,11 +744,17 @@ router.post('/reset-password', async (req, res) => {
       });
     }
     
-    // Check password strength
+    // Check password strength (same as register: 8+ chars, upper, lower, number, special)
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
-    
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        error: 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
+      });
+    }
+
     // Find user by email first
     const user = await User.findOne({ email: email.trim().toLowerCase() })
       .select('+resetPasswordToken +resetPasswordExpires');

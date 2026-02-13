@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../utils/axiosConfig';
 import Navbar from './Navbar';
 import apiUtils from '../utils/apiUtils';
 import { DashboardSkeleton } from './Skeleton';
@@ -43,13 +43,12 @@ const Dashboard = () => {
           return;
         }
 
-        const response = await axios.get(`${apiUtils.getApiBaseUrl()}/dashboard`, {
+        const response = await api.get('/dashboard', {
           headers: {
-            Authorization: `Bearer ${token}`,
-            'Cache-Control': 'no-cache', // Prevent caching issues
+            'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
           },
-          timeout: 10000 // 10 seconds timeout
+          timeout: 10000
         });
 
         if (response.data.success) {
@@ -143,12 +142,10 @@ const Dashboard = () => {
       }
       
       // Record study session (25 min = 0.42 hours)
-      await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/study-session`, {
+      await api.post('/dashboard/study-session', {
         hours: 0.42, // 25 minutes in hours
         subject: pomodoroSubject || null,
         examStage: pomodoroExamStage || null
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Show completion notification
@@ -191,11 +188,7 @@ const Dashboard = () => {
       if (!token) return;
       
       // Track the resource view on the backend
-      await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/resource-view`, {
-        resourceId
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/dashboard/resource-view', { resourceId });
       
       // Navigate to the resource
       navigateToItem('resource', resourceId, resourceTitle);
@@ -214,17 +207,13 @@ const Dashboard = () => {
       
       // Increment download count
       try {
-        await axios.post(`${apiUtils.getApiBaseUrl()}/resources/${resourceId}/download`, {}, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await api.post(`/resources/${resourceId}/download`, {});
       } catch (countError) {
         console.error('Failed to increment download count:', countError);
       }
       
       // Get the resource data
-      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/resources/${resourceId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get(`/resources/${resourceId}`);
       
       if (response.data && response.data.fileUrl) {
         // Open the PDF in a new tab (browser's native PDF viewer)
@@ -244,11 +233,7 @@ const Dashboard = () => {
       const token = apiUtils.getAuthToken();
       if (!token) return;
       
-      await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/question-view`, {
-        questionId
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/dashboard/question-view', { questionId });
       
       navigateToItem('question', questionId);
     } catch (err) {
@@ -295,6 +280,30 @@ const Dashboard = () => {
     setPomodoroExamStage(newStage);
     // Reset subject when exam stage changes
     setPomodoroSubject('');
+  };
+
+  const handleDismissAnnouncement = async (id) => {
+    try {
+      await api.patch(`/announcements/${id}/dismiss`);
+      setDashboardData((prev) => ({
+        ...prev,
+        announcements: (prev.announcements || []).filter((a) => a._id !== id)
+      }));
+    } catch (err) {
+      console.error('Failed to dismiss announcement:', err);
+    }
+  };
+
+  const handleAcknowledgeAnnouncement = async (id) => {
+    try {
+      await api.patch(`/announcements/${id}/acknowledge`);
+      setDashboardData((prev) => ({
+        ...prev,
+        announcements: (prev.announcements || []).filter((a) => a._id !== id)
+      }));
+    } catch (err) {
+      console.error('Failed to acknowledge announcement:', err);
+    }
   };
 
   if (loading) {
@@ -476,6 +485,7 @@ const Dashboard = () => {
               ) : (
                 <div className="no-data">
                   <p>No quiz data available yet. Complete some quizzes to see your performance trends.</p>
+                  <Link to="/quiz" className="dashboard-cta">Take your first quiz</Link>
                 </div>
               )}
             </div>
@@ -510,7 +520,8 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="no-data">
-                  <p>No study hours tracked yet. Use the Pomodoro timer to start logging your study sessions.</p>
+                  <p>No study hours tracked yet. Use the Pomodoro timer below to start logging your study sessions.</p>
+                  <Link to="/quiz" className="dashboard-cta">Take a quiz</Link>
                 </div>
               )}
             </div>
@@ -540,6 +551,7 @@ const Dashboard = () => {
               ) : (
                 <div className="no-data">
                   <p>No recently viewed questions. Start exploring questions to see them here.</p>
+                  <Link to="/questions" className="dashboard-cta">Browse questions</Link>
                 </div>
               )}
             </div>
@@ -566,6 +578,7 @@ const Dashboard = () => {
               ) : (
                 <div className="no-data">
                   <p>No recently viewed resources. Start exploring resources to see them here.</p>
+                  <Link to="/resources" className="dashboard-cta">Browse resources</Link>
                 </div>
               )}
             </div>
@@ -609,6 +622,7 @@ const Dashboard = () => {
                   ) : (
                     <div className="no-data">
                       <p>No bookmarked questions. Bookmark important questions to access them quickly.</p>
+                      <Link to="/questions" className="dashboard-cta">Browse questions</Link>
                     </div>
                   )
                 ) : (
@@ -630,6 +644,7 @@ const Dashboard = () => {
                   ) : (
                     <div className="no-data">
                       <p>No bookmarked resources. Bookmark useful resources to access them quickly.</p>
+                      <Link to="/resources" className="dashboard-cta">Browse resources</Link>
                     </div>
                   )
                 )}
@@ -668,8 +683,8 @@ const Dashboard = () => {
               {dashboardData && dashboardData.announcements && dashboardData.announcements.length > 0 ? (
                 <ul className="announcement-list">
                   {dashboardData.announcements.map((announcement) => (
-                    <li key={announcement._id} 
-                      className={`priority-${announcement.priority}`} 
+                    <li key={announcement._id}
+                      className={`priority-${announcement.priority}`}
                       onClick={() => navigateToItem('announcement', announcement._id)}
                       style={{ cursor: 'pointer' }}
                     >
@@ -679,6 +694,24 @@ const Dashboard = () => {
                       </div>
                       <h3>{announcement.title}</h3>
                       <p>{announcement.content}</p>
+                      <div className="announcement-actions" onClick={(e) => e.stopPropagation()}>
+                        {announcement.needsAcknowledgment && (
+                          <button
+                            type="button"
+                            className="btn-acknowledge"
+                            onClick={() => handleAcknowledgeAnnouncement(announcement._id)}
+                          >
+                            Acknowledge
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn-dismiss"
+                          onClick={() => handleDismissAnnouncement(announcement._id)}
+                        >
+                          Dismiss
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -720,6 +753,7 @@ const Dashboard = () => {
               ) : (
                 <div className="no-data">
                   <p>No new resources added recently.</p>
+                  <Link to="/resources" className="dashboard-cta">Browse resources</Link>
                 </div>
               )}
             </div>
@@ -808,6 +842,7 @@ const Dashboard = () => {
               ) : (
                 <div className="no-data">
                   <p>No resource usage data available yet. Start using resources to see your usage statistics.</p>
+                  <Link to="/resources" className="dashboard-cta">Browse resources</Link>
                 </div>
               )}
             </div>

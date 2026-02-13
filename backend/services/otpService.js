@@ -457,6 +457,42 @@ const generatePasswordResetTemplate = (email, otp) => {
   `;
 };
 
+// Send email when someone replies to a discussion (optional; used by discussions route)
+const sendReplyNotificationEmail = async (toEmail, replyAuthorName, itemType, itemId, excerpt) => {
+  if (!toEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+    return { success: false, error: 'Invalid email' };
+  }
+  const subject = 'New reply on CAprep discussion';
+  const text = `${replyAuthorName} replied to a discussion (${itemType}): ${excerpt}. Log in to CAprep to view and respond.`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #0288d1;">CAprep - New reply</h2>
+      <p><strong>${replyAuthorName}</strong> replied to a discussion (${itemType}):</p>
+      <blockquote style="background: #f5f5f5; padding: 12px; border-left: 4px solid #03a9f4;">${excerpt}</blockquote>
+      <p>Log in to CAprep to view and respond.</p>
+      <p style="font-size: 12px; color: #777;">This is an automated notification.</p>
+    </div>
+  `;
+  if (useSendGrid()) {
+    return await sendViaSendGrid(toEmail, subject, html, text);
+  }
+  const transport = getTransporter();
+  if (!transport) return { success: false, error: 'Email not configured' };
+  try {
+    await transport.sendMail({
+      from: `"CAprep" <${process.env.EMAIL_USER}>`,
+      to: toEmail,
+      subject,
+      html,
+      text
+    });
+    return { success: true };
+  } catch (err) {
+    console.error('Reply notification email error:', err.message);
+    return { success: false, error: err.message };
+  }
+};
+
 module.exports = {
   generateOTP,
   verifyOTP,
@@ -464,5 +500,6 @@ module.exports = {
   isEmailVerified,
   markEmailAsVerified,
   removeVerifiedEmail,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendReplyNotificationEmail
 };

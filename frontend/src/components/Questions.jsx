@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify';
 import Navbar from './Navbar';
 import { generateQuestionsPDF, savePDF } from '../utils/pdfGenerator';
 import './Questions.css';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import MoreMenu from './MoreMenu';
 import DiscussionModal from './DiscussionModal';
@@ -49,14 +49,10 @@ const Questions = () => {
   const [questionToBookmark, setQuestionToBookmark] = useState(null);
 
   // --- Fetch Bookmarked Question IDs --- 
-  const fetchBookmarkIds = useCallback(async (token) => {
+  const fetchBookmarkIds = useCallback(async () => {
     try {
-      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/ids`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (response.data && response.data.bookmarkedQuestionIds) {
+      const response = await api.get('/users/me/bookmarks/ids');
+      if (response.data?.bookmarkedQuestionIds) {
         setBookmarkedQuestionIds(new Set(response.data.bookmarkedQuestionIds));
       }
     } catch (err) {
@@ -65,25 +61,18 @@ const Questions = () => {
   }, []);
 
   // --- Fetch Questions based on filters (with pagination) --- 
-  const fetchQuestions = useCallback(async (token, currentFilters, page = 1) => {
+  const fetchQuestions = useCallback(async (currentFilters, page = 1) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
       Object.entries(currentFilters).forEach(([key, value]) => {
-        if (value) {
-          params.append(key, value);
-        }
+        if (value) params.append(key, value);
       });
       params.append('page', String(page));
       params.append('limit', String(questionsPerPage));
 
-      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/questions`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        params: params
-      });
+      const response = await api.get(`/questions?${params.toString()}`);
 
       const data = response.data;
       const list = Array.isArray(data) ? data : (data?.data ?? []);
@@ -106,7 +95,7 @@ const Questions = () => {
     if (!token) {
       navigate('/login');
     } else {
-      fetchBookmarkIds(token);
+      fetchBookmarkIds();
     }
   }, [navigate]);
 
@@ -119,7 +108,7 @@ const Questions = () => {
     }
     const token = apiUtils.getAuthToken();
     if (!token) return;
-    fetchQuestions(token, filters, currentPage);
+    fetchQuestions(filters, currentPage);
   }, [currentPage]);
 
   // --- Handle preSelectedQuestion from location.state ---
@@ -132,11 +121,7 @@ const Questions = () => {
       const trackQuestionView = async () => {
         try {
           // Call the API endpoint to track question view
-          await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/question-view`, {
-            questionId
-          }, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+          await api.post('/dashboard/question-view', { questionId });
           
           console.log('Question view tracked successfully');
           
@@ -189,7 +174,7 @@ const Questions = () => {
     const token = apiUtils.getAuthToken();
     if (token) {
       setCurrentPage(1);
-      fetchQuestions(token, filters, 1);
+      fetchQuestions(filters, 1);
     }
   }, [filters, fetchQuestions]);
 
@@ -253,14 +238,8 @@ const Questions = () => {
     const isCurrentlyBookmarked = bookmarkedQuestionIds.has(questionId);
     
     if (isCurrentlyBookmarked) {
-      // If already bookmarked, remove the bookmark
-      const url = `${apiUtils.getApiBaseUrl()}/users/me/bookmarks/${questionId}`;
-      const config = {
-          headers: { 'Authorization': `Bearer ${token}` }
-      };
-
       try {
-        const response = await axios.delete(url, config);
+        const response = await api.delete(`/users/me/bookmarks/${questionId}`);
 
         if (response.data && response.data.bookmarkedQuestionIds) {
           // Update the bookmarked IDs in state
@@ -292,26 +271,20 @@ const Questions = () => {
   
   // Handle successful bookmark to folder
   const handleBookmarkSuccess = async () => {
-    // Refresh bookmark IDs
-    const token = apiUtils.getAuthToken();
-    if (token) {
-      try {
-        const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/ids`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.data && response.data.bookmarkedQuestionIds) {
+    try {
+      const response = await api.get('/users/me/bookmarks/ids');
+      if (response.data?.bookmarkedQuestionIds) {
           setBookmarkedQuestionIds(new Set(response.data.bookmarkedQuestionIds));
           
           // If we have a question that was just bookmarked, make sure it's in the set
-          if (questionToBookmark) {
-            const updatedSet = new Set(response.data.bookmarkedQuestionIds);
-            updatedSet.add(questionToBookmark._id);
-            setBookmarkedQuestionIds(updatedSet);
-          }
+        if (questionToBookmark) {
+          const updatedSet = new Set(response.data.bookmarkedQuestionIds);
+          updatedSet.add(questionToBookmark._id);
+          setBookmarkedQuestionIds(updatedSet);
         }
-      } catch (err) {
-        console.error('Error refreshing bookmark IDs:', err);
       }
+    } catch (err) {
+      console.error('Error refreshing bookmark IDs:', err);
     }
   };
 

@@ -47,6 +47,12 @@ const ResourceSchema = new Schema({
     default: 'pdf',
     index: true
   },
+  // Display type (e.g. 'pdf') - persisted for dashboard and UI
+  resourceType: {
+    type: String,
+    default: 'pdf',
+    index: true
+  },
   fileSize: {
     type: Number
   },

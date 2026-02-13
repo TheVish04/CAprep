@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import Navbar from './Navbar';
 import './Quiz.css';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 
 const Quiz = () => {
@@ -72,15 +72,10 @@ const Quiz = () => {
         const token = apiUtils.getAuthToken();
         
         // For AI quizzes, fetch all subjects even if they don't have MCQs
-        const endpoint = quizMode === 'ai' 
-          ? `${apiUtils.getApiBaseUrl()}/questions/all-subjects?examStage=${encodeURIComponent(examStage)}`
-          : `${apiUtils.getApiBaseUrl()}/questions/available-subjects?examStage=${encodeURIComponent(examStage)}`;
-        
-        const response = await axios.get(endpoint, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        const endpoint = quizMode === 'ai'
+          ? `/questions/all-subjects?examStage=${encodeURIComponent(examStage)}`
+          : `/questions/available-subjects?examStage=${encodeURIComponent(examStage)}`;
+        const response = await api.get(endpoint);
         
         const data = response.data;
         setAvailableSubjects(data);
@@ -111,12 +106,7 @@ const Quiz = () => {
     if (!token) return;
 
     try {
-      await axios.post(`${apiUtils.getApiBaseUrl()}/users/me/quiz-history`, quizResult, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      await api.post('/users/me/quiz-history', quizResult);
       console.log('Quiz history saved successfully');
     } catch (error) {
       console.error('Error saving quiz history:', error);
@@ -243,37 +233,21 @@ const Quiz = () => {
     setQuizCompleted(false);
     
     try {
-      const token = apiUtils.getAuthToken();
-      
       let data;
       
       if (quizMode === 'standard') {
         // Standard quiz - fetch questions from database
-        const response = await axios.get(
-          `${apiUtils.getApiBaseUrl()}/questions/quiz?examStage=${encodeURIComponent(examStage)}&subject=${encodeURIComponent(subject)}&limit=${questionCount}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          }
+        const response = await api.get(
+          `/questions/quiz?examStage=${encodeURIComponent(examStage)}&subject=${encodeURIComponent(subject)}&limit=${questionCount}`
         );
         data = response.data;
       } else {
         // AI-generated quiz
-        const response = await axios.post(
-          `${apiUtils.getApiBaseUrl()}/ai-quiz/generate`,
-          {
-            examStage,
-            subject,
-            count: questionCount
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-          }
-        );
+        const response = await api.post('/ai-quiz/generate', {
+          examStage,
+          subject,
+          count: questionCount
+        });
         
         // Transform AI response to match the format expected by the quiz component
         data = response.data.map((aiQuestion, index) => {

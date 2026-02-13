@@ -102,6 +102,12 @@ const ResetPassword = () => {
         setIsLoading(false);
         return;
       }
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(formData.newPassword)) {
+        setError('Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)');
+        setIsLoading(false);
+        return;
+      }
 
       console.log('Resetting password for:', { email: formData.email });
       

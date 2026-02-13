@@ -9,6 +9,7 @@ const Resource = require('../models/ResourceModel');
 const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
 const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
 const User = require('../models/UserModel');
+const { logAudit } = require('../utils/auditLog');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 
@@ -47,7 +48,8 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     
     if (search) {
       filters.$or = [
-        { title: { $regex: search, $options: 'i' } }
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
       ];
     }
     
@@ -225,10 +227,8 @@ router.post('/', authMiddleware, adminMiddleware, upload.single('file'), async (
     
     const savedResource = await resource.save();
     
-    // Clear all resource-related caches
     clearCache('/api/resources');
-    
-    // Return the complete resource object with all fields
+    await logAudit(req.user.id, 'create', 'resource', savedResource._id, { title: savedResource.title, subject: savedResource.subject });
     console.log('Resource saved successfully:', savedResource._id);
     
     res.status(201).json(savedResource);
@@ -268,6 +268,7 @@ router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     }
     
     clearCache([`/api/resources/${req.params.id}`, '/api/resources']);
+    await logAudit(req.user.id, 'update', 'resource', req.params.id, { title: resource.title });
     res.status(200).json(resource);
   } catch (error) {
     logger.error(`Error updating resource: ${error.message}`);
@@ -303,9 +304,10 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
       }
     }
     
-    // Delete the resource from database
+    const title = resource.title;
     await Resource.findByIdAndDelete(req.params.id);
     clearCache([`/api/resources/${req.params.id}`, '/api/resources']);
+    await logAudit(req.user.id, 'delete', 'resource', req.params.id, { title });
     res.status(200).json({ message: 'Resource deleted successfully' });
   } catch (error) {
     logger.error(`Error deleting resource: ${error.message}`);

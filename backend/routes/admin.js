@@ -6,14 +6,7 @@ const Resource = require('../models/ResourceModel');
 const Announcement = require('../models/AnnouncementModel');
 const AuditLog = require('../models/AuditLogModel');
 const Notification = require('../models/NotificationModel');
-
-async function logAudit(actorId, action, resource, resourceId = null, details = null) {
-  try {
-    await AuditLog.create({ actor: actorId, action, resource, resourceId, details });
-  } catch (err) {
-    console.error('Audit log write error:', err);
-  }
-}
+const { logAudit } = require('../utils/auditLog');
 
 // GET /api/admin/users - List users with pagination (admin only)
 router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
