@@ -2,7 +2,7 @@ import axios from 'axios';
 import apiUtils from './apiUtils';
 
 // Use API URL from environment variables with fallback
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com/api';
 
 // Create axios instance with default config
 const api = axios.create({

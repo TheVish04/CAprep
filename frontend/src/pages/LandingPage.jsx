@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import './LandingPage.css';
 import Navbar from '../components/Navbar';
 import CountUp from 'react-countup';
+import apiUtils from '../utils/apiUtils';
 
 const LandingPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -47,10 +48,11 @@ const LandingPage = () => {
       }
     }
     
-    // Fetch question count from the backend
+    // Fetch question count from the backend (API base includes /api)
     const fetchQuestionCount = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/questions/count`);
+        const baseUrl = apiUtils.getApiBaseUrl();
+        const response = await fetch(`${baseUrl}/questions/count`);
         if (!response.ok) {
           throw new Error('Failed to fetch question count');
         }
@@ -58,7 +60,6 @@ const LandingPage = () => {
         setQuestionCount(data.count);
       } catch (error) {
         console.error('Error fetching question count:', error);
-        // Set a fallback value if fetch fails
         setQuestionCount(1000);
       }
     };
@@ -66,7 +67,8 @@ const LandingPage = () => {
     // Fetch resource count from the backend
     const fetchResourceCount = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/resources/count`);
+        const baseUrl = apiUtils.getApiBaseUrl();
+        const response = await fetch(`${baseUrl}/resources/count`);
         if (!response.ok) {
           throw new Error('Failed to fetch resource count');
         }
@@ -74,7 +76,6 @@ const LandingPage = () => {
         setResourceCount(data.count);
       } catch (error) {
         console.error('Error fetching resource count:', error);
-        // Set a fallback value if fetch fails
         setResourceCount(3);
       }
     };

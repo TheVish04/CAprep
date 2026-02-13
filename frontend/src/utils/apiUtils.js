@@ -10,10 +10,10 @@ const apiUtils = {
    */
   getApiBaseUrl: () => {
     let apiUrl = import.meta.env.VITE_API_URL || 'https://caprep.onrender.com';
-    // Remove trailing slash if it exists
-    if (apiUrl.endsWith('/')) {
-      apiUrl = apiUrl.slice(0, -1);
-    }
+    // Remove trailing slash
+    if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
+    // Ensure /api path for backend routes (handles both https://host and https://host/api)
+    if (!apiUrl.endsWith('/api')) apiUrl = `${apiUrl}/api`;
     return apiUrl;
   },
 
