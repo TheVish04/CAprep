@@ -115,95 +115,94 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             <div className="edit-profile-content">
                 <h2>Edit Profile</h2>
                 {error && <div className="error-message">{error}</div>}
-                
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="fullName">Full Name</label>
-                        <input
-                            type="text"
-                            id="fullName"
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="profilePicture">Profile Picture</label>
-                        <div className="profile-picture-preview">
-                            {previewUrl && (
-                                <img src={previewUrl} alt="Profile Preview" />
-                            )}
+                <form onSubmit={handleSubmit} className="edit-profile-form">
+                    <div className="edit-profile-left">
+                        <div className="form-group">
+                            <label htmlFor="profilePicture">Profile Picture</label>
+                            <div className="profile-picture-preview">
+                                {previewUrl && (
+                                    <img src={previewUrl} alt="Profile Preview" />
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                id="profilePicture"
+                                name="profilePicture"
+                                onChange={handleFileChange}
+                                accept="image/*"
+                            />
                         </div>
-                        <input
-                            type="file"
-                            id="profilePicture"
-                            name="profilePicture"
-                            onChange={handleFileChange}
-                            accept="image/*"
-                        />
                     </div>
-
-                    <div className="form-group edit-profile-password-section">
-                        <span className="form-section-label">Change password (optional)</span>
-                        <input
-                            type="password"
-                            name="currentPassword"
-                            value={passwordData.currentPassword}
-                            onChange={handlePasswordChange}
-                            placeholder="Current password"
-                            autoComplete="current-password"
-                            className="edit-profile-password-input"
-                        />
-                        <input
-                            type="password"
-                            name="newPassword"
-                            value={passwordData.newPassword}
-                            onChange={handlePasswordChange}
-                            placeholder="New password"
-                            autoComplete="new-password"
-                            className="edit-profile-password-input"
-                        />
-                        <input
-                            type="password"
-                            name="confirmPassword"
-                            value={passwordData.confirmPassword}
-                            onChange={handlePasswordChange}
-                            placeholder="Confirm new password"
-                            autoComplete="new-password"
-                            className="edit-profile-password-input"
-                        />
-                    </div>
-
-                    <div className="form-actions">
-                        <button 
-                            type="button" 
-                            className="cancel-button" 
-                            onClick={onClose}
-                            disabled={loading}
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            type="submit" 
-                            className="save-button" 
-                            disabled={loading}
-                        >
-                            {loading ? 'Saving...' : 'Save Changes'}
-                        </button>
+                    <div className="edit-profile-right">
+                        <div className="form-group">
+                            <label htmlFor="fullName">Full Name</label>
+                            <input
+                                type="text"
+                                id="fullName"
+                                name="fullName"
+                                value={formData.fullName}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="email">Email</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+                        <div className="form-group edit-profile-password-section">
+                            <span className="form-section-label">Change password (optional)</span>
+                            <input
+                                type="password"
+                                name="currentPassword"
+                                value={passwordData.currentPassword}
+                                onChange={handlePasswordChange}
+                                placeholder="Current password"
+                                autoComplete="current-password"
+                                className="edit-profile-password-input"
+                            />
+                            <input
+                                type="password"
+                                name="newPassword"
+                                value={passwordData.newPassword}
+                                onChange={handlePasswordChange}
+                                placeholder="New password"
+                                autoComplete="new-password"
+                                className="edit-profile-password-input"
+                            />
+                            <input
+                                type="password"
+                                name="confirmPassword"
+                                value={passwordData.confirmPassword}
+                                onChange={handlePasswordChange}
+                                placeholder="Confirm new password"
+                                autoComplete="new-password"
+                                className="edit-profile-password-input"
+                            />
+                        </div>
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className="cancel-button"
+                                onClick={onClose}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="save-button"
+                                disabled={loading}
+                            >
+                                {loading ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
