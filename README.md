@@ -19,7 +19,7 @@
 11. [Installation Guide](#11-installation-guide)
 12. [Production Deployment Guide](#12-production-deployment-guide)
 13. [Scripts & Commands](#13-scripts--commands)
-14. [Scalability, Performance & Future Roadmap](#14-scalability-performance--future-roadmap)
+14. [Future Feature Ideas](#14-future-feature-ideas)
 15. [Business Ideas (Freemium Monetization)](#15-business-ideas-freemium-monetization)
 
 ---
@@ -920,38 +920,22 @@ CAPrep/
 
 ---
 
-## 14. Scalability, Performance & Future Roadmap
+## 14. Future Features Ideas
 
-### Scalability & performance
+Ideas for features that can be added to CAprep to extend functionality and value for CA students and admins:
 
-- **Caching**
-  - In-memory cache (node-cache) for GET routes: questions (list 300s, count/available-subjects/all-subjects 3600s, quiz 900s), resources (list 300s, count 300s, by-id 3600s). Cache key: `userId:originalUrl`; clients can bypass with `x-skip-cache: true`. Mutations clear affected cache; admin can clear all via `POST /api/admin/clear-cache`.
-  - Reduces repeated DB hits and keeps response times low for list/count/quiz and resource reads.
-
-- **Rate limiting**
-  - Global: 200 requests per 15 min per IP on `/api/` (express-rate-limit).
-  - Auth: login 10/15 min, send-otp 5/15 min, forgot-password 5/15 min per IP. Lowers abuse and brute-force risk.
-
-- **Database**
-  - Mongoose indexes on hot paths: User (email, role, quizHistory.date, studyHours.date, compound role+createdAt), Question/Resource (subject, examStage, type, compound filters, text search), Discussion, Notification, Announcement, AuditLog, ContactSubmission.
-  - User document caps: quizHistory ≤100, studyHours ≤365, recentlyViewed ≤50 each, resourceEngagement ≤100. Keeps user documents bounded and queries predictable.
-
-- **Search**
-  - User search is escaped with `escapeRegex()` before use in MongoDB `$regex` (questions and resources). Avoids regex injection and runaway patterns.
-
-- **Queries**
-  - `.lean()` used where appropriate (dashboard, admin, notifications, discussions) to return plain objects and reduce memory.
-  - Pagination and `.limit()` on list endpoints (questions, resources, admin, notifications, announcements).
-
-- **Static & frontend**
-  - PWA service worker caches same-origin static assets; API responses are not cached by the SW. Production build can be served via CDN (e.g. Vercel).
-
-### Future roadmap
-
-- **Frontend:** Code-splitting and lazy loading for admin and heavy routes (e.g. Quiz, Chat, AdminPanel) to reduce initial bundle size.
-- **DevOps:** Optional Docker and CI (e.g. GitHub Actions) for reproducible builds and automated tests/deploys.
-- **Testing:** Unit and integration tests for critical paths (auth, quiz, contact, admin, cache invalidation).
-- **Scale-out:** Optional Redis or external cache for multi-instance deployments so cache is shared across nodes.
+1. **Full-length mock exams** — Timed, exam-style tests (e.g. 3 hours) with multiple papers, auto-submit on timer, rank/percentile, and downloadable score report.
+2. **Weak-area analysis & recommendations** — Use quiz history and subject scores to highlight weak topics and suggest “practice next” questions or resources by subject/difficulty.
+3. **Study reminders & goals** — Set daily/weekly study goals (e.g. “2 quizzes, 1 hour”), in-app or email reminders, and streak tracking on the dashboard.
+4. **Export chat history** — Let users download or email their AI chat conversations (e.g. PDF or text) for revision.
+5. **Offline mode for resources** — Allow saving selected PDFs for offline access (e.g. via PWA cache or download-to-device) when the user has no internet.
+6. **Peer comparison (anonymized)** — Show anonymized stats (e.g. “You’re in top 20% for this subject”) or cohort averages to motivate without exposing identities.
+7. **Custom study plans** — User picks exam date and subjects; app suggests a week-by-week plan (quizzes, topics, resources) and tracks adherence.
+8. **Notes on questions/resources** — Inline notes or highlights on individual questions and resources, synced with bookmarks and viewable in a “My notes” view.
+9. **Discussion notifications** — Notify users when someone replies or likes their discussion post; optional email digest.
+10. **Admin: bulk upload questions** — CSV/Excel import for questions (with validation and subject/meta mapping) to speed up question bank growth.
+11. **Certificates** — Generate a simple “Course completed” or “Mock exam completed” certificate (PDF) with name, date, and score for sharing or resume.
+12. **Dark mode** — Theme toggle (light/dark) with preference stored in profile or localStorage for better late-night study.
 
 ---
 
