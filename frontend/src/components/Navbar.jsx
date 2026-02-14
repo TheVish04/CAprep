@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import NotificationsDropdown from './NotificationsDropdown';
 import './Navbar.css';
 
+const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
+
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [studyDropdownOpen, setStudyDropdownOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const studyDropdownRef = useRef(null);
+  const profileDropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -19,23 +25,21 @@ const Navbar = () => {
       if (studyDropdownRef.current && !studyDropdownRef.current.contains(e.target)) {
         setStudyDropdownOpen(false);
       }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-
 
   useEffect(() => {
     const token = apiUtils.getAuthToken();
     if (token) {
       setIsLoggedIn(true);
       try {
-        // Safely decode JWT token
         const parts = token.split('.');
-        if (parts.length !== 3) {
-          throw new Error('Invalid token format');
-        }
+        if (parts.length !== 3) throw new Error('Invalid token format');
         const payload = JSON.parse(atob(parts[1]));
         setIsAdmin(payload.role === 'admin');
       } catch (error) {
@@ -47,8 +51,22 @@ const Navbar = () => {
     } else {
       setIsLoggedIn(false);
       setIsAdmin(false);
+      setProfilePicture(null);
     }
   }, [location]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const fetchProfilePicture = async () => {
+      try {
+        const res = await api.get('/users/me');
+        if (res.data?.profilePicture) setProfilePicture(res.data.profilePicture);
+      } catch {
+        setProfilePicture(null);
+      }
+    };
+    fetchProfilePicture();
+  }, [isLoggedIn, location]);
 
   const handleLogout = () => {
     apiUtils.clearAuthToken();
@@ -164,32 +182,17 @@ const Navbar = () => {
                 </div>
               </motion.li>
 
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/dashboard" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Dashboard
-                </Link>
-              </motion.li>
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Profile
-                </Link>
-              </motion.li>
+              {!isAdmin && (
+                <motion.li 
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link to="/dashboard" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                    Dashboard
+                  </Link>
+                </motion.li>
+              )}
 
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="nav-item notifications-nav-item"
-              >
-                <NotificationsDropdown />
-              </motion.li>
-              
               {isAdmin && (
                 <motion.li 
                   whileHover={{ scale: 1.1 }}
@@ -200,6 +203,46 @@ const Navbar = () => {
                   </Link>
                 </motion.li>
               )}
+              
+              <motion.li 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="nav-item nav-profile-dropdown-wrapper"
+              >
+                <div ref={profileDropdownRef} className="nav-dropdown-inner">
+                  <button
+                    type="button"
+                    className={`nav-profile-trigger ${profileDropdownOpen ? 'open' : ''}`}
+                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    aria-expanded={profileDropdownOpen}
+                    aria-haspopup="true"
+                    title="Profile menu"
+                  >
+                    <img
+                      src={profilePicture || defaultAvatar}
+                      alt="Profile"
+                      className="nav-profile-avatar"
+                    />
+                  </button>
+                  {profileDropdownOpen && (
+                    <ul className="nav-dropdown-menu nav-profile-dropdown-menu" role="menu">
+                      <li role="none">
+                        <Link to="/profile" className="nav-dropdown-item" onClick={() => { setProfileDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
+                          Profile
+                        </Link>
+                      </li>
+                      <li role="none" className="nav-profile-notifications-item">
+                        <NotificationsDropdown embedded />
+                      </li>
+                      <li role="none">
+                        <button type="button" className="nav-dropdown-item nav-dropdown-item-button" onClick={() => { setProfileDropdownOpen(false); handleLogout(); }} role="menuitem">
+                          Logout
+                        </button>
+                      </li>
+                    </ul>
+                  )}
+                </div>
+              </motion.li>
               
               <motion.li 
                 whileHover={{ scale: 1.1 }}
@@ -217,15 +260,6 @@ const Navbar = () => {
                   </svg>
                   Chat
                 </Link>
-              </motion.li>
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <button onClick={handleLogout} className="nav-button logout-btn">
-                  Logout
-                </button>
               </motion.li>
             </>
           ) : (

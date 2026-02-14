@@ -133,6 +133,14 @@
   color: #666;
 }
 
+.notifications-dropdown-embedded {
+  width: 100%;
+}
+
+.notifications-panel-embedded .notifications-list {
+  max-height: 240px;
+}
+
 @media screen and (max-width: 960px) {
   .notifications-panel {
     right: 50%;

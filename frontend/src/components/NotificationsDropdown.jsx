@@ -3,7 +3,7 @@ import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import './NotificationsDropdown.css';
 
-const NotificationsDropdown = () => {
+const NotificationsDropdown = ({ embedded = false }) => {
   const [open, setOpen] = useState(false);
   const [list, setList] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -33,17 +33,18 @@ const NotificationsDropdown = () => {
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !embedded) return;
     fetchNotifications();
-  }, [open]);
+  }, [open, embedded]);
 
   useEffect(() => {
+    if (embedded) return;
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [embedded]);
 
   const markAsRead = async (id) => {
     if (!apiUtils.getAuthToken()) return;
@@ -78,6 +79,46 @@ const NotificationsDropdown = () => {
     return date.toLocaleDateString();
   };
 
+  const panelContent = (
+    <div className={`notifications-panel ${embedded ? 'notifications-panel-embedded' : ''}`}>
+      <div className="notifications-panel-header">
+        <span>Notifications</span>
+        {unreadCount > 0 && (
+          <button type="button" className="notifications-mark-all" onClick={markAllRead}>
+            Mark all read
+          </button>
+        )}
+      </div>
+      <div className="notifications-list">
+        {loading ? (
+          <div className="notifications-loading">Loading…</div>
+        ) : list.length === 0 ? (
+          <div className="notifications-empty">No notifications</div>
+        ) : (
+          list.map((n) => (
+            <div
+              key={n._id}
+              className={`notifications-item ${n.read ? 'read' : ''}`}
+              onClick={() => !n.read && markAsRead(n._id)}
+            >
+              <div className="notifications-item-title">{n.title}</div>
+              {n.body && <div className="notifications-item-body">{n.body}</div>}
+              <div className="notifications-item-time">{formatDate(n.createdAt)}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="notifications-dropdown notifications-dropdown-embedded" ref={dropdownRef}>
+        {panelContent}
+      </div>
+    );
+  }
+
   return (
     <div className="notifications-dropdown" ref={dropdownRef}>
       <button
@@ -92,37 +133,7 @@ const NotificationsDropdown = () => {
         </svg>
         {unreadCount > 0 && <span className="notifications-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
       </button>
-      {open && (
-        <div className="notifications-panel">
-          <div className="notifications-panel-header">
-            <span>Notifications</span>
-            {unreadCount > 0 && (
-              <button type="button" className="notifications-mark-all" onClick={markAllRead}>
-                Mark all read
-              </button>
-            )}
-          </div>
-          <div className="notifications-list">
-            {loading ? (
-              <div className="notifications-loading">Loading…</div>
-            ) : list.length === 0 ? (
-              <div className="notifications-empty">No notifications</div>
-            ) : (
-              list.map((n) => (
-                <div
-                  key={n._id}
-                  className={`notifications-item ${n.read ? 'read' : ''}`}
-                  onClick={() => !n.read && markAsRead(n._id)}
-                >
-                  <div className="notifications-item-title">{n.title}</div>
-                  {n.body && <div className="notifications-item-body">{n.body}</div>}
-                  <div className="notifications-item-time">{formatDate(n.createdAt)}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      {open && panelContent}
     </div>
   );
 };
