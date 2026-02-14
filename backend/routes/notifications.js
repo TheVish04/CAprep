@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/NotificationModel');
+const logger = require('../config/logger');
 
 // GET /api/notifications - List notifications for current user (auth required via server mount)
 router.get('/', async (req, res) => {
@@ -35,7 +36,7 @@ router.get('/', async (req, res) => {
       unreadCount
     });
   } catch (error) {
-    console.error('Notifications list error:', error);
+    logger.error('Notifications list error: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 });
@@ -49,7 +50,7 @@ router.patch('/read-all', async (req, res) => {
     await Notification.updateMany({ user: userId, read: false }, { read: true });
     res.status(200).json({ success: true, message: 'All notifications marked as read' });
   } catch (error) {
-    console.error('Mark all read error:', error);
+    logger.error('Mark all read error: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to update notifications' });
   }
 });
@@ -70,7 +71,7 @@ router.patch('/:id/read', async (req, res) => {
     }
     res.status(200).json({ success: true, data: notification });
   } catch (error) {
-    console.error('Mark read error:', error);
+    logger.error('Mark read error: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to update notification' });
   }
 });

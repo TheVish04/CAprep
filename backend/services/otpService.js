@@ -3,6 +3,7 @@ const sgMail = require('@sendgrid/mail');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const logger = require('../config/logger');
 require('dotenv').config();
 
 // SendGrid: email API (no SMTP). Works with Vercel/Render serverless. Single Sender Verification = no DNS required.
@@ -13,8 +14,8 @@ const getSendGridFrom = () =>
 
 if (useSendGrid()) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  console.log('📧 Email: Using SendGrid API (HTTP) - works with Vercel/Render');
-  console.log(`📧 SendGrid FROM: ${getSendGridFrom()}`);
+  logger.info('Email: Using SendGrid API (HTTP) - works with Vercel/Render');
+  logger.info('SendGrid FROM: ' + getSendGridFrom());
 }
 
 // Path to store verified emails
@@ -34,9 +35,9 @@ try {
     Object.entries(parsed).forEach(([email, timestamp]) => {
       verifiedEmails.set(email, timestamp);
     });
-    console.log(`Loaded ${verifiedEmails.size} verified emails from disk`);
+    logger.info('Loaded ' + verifiedEmails.size + ' verified emails from disk');
   } else {
-    console.log('No verified emails file found, starting with empty set');
+    logger.info('No verified emails file found, starting with empty set');
     // Create directory if it doesn't exist
     const dir = path.dirname(verifiedEmailsFilePath);
     if (!fs.existsSync(dir)) {
@@ -46,7 +47,7 @@ try {
     fs.writeFileSync(verifiedEmailsFilePath, '{}', 'utf8');
   }
 } catch (error) {
-  console.error('Error loading verified emails from disk:', error);
+  logger.error('Error loading verified emails from disk: ' + (error && error.message));
 }
 
 // Function to save verified emails to disk
@@ -57,9 +58,9 @@ const saveVerifiedEmailsToDisk = () => {
       data[email] = timestamp;
     });
     fs.writeFileSync(verifiedEmailsFilePath, JSON.stringify(data, null, 2), 'utf8');
-    console.log(`Saved ${verifiedEmails.size} verified emails to disk`);
+    logger.info('Saved ' + verifiedEmails.size + ' verified emails to disk');
   } catch (error) {
-    console.error('Error saving verified emails to disk:', error);
+    logger.error('Error saving verified emails to disk: ' + (error && error.message));
   }
 };
 
@@ -107,17 +108,17 @@ const sendViaSendGrid = async (to, subject, html, text = '') => {
       html: html || `<p>${text}</p>`,
       text: text || (html ? html.replace(/<[^>]*>/g, '') : '')
     };
-    console.log(`SendGrid: Sending email to ${to}`);
+    logger.info('SendGrid: Sending email to ' + to);
     const [response] = await sgMail.send(msg);
     if (response && response.statusCode >= 200 && response.statusCode < 300) {
-      console.log(`SendGrid: Email sent successfully to ${to}. Status: ${response.statusCode}`);
+      logger.info('SendGrid: Email sent successfully. Status: ' + (response && response.statusCode));
       return { success: true, messageId: response.headers?.['x-message-id'] };
     }
     return { success: true, messageId: null };
   } catch (err) {
     const body = err.response?.body || {};
     const message = body.errors?.[0]?.message || err.message || 'Failed to send email via SendGrid';
-    console.error('SendGrid error:', message, body);
+    logger.error('SendGrid error: ' + (message || '') + ' ' + (body ? JSON.stringify(body) : ''));
     return {
       success: false,
       error: message,
@@ -232,7 +233,7 @@ const isEmailVerified = (email) => {
       }
     }
   } catch (error) {
-    console.error('Error checking verified email from disk:', error);
+    logger.error('Error checking verified email from disk: ' + (error && error.message));
   }
   
   return false;
@@ -255,7 +256,7 @@ const removeVerifiedEmail = (email) => {
 // Send OTP via email (SendGrid only)
 const sendOTPEmail = async (email, otp) => {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    console.error(`Invalid email format: ${email}`);
+    logger.error('Invalid email format: ' + email);
     return {
       success: false,
       error: 'Invalid email format',
@@ -297,7 +298,7 @@ const generateEmailTemplate = (name, otp) => {
 // Send password reset email with OTP (SendGrid only)
 const sendPasswordResetEmail = async (email, otp) => {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    console.error(`Invalid email format: ${email}`);
+    logger.error('Invalid email format: ' + email);
     return {
       success: false,
       error: 'Invalid email format',

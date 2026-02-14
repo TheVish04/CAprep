@@ -6,6 +6,7 @@ const Notification = require('../models/NotificationModel');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const mongoose = require('mongoose');
 const { sendReplyNotificationEmail } = require('../services/otpService');
+const logger = require('../config/logger');
 
 // Get all discussions for a user (MUST be before /:itemType/:itemId to avoid route shadowing)
 router.get('/user/me', authMiddleware, async (req, res) => {
@@ -19,7 +20,7 @@ router.get('/user/me', authMiddleware, async (req, res) => {
     
     res.json(discussions);
   } catch (error) {
-    console.error('Error fetching user discussions:', error);
+    logger.error('Error fetching user discussions: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch discussions' });
   }
 });
@@ -69,7 +70,7 @@ router.get('/:itemType/:itemId', authMiddleware, async (req, res) => {
     
     res.json(discussion);
   } catch (error) {
-    console.error('Error fetching discussion:', error);
+    logger.error('Error fetching discussion: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to fetch discussion',
       message: error.message 
@@ -80,11 +81,7 @@ router.get('/:itemType/:itemId', authMiddleware, async (req, res) => {
 // Add message to discussion
 router.post('/:itemType/:itemId/message', authMiddleware, async (req, res) => {
   try {
-    console.log('Received message POST request:', {
-      params: req.params,
-      body: req.body,
-      user: req.user ? { id: req.user.id, role: req.user.role } : 'No user'
-    });
+    logger.info('Received message POST request');
     
     const { itemType, itemId } = req.params;
     const { content, parentMessageId } = req.body;
@@ -158,12 +155,12 @@ router.post('/:itemType/:itemId/message', authMiddleware, async (req, res) => {
           User.findById(parentMsg.userId).select('email fullName').lean().then((targetUser) => {
             if (targetUser?.email) {
               sendReplyNotificationEmail(targetUser.email, replyAuthorName, itemType, itemId, excerpt).catch((err) => {
-                console.error('Reply notification email failed:', err);
+                logger.error('Reply notification email failed: ' + (err && err.message));
               });
             }
-          }).catch((err) => console.error('Failed to fetch user for reply email:', err));
+          }).catch((err) => logger.error('Failed to fetch user for reply email: ' + (err && err.message)));
         } catch (notifErr) {
-          console.error('Failed to create reply notification:', notifErr);
+          logger.error('Failed to create reply notification: ' + (notifErr && notifErr.message));
         }
       }
     }
@@ -175,10 +172,10 @@ router.post('/:itemType/:itemId/message', authMiddleware, async (req, res) => {
         select: 'fullName email role' // Include role to identify admins
       });
     
-    console.log('Successfully added message, returning updated discussion');
+    logger.info('Successfully added message, returning updated discussion');
     res.json(updatedDiscussion);
   } catch (error) {
-    console.error('Error adding message:', error);
+    logger.error('Error adding message: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to add message',
       message: error.message,
@@ -232,7 +229,7 @@ router.post('/:discussionId/message/:messageId/like', authMiddleware, async (req
     
     res.json(updatedDiscussion);
   } catch (error) {
-    console.error('Error toggling like:', error);
+    logger.error('Error toggling like: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to toggle like' });
   }
 });
@@ -289,7 +286,7 @@ router.put('/:discussionId/message/:messageId', authMiddleware, async (req, res)
     
     res.json(updatedDiscussion);
   } catch (error) {
-    console.error('Error editing message:', error);
+    logger.error('Error editing message: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to edit message',
       message: error.message
@@ -351,7 +348,7 @@ router.delete('/:discussionId/message/:messageId', authMiddleware, async (req, r
     // Collect all replies to the target message
     collectReplies(messageId);
     
-    console.log(`Deleting message ${messageId} and ${messageIdsToDelete.length - 1} related replies`);
+    logger.info('Deleting message and related replies: count=' + (messageIdsToDelete && messageIdsToDelete.length));
     
     // Remove all collected messages from the discussion
     messageIdsToDelete.forEach(id => {
@@ -369,7 +366,7 @@ router.delete('/:discussionId/message/:messageId', authMiddleware, async (req, r
     
     res.json(updatedDiscussion);
   } catch (error) {
-    console.error('Error deleting message:', error);
+    logger.error('Error deleting message: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to delete message',
       message: error.message

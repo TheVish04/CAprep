@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const logger = require('./logger');
 require('dotenv').config();
 
 // Connect to MongoDB with retry logic
@@ -18,33 +19,33 @@ const connectDB = async (retryCount = 5, delay = 5000) => {
 
     // Add connection events before connecting
     mongoose.connection.on('error', err => {
-      console.error('MongoDB connection error:', err);
+      logger.error('MongoDB connection error: ' + (err && err.message));
     });
     
     mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB disconnected. Attempting to reconnect...');
+      logger.warn('MongoDB disconnected. Attempting to reconnect...');
     });
     
     mongoose.connection.on('reconnected', () => {
-      console.log('MongoDB reconnected successfully');
+      logger.info('MongoDB reconnected successfully');
     });
 
     // Attempt database connection
-    console.log(`Attempting MongoDB connection to: ${process.env.MONGODB_URI?.split('@')[1] || '[URI hidden]'}`);
+    logger.info('Attempting MongoDB connection to: ' + (process.env.MONGODB_URI ? (process.env.MONGODB_URI.split('@')[1] || '[URI hidden]') : '[URI hidden]'));
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    logger.info('MongoDB Connected: ' + conn.connection.host);
     
     return conn;
   } catch (error) {
-    console.error(`Error connecting to MongoDB: ${error.message}`);
+    logger.error('Error connecting to MongoDB: ' + (error && error.message));
     
     // Implement retry logic
     if (retryCount > 0) {
-      console.log(`Retrying connection in ${delay/1000} seconds... (${retryCount} attempts remaining)`);
+      logger.info('Retrying connection in ' + (delay / 1000) + ' seconds... (' + retryCount + ' attempts remaining)');
       await new Promise(resolve => setTimeout(resolve, delay));
       return connectDB(retryCount - 1, delay);
     } else {
-      console.error('Failed to connect to MongoDB after multiple attempts. Exiting process.');
+      logger.error('Failed to connect to MongoDB after multiple attempts. Exiting process.');
       process.exit(1);
     }
   }

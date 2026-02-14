@@ -10,6 +10,7 @@ const AuditLog = require('../models/AuditLogModel');
 const Notification = require('../models/NotificationModel');
 const ContactSubmission = require('../models/ContactSubmissionModel');
 const { logAudit } = require('../utils/auditLog');
+const logger = require('../config/logger');
 
 // GET /api/admin/users - List users with pagination (admin only)
 router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
@@ -33,7 +34,7 @@ router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching admin users:', error);
+    logger.error('Error fetching admin users: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
@@ -104,7 +105,7 @@ router.get('/analytics', authMiddleware, adminMiddleware, async (req, res) => {
         res.json(analytics);
 
     } catch (error) {
-        console.error('Error fetching admin analytics:', error);
+        logger.error('Error fetching admin analytics: ' + (error && error.message));
         res.status(500).json({ error: 'Failed to fetch analytics data' });
     }
 });
@@ -145,7 +146,7 @@ router.post('/announcements', authMiddleware, adminMiddleware, async (req, res) 
         refType: 'Announcement'
       }));
       return Notification.insertMany(docs);
-    }).catch((err) => console.error('Create notifications for announcement:', err));
+    }).catch((err) => logger.error('Create notifications for announcement: ' + err.message));
 
     res.status(201).json({
       success: true,
@@ -153,7 +154,7 @@ router.post('/announcements', authMiddleware, adminMiddleware, async (req, res) 
       data: announcement
     });
   } catch (error) {
-    console.error('Create announcement error:', error);
+    logger.error('Create announcement error: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Error creating announcement', error: error.message });
   }
 });
@@ -194,7 +195,7 @@ router.get('/announcements', authMiddleware, adminMiddleware, async (req, res) =
       }
     });
   } catch (error) {
-    console.error('Get announcements error:', error);
+    logger.error('Get announcements error: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Error retrieving announcements', error: error.message });
   }
 });
@@ -228,7 +229,7 @@ router.put('/announcements/:id', authMiddleware, adminMiddleware, async (req, re
       data: announcement
     });
   } catch (error) {
-    console.error('Update announcement error:', error);
+    logger.error('Update announcement error: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Error updating announcement', error: error.message });
   }
 });
@@ -250,7 +251,7 @@ router.delete('/announcements/:id', authMiddleware, adminMiddleware, async (req,
       message: 'Announcement deleted successfully'
     });
   } catch (error) {
-    console.error('Delete announcement error:', error);
+    logger.error('Delete announcement error: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Error deleting announcement', error: error.message });
   }
 });
@@ -281,7 +282,7 @@ router.get('/audit', authMiddleware, adminMiddleware, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching audit log:', error);
+    logger.error('Error fetching audit log: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch audit log' });
   }
 });
@@ -296,7 +297,7 @@ router.get('/contact/feature-requests', authMiddleware, adminMiddleware, async (
       .lean();
     res.status(200).json({ success: true, data: submissions });
   } catch (error) {
-    console.error('Error fetching feature requests:', error);
+    logger.error('Error fetching feature requests: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Failed to fetch feature requests', error: error.message });
   }
 });
@@ -311,7 +312,7 @@ router.get('/contact/report-issues', authMiddleware, adminMiddleware, async (req
       .lean();
     res.status(200).json({ success: true, data: submissions });
   } catch (error) {
-    console.error('Error fetching report issues:', error);
+    logger.error('Error fetching report issues: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Failed to fetch issue reports', error: error.message });
   }
 });

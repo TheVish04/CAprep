@@ -6,10 +6,11 @@ const Question = require('../models/QuestionModel');
 const User = require('../models/UserModel');
 const { questionSchema } = require('../validators/questionValidator');
 const { logAudit } = require('../utils/auditLog');
+const logger = require('../config/logger');
 
 router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
-    console.log('Received question data (raw):', req.body);
+    logger.info('Received question data (raw)');
 
     const {
       subject,
@@ -35,11 +36,11 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
       subQuestions: subQuestions || [],
     };
 
-    console.log('Data to validate:', dataToValidate);
+    logger.info('Data to validate for question create');
 
     const { error } = questionSchema.validate(dataToValidate, { abortEarly: false });
     if (error) {
-      console.log('Validation errors:', error.details);
+      logger.info('Validation errors: ' + (error.details && error.details.map(d => d.message).join(', ')));
       return res.status(400).json({ error: error.details.map(d => d.message).join(', ') });
     }
 
@@ -58,10 +59,10 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
     const question = await Question.create(questionData);
     clearCache('/api/questions');
     await logAudit(req.user.id, 'create', 'question', question.id, { subject: question.subject, questionNumber: question.questionNumber });
-    console.log('Question created with ID:', question.id);
+    logger.info('Question created with ID: ' + question.id);
     res.status(201).json({ id: question.id, ...questionData });
   } catch (error) {
-    console.error('Error creating question:', error);
+    logger.error('Error creating question: ' + (error && error.message));
     res.status(500).json({ error: `Failed to create question: ${error.message}` });
   }
 });
@@ -69,7 +70,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Updating question with ID:', id, 'Received data:', req.body);
+    logger.info('Updating question with ID: ' + id);
 
     const {
       subject,
@@ -100,7 +101,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const { error } = questionSchema.validate(dataToValidate, { abortEarly: false });
     if (error) {
-      console.log('Validation errors on update:', error.details);
+      logger.info('Validation errors on update: ' + (error.details && error.details.map(d => d.message).join(', ')));
       return res.status(400).json({ error: error.details.map(d => d.message).join(', ') });
     }
 
@@ -119,10 +120,10 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
     await Question.findByIdAndUpdate(id, updatedData, { new: true });
     clearCache([`/api/questions?id=${id}`, '/api/questions']);
     await logAudit(req.user.id, 'update', 'question', id, { subject: updatedData.subject });
-    console.log('Question updated successfully for ID:', id);
+    logger.info('Question updated successfully for ID: ' + id);
     res.json({ message: 'Question updated successfully', id, ...updatedData });
   } catch (error) {
-    console.error('Error updating question:', error);
+    logger.error('Error updating question: ' + (error && error.message));
     res.status(500).json({ error: `Failed to update question: ${error.message}` });
   }
 });
@@ -174,7 +175,7 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching questions:', error);
+    logger.error('Error fetching questions: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch questions' });
   }
 });
@@ -182,7 +183,7 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
 router.delete('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`Attempting to delete question with ID: ${id}`);
+    logger.info('Attempting to delete question with ID: ' + id);
     
     if (!id || id === 'undefined') {
       return res.status(400).json({ error: 'Invalid question ID provided' });
@@ -201,14 +202,10 @@ router.delete('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
     
     clearCache([`/api/questions?id=${id}`, '/api/questions']);
     await logAudit(req.user.id, 'delete', 'question', id, { subject: question.subject });
-    console.log(`Successfully deleted question with ID: ${id}`);
+    logger.info('Successfully deleted question with ID: ' + id);
     res.json({ message: 'Question deleted successfully', id });
   } catch (error) {
-    console.error('Error deleting question:', {
-      id: req.params.id,
-      errorMessage: error.message,
-      stack: error.stack
-    });
+    logger.error('Error deleting question: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to delete question',
       details: error.message
@@ -222,7 +219,7 @@ router.get('/count', [cacheMiddleware(3600)], async (req, res) => {
     const count = await Question.countDocuments();
     res.json({ count });
   } catch (error) {
-    console.error('Error fetching question count:', error);
+    logger.error('Error fetching question count: ' + (error && error.message));
     res.status(500).json({ error: `Failed to fetch question count: ${error.message}` });
   }
 });
@@ -265,7 +262,7 @@ router.get('/quiz', [authMiddleware, cacheMiddleware(900)], async (req, res) => 
     
     res.json(mcqQuestions);
   } catch (error) {
-    console.error('Error fetching MCQ questions for quiz:', error);
+    logger.error('Error fetching MCQ questions for quiz: ' + (error && error.message));
     res.status(500).json({ error: `Failed to fetch quiz questions: ${error.message}` });
   }
 });
@@ -305,7 +302,7 @@ router.get('/available-subjects', [authMiddleware, cacheMiddleware(3600)], async
     
     res.json(availableSubjects);
   } catch (error) {
-    console.error('Error fetching available subjects:', error);
+    logger.error('Error fetching available subjects: ' + (error && error.message));
     res.status(500).json({ error: `Failed to fetch available subjects: ${error.message}` });
   }
 });
@@ -392,7 +389,7 @@ router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req,
     
     res.json(mergedSubjects);
   } catch (error) {
-    console.error('Error fetching all subjects:', error);
+    logger.error('Error fetching all subjects: ' + (error && error.message));
     res.status(500).json({ error: `Failed to fetch subjects: ${error.message}` });
   }
 });
@@ -419,7 +416,7 @@ router.post('/batch', [authMiddleware], async (req, res) => {
     
     res.json(questions);
   } catch (error) {
-    console.error('Error fetching batch questions:', error);
+    logger.error('Error fetching batch questions: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch batch questions' });
   }
 });

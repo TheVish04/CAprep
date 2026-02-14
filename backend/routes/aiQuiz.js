@@ -4,11 +4,12 @@ const router = express.Router();
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai'); // Import Gemini SDK
 const { authMiddleware } = require('../middleware/authMiddleware');
 const Question = require('../models/QuestionModel');
+const logger = require('../config/logger');
 require('dotenv').config(); // Ensure environment variables are loaded
 
 // Initialize Gemini Client
 if (!process.env.GEMINI_API_KEY) {
-  console.error('FATAL ERROR: GEMINI_API_KEY is not defined in .env');
+  logger.error('FATAL ERROR: GEMINI_API_KEY is not defined in .env');
   // Optional: Exit process if key is critical for startup
   // process.exit(1);
 }
@@ -30,22 +31,22 @@ router.post('/generate', authMiddleware, async (req, res) => {
   try {
     const { subject, examStage, count = 5 } = req.body; // Default to 5 questions
     
-    console.log('AI Quiz Request:', { subject, examStage, count });
+    logger.info('AI Quiz Request: subject=' + subject + ', examStage=' + examStage + ', count=' + count);
 
     // 1. Input Validation (Basic)
     if (!subject || !examStage) {
-      console.log('Missing required fields:', { subject, examStage });
+      logger.info('Missing required fields: subject or examStage');
       return res.status(400).json({ error: 'Subject and Exam Stage are required.' });
     }
     if (!process.env.GEMINI_API_KEY) {
-        console.error('GEMINI API Key not configured in .env');
+        logger.error('GEMINI API Key not configured in .env');
         return res.status(500).json({ error: 'AI service configuration error.' });
     }
     
-    console.log('Gemini API Key available:', !!process.env.GEMINI_API_KEY);
+    logger.info('Gemini API Key available: ' + !!process.env.GEMINI_API_KEY);
 
     // 2. Retrieve Example Questions
-    console.log('Fetching example questions for subject:', subject, 'examStage:', examStage);
+    logger.info('Fetching example questions for subject: ' + subject + ', examStage: ' + examStage);
     // Get the total count of available questions first
     const totalQuestions = await Question.countDocuments({ subject, examStage });
     
@@ -54,7 +55,7 @@ router.post('/generate', authMiddleware, async (req, res) => {
     if (totalQuestions > 0) {
       // Determine how many examples to use (up to 30)
       const sampleSize = Math.min(totalQuestions, 30);
-      console.log(`Found ${totalQuestions} total questions, will sample ${sampleSize} random questions for AI context.`);
+      logger.info(`Found ${totalQuestions} total questions, will sample ${sampleSize} random questions for AI context.`);
       
       // Use MongoDB's aggregate with $sample for truly random selection
       exampleQuestions = await Question.aggregate([
@@ -64,9 +65,9 @@ router.post('/generate', authMiddleware, async (req, res) => {
     }
     
     if (!exampleQuestions || exampleQuestions.length === 0) {
-      console.warn(`No example questions found for Subject: ${subject}, Stage: ${examStage}. Will generate questions using AI's general knowledge.`);
+      logger.warn(`No example questions found for Subject: ${subject}, Stage: ${examStage}. Will generate questions using AI's general knowledge.`);
     } else {
-      console.log(`Using ${exampleQuestions.length} random example questions for AI prompt context.`);
+      logger.info(`Using ${exampleQuestions.length} random example questions for AI prompt context.`);
     }
 
     // 3. Construct Enhanced Prompt
@@ -175,9 +176,9 @@ Use these examples to refine the quality and relevance of the questions you gene
               "the JSON array itself. Only output the valid JSON array.";
 
     // 4. Call Google Gemini API
-    console.log("Sending prompt to Google Gemini API...");
-    console.log("Prompt length:", prompt.length, "characters");
-    // console.log("Prompt:", prompt); // Uncomment for debugging
+    logger.info("Sending prompt to Google Gemini API...");
+    logger.info("Prompt length: " + prompt.length + " characters");
+    // logger.info("Prompt:", prompt); // Uncomment for debugging
 
     try {
       const model = genAI.getGenerativeModel({
@@ -185,48 +186,48 @@ Use these examples to refine the quality and relevance of the questions you gene
         safetySettings
       });
 
-      console.log("Using model:", GEMINI_MODEL);
+      logger.info("Using model: " + GEMINI_MODEL);
 
       const generationConfig = {
         temperature: 0.7,
         maxOutputTokens: 8192,
       };
       
-      console.log("Generation config:", generationConfig);
+      logger.info("Generation config: " + JSON.stringify(generationConfig));
 
-      console.log("Calling Gemini API...");
+      logger.info("Calling Gemini API...");
       const result = await model.generateContent(prompt);
-      console.log("Received response from Google Gemini API.");
+      logger.info("Received response from Google Gemini API.");
 
       // 5. Parse Response
       let generatedQuestions = [];
       if (result && result.response) {
         const rawContent = result.response.text();
-        console.log("Raw Content length:", rawContent.length, "characters");
-        // console.log("Raw Content from AI:", rawContent);
+        logger.info("Raw Content length: " + rawContent.length + " characters");
+        // logger.info("Raw Content from AI:", rawContent);
 
         // Attempt to parse the content as JSON
         try {
           // Sometimes the AI might wrap the JSON in backticks or add intro text
-          console.log("Attempting to parse JSON response...");
+          logger.info("Attempting to parse JSON response...");
           const jsonMatch = rawContent.match(/```json\n?([\s\S]*?)```|(\[[\s\S]*\])/);
           let jsonString = rawContent.trim();
           if (jsonMatch) {
-            console.log("Found JSON match with regex");
+            logger.info("Found JSON match with regex");
             jsonString = jsonMatch[1] || jsonMatch[2];
           }
 
-          console.log("Parsing JSON string...");
+          logger.info("Parsing JSON string...");
           generatedQuestions = JSON.parse(jsonString);
-          console.log("JSON parsed successfully");
+          logger.info("JSON parsed successfully");
 
           // Basic validation of the parsed structure
           if (!Array.isArray(generatedQuestions)) {
-            console.error("Parsed response is not an array:", typeof generatedQuestions);
+            logger.error("Parsed response is not an array: " + typeof generatedQuestions);
             throw new Error("Parsed response is not an array.");
           }
           
-          console.log("Validating question objects...");
+          logger.info("Validating question objects...");
           let validationErrors = [];
           
           generatedQuestions.forEach((q, i) => {
@@ -269,20 +270,20 @@ Use these examples to refine the quality and relevance of the questions you gene
           });
           
           if (validationErrors.length > 0) {
-            console.error("Validation errors:", validationErrors);
+            logger.error("Validation errors: " + (validationErrors && JSON.stringify(validationErrors)));
             throw new Error("Question objects have invalid structure: " + validationErrors.join("; "));
           }
           
           if (qualityErrors.length > 0) {
-            console.warn("Quality issues with generated questions:", qualityErrors);
+            logger.warn("Quality issues with generated questions: " + (qualityErrors && JSON.stringify(qualityErrors)));
             // We don't throw an error for quality issues, just log warnings
           }
 
-          console.log("Successfully parsed " + generatedQuestions.length + " questions.");
+          logger.info("Successfully parsed " + generatedQuestions.length + " questions.");
 
         } catch (parseError) {
-          console.error("Failed to parse AI response JSON:", parseError);
-          // console.error("First 200 chars of raw content:", rawContent.substring(0, 200));
+          logger.error("Failed to parse AI response JSON: " + (parseError && parseError.message));
+          // logger.error("First 200 chars of raw content:", rawContent.substring(0, 200));
           return res.status(500).json({ 
             error: 'Failed to parse AI response.', 
             details: parseError.message,
@@ -292,8 +293,7 @@ Use these examples to refine the quality and relevance of the questions you gene
 
       } else {
         // Handle cases where the response might be blocked
-        console.error('No valid text content received from AI API.', 
-                    result ? JSON.stringify(result) : 'No result object');
+        logger.error('No valid text content received from AI API: ' + (result ? JSON.stringify(result) : 'No result object'));
         
         const blockReason = result?.promptFeedback?.blockReason;
         const safetyRatings = result?.candidates?.[0]?.safetyRatings;
@@ -306,12 +306,12 @@ Use these examples to refine the quality and relevance of the questions you gene
       }
 
       // 6. Send to Frontend
-      console.log("Sending " + generatedQuestions.length + " questions to frontend");
+      logger.info("Sending " + generatedQuestions.length + " questions to frontend");
       res.status(200).json(generatedQuestions);
 
     } catch (apiError) {
-      console.error('Error calling Gemini API:', apiError);
-      console.error('API error details:', JSON.stringify(apiError, null, 2));
+      logger.error('Error calling Gemini API: ' + (apiError && apiError.message));
+      logger.error('API error details: ' + (apiError && JSON.stringify(apiError)));
       return res.status(500).json({ 
         error: 'Error calling AI service API', 
         details: apiError.message,
@@ -321,8 +321,8 @@ Use these examples to refine the quality and relevance of the questions you gene
 
   } catch (error) {
     // General error handling for API calls or other issues
-    console.error('Error generating AI quiz:', error);
-    console.error('Stack trace:', error.stack);
+    logger.error('Error generating AI quiz: ' + (error && error.message));
+    logger.error('Stack trace: ' + (error && error.stack));
     res.status(500).json({ 
       error: 'Failed to generate AI quiz.', 
       details: error.message,
@@ -336,14 +336,14 @@ router.post('/ask', authMiddleware, async (req, res) => {
   try {
     const { question, examStage, subject, conversationHistory = [] } = req.body;
     
-    console.log('AI Bot Question Request:', { question, examStage, subject, historyLength: conversationHistory.length });
+    logger.info('AI Bot Question Request: historyLength=' + (conversationHistory && conversationHistory.length));
 
     // Input Validation
     if (!question) {
       return res.status(400).json({ error: 'Question is required.' });
     }
     if (!process.env.GEMINI_API_KEY) {
-      console.error('GEMINI API Key not configured in .env');
+      logger.error('GEMINI API Key not configured in .env');
       return res.status(500).json({ error: 'AI service configuration error.' });
     }
 
@@ -400,7 +400,7 @@ router.post('/ask', authMiddleware, async (req, res) => {
         maxOutputTokens: 1000,
       };
       
-      console.log("Setting up chat with Gemini...");
+      logger.info("Setting up chat with Gemini...");
       
       // Convert conversation history to Gemini's chat format
       // NOTE: We no longer need to manually inject the system prompt here
@@ -415,24 +415,24 @@ router.post('/ask', authMiddleware, async (req, res) => {
         generationConfig
       });
       
-      console.log("Sending message to Gemini chat...");
+      logger.info("Sending message to Gemini chat...");
       const result = await chat.sendMessage(question);
-      console.log("Received response from Gemini chat API.");
+      logger.info("Received response from Gemini chat API.");
 
       if (result && result.response) {
         const answer = result.response.text();
-        console.log("Answer length:", answer.length, "characters");
+        logger.info("Answer length: " + answer.length + " characters");
         
         res.json({ answer });
       } else {
         throw new Error("Empty or invalid response from AI service");
       }
     } catch (aiError) {
-      console.error("Error calling Gemini AI chat:", aiError);
+      logger.error("Error calling Gemini AI chat: " + (aiError && aiError.message));
       res.status(500).json({ error: 'Failed to generate answer', details: aiError.message });
     }
   } catch (error) {
-    console.error('Error handling CA question:', error);
+    logger.error('Error handling CA question: ' + (error && error.message));
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });

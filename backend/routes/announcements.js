@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Announcement = require('../models/AnnouncementModel');
 const mongoose = require('mongoose');
+const logger = require('../config/logger');
 
 // GET /api/announcements - Get active announcements (auth required)
 router.get('/', async (req, res) => {
@@ -19,7 +20,7 @@ router.get('/', async (req, res) => {
       data: announcements
     });
   } catch (error) {
-    console.error('Announcements retrieval error:', error);
+    logger.error('Announcements retrieval error: ' + (error && error.message));
     res.status(500).json({
       success: false,
       message: 'Error retrieving announcements',
@@ -42,7 +43,7 @@ router.patch('/:id/dismiss', async (req, res) => {
     await announcement.dismiss(userId);
     res.status(200).json({ success: true, message: 'Announcement dismissed' });
   } catch (error) {
-    console.error('Announcement dismiss error:', error);
+    logger.error('Announcement dismiss error: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Failed to dismiss', error: error.message });
   }
 });
@@ -61,7 +62,7 @@ router.patch('/:id/acknowledge', async (req, res) => {
     await announcement.acknowledge(userId);
     res.status(200).json({ success: true, message: 'Announcement acknowledged' });
   } catch (error) {
-    console.error('Announcement acknowledge error:', error);
+    logger.error('Announcement acknowledge error: ' + (error && error.message));
     res.status(500).json({ success: false, message: 'Failed to acknowledge', error: error.message });
   }
 });

@@ -1,4 +1,5 @@
 const AuditLog = require('../models/AuditLogModel');
+const logger = require('../config/logger');
 
 /**
  * Write an audit log entry (fire-and-forget; does not throw).
@@ -12,7 +13,7 @@ async function logAudit(actorId, action, resource, resourceId = null, details = 
   try {
     await AuditLog.create({ actor: actorId, action, resource, resourceId, details });
   } catch (err) {
-    console.error('Audit log write error:', err);
+    logger.error('Audit log write error: ' + (err && err.message));
   }
 }
 

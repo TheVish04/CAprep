@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ContactSubmission = require('../models/ContactSubmissionModel');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const logger = require('../config/logger');
 
 // POST /api/contact/feature - Submit feature request (registered users only)
 router.post('/feature', authMiddleware, async (req, res) => {
@@ -28,7 +29,7 @@ router.post('/feature', authMiddleware, async (req, res) => {
     });
     res.status(201).json({ success: true, id: doc._id, message: 'Feature request submitted successfully' });
   } catch (error) {
-    console.error('Contact feature submit error:', error);
+    logger.error('Contact feature submit error: ' + error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to submit feature request',
@@ -61,7 +62,7 @@ router.post('/issue', authMiddleware, async (req, res) => {
     });
     res.status(201).json({ success: true, id: doc._id, message: 'Issue report submitted successfully' });
   } catch (error) {
-    console.error('Contact issue submit error:', error);
+    logger.error('Contact issue submit error: ' + error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to submit issue report',

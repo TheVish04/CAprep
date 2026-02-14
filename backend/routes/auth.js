@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { generateOTP, verifyOTP, sendOTPEmail, isEmailVerified, removeVerifiedEmail, markEmailAsVerified, sendPasswordResetEmail } = require('../services/otpService');
 const otpGenerator = require('otp-generator');
+const logger = require('../config/logger');
 require('dotenv').config();
 
 // Route-specific rate limiters (stricter than global API limit)
@@ -77,7 +78,7 @@ function updateLoginAttempts(key, success) {
 router.post('/send-otp', sendOtpLimiter, async (req, res) => {
   try {
     if (process.env.NODE_ENV === 'development') {
-      console.log('Received send-otp request for email:', req.body?.email ? '(provided)' : '(missing)');
+      logger.info('Received send-otp request for email: ' + (req.body?.email ? '(provided)' : '(missing)'));
     }
     const { email } = req.body;
     
@@ -103,9 +104,9 @@ router.post('/send-otp', sendOtpLimiter, async (req, res) => {
     let otp;
     try {
       otp = generateOTP(email);
-      console.log(`OTP generated successfully for ${email}`);
+      logger.info('OTP generated successfully for ' + email);
     } catch (otpError) {
-      console.error('Failed to generate OTP:', otpError);
+      logger.error('Failed to generate OTP: ' + (otpError && otpError.message));
       return res.status(429).json({ 
         error: otpError.message || 'Rate limit exceeded for OTP generation'
       });
@@ -115,7 +116,7 @@ router.post('/send-otp', sendOtpLimiter, async (req, res) => {
     const emailResult = await sendOTPEmail(email, otp);
     
     if (!emailResult.success) {
-      console.error('Failed to send OTP email:', emailResult);
+      logger.error('Failed to send OTP email: ' + (emailResult && (emailResult.message || String(emailResult))));
       
       // Return appropriate error based on the issue
       if (emailResult.transportError === 'INVALID_EMAIL') {
@@ -147,10 +148,7 @@ router.post('/send-otp', sendOtpLimiter, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Send OTP error:', {
-      message: error.message, 
-      stack: error.stack
-    });
+    logger.error('Send OTP error: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to send OTP',
       details: process.env.NODE_ENV === 'development' ? error.message : null
@@ -162,7 +160,7 @@ router.post('/send-otp', sendOtpLimiter, async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
   try {
     if (process.env.NODE_ENV === 'development') {
-      console.log('Verify OTP request received for email:', req.body?.email ? '(provided)' : '(missing)');
+      logger.info('Verify OTP request received for email: ' + (req.body?.email ? '(provided)' : '(missing)'));
     }
     const { email, otp } = req.body;
     
@@ -190,7 +188,7 @@ router.post('/verify-otp', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('OTP verification error:', error);
+    logger.error('OTP verification error: ' + (error && error.message));
     return res.status(500).json({ 
       error: 'OTP verification failed',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -201,17 +199,11 @@ router.post('/verify-otp', async (req, res) => {
 // Login
 router.post('/login', loginLimiter, async (req, res) => {
   try {
-    console.log('Login attempt received:', {
-      origin: req.headers.origin,
-      method: req.method,
-      contentType: req.headers['content-type'],
-      hasBody: !!req.body,
-      emailProvided: !!req.body?.email
-    });
+    logger.info('Login attempt received');
 
     const { email, password } = req.body;
     if (process.env.NODE_ENV === 'development') {
-      console.log('Login handler started for email:', email ? '(provided)' : '(missing)');
+      logger.info('Login handler started for email: ' + (email ? '(provided)' : '(missing)'));
     }
 
     // Validate email format
@@ -247,7 +239,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!user) {
       // Update failed attempts for this IP and email combination
       updateLoginAttempts(loginKey, false);
-      console.log(`Login failed: user not found for email ${email}`);
+      logger.info('Login failed: user not found for email');
       return res.status(401).json({
         error: 'This email is not registered. Please register as a new user.',
         code: 'EMAIL_NOT_REGISTERED'
@@ -256,19 +248,19 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     // Log debugging info
     if (process.env.NODE_ENV === 'development') {
-      console.log('User found for login, password field exists:', !!user.password);
+      logger.info('User found for login, password field exists: ' + !!user.password);
     }
 
     // Verify password
     let isMatch = false;
     try {
       if (!user.password) {
-        console.error(`Password field missing for user ${email}`);
+        logger.error('Password field missing for user');
         throw new Error('Password field is missing from user record');
       }
       isMatch = await bcrypt.compare(password, user.password);
     } catch (bcryptError) {
-      console.error(`Password comparison error for ${email}:`, bcryptError.message);
+      logger.error('Password comparison error: ' + (bcryptError && bcryptError.message));
       // Update failed attempts counter
       updateLoginAttempts(loginKey, false);
       return res.status(500).json({ error: 'Authentication error', details: 'Error verifying credentials' });
@@ -281,16 +273,11 @@ router.post('/login', loginLimiter, async (req, res) => {
       // Log suspicious activity if multiple failed attempts
       const updatedAttemptData = loginAttempts.get(loginKey);
       if (updatedAttemptData && updatedAttemptData.attempts >= 3) {
-        console.warn('Multiple failed login attempts:', {
-          email,
-          ip: clientIP,
-          attempts: updatedAttemptData.attempts,
-          timestamp: new Date().toISOString()
-        });
+        logger.warn('Multiple failed login attempts: attempts=' + (updatedAttemptData && updatedAttemptData.attempts) + ', ip=' + (clientIP || ''));
       }
       
       if (process.env.NODE_ENV === 'development') {
-        console.log('Login failed: incorrect password for email');
+        logger.info('Login failed: incorrect password for email');
       }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -335,7 +322,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       refreshExpires = refExpiry.toISOString();
     }
 
-    console.log(`Login successful for user: ${email}`);
+    logger.info('Login successful for user');
     
     // Send response (include expires and optional refreshToken for rotation)
     const payload = {
@@ -357,12 +344,8 @@ router.post('/login', loginLimiter, async (req, res) => {
   } catch (error) {
     // Extract email from request body first
     const { email } = req.body;
-    console.log(`Entering login catch block for email: ${email || 'unknown'}`);
-    
-    console.error('Login error:', {
-      message: error.message,
-      stack: error.stack,
-      email: email || 'unknown' });
+    logger.info('Entering login catch block');
+    logger.error('Login error: ' + (error && error.message));
     
     res.status(500).json({ 
       error: 'An error occurred during login',
@@ -375,14 +358,14 @@ router.post('/login', loginLimiter, async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     if (process.env.NODE_ENV === 'development') {
-      console.log('Register request received for email:', req.body?.email ? '(provided)' : '(missing)');
+      logger.info('Register request received for email: ' + (req.body?.email ? '(provided)' : '(missing)'));
     }
     const { fullName, email, password } = req.body;
     
     // Validate all required fields
     if (!fullName || !email || !password) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('Missing required fields:', { hasFullName: !!fullName, hasEmail: !!email, hasPassword: !!password });
+        logger.info('Missing required fields: fullName=' + !!fullName + ', email=' + !!email + ', password=' + !!password);
       }
       
       return res.status(400).json({ 
@@ -418,10 +401,10 @@ router.post('/register', async (req, res) => {
     
     // Check if the email has been verified with OTP
     const isVerified = isEmailVerified(email);
-    console.log(`Email verification status for ${email}: ${isVerified ? 'Verified' : 'Not verified'}`);
+    logger.info('Email verification status: ' + (isVerified ? 'Verified' : 'Not verified'));
     
     if (!isVerified) {
-      console.log(`Verification failed for ${email}. Checking verified emails list...`);
+      logger.info('Verification failed, checking verified emails list');
       
       return res.status(400).json({ 
         error: 'Email verification required. Please verify your email with OTP first.',
@@ -456,12 +439,7 @@ router.post('/register', async (req, res) => {
     removeVerifiedEmail(email);
     
     // Log user creation for audit purposes
-    console.log('New user registered:', {
-      userId: user._id,
-      email: email.toLowerCase(),
-      ip: req.ip,
-      timestamp: new Date().toISOString()
-    });
+    logger.info('New user registered: id=' + (user && user._id));
     
     // Create token
     const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
@@ -522,7 +500,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json(payload);
     
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error('Registration error: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Registration failed',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -546,10 +524,7 @@ return res.status(404).json({ error: 'User not found' });
 
 res.json(user);
 } catch (error) {
-console.error('Error in /me route:', {
-message: error.message,
-stack: error.stack,
-});
+logger.error('Error in /me route: ' + (error && error.message));
 res.status(500).json({ error: 'Failed to fetch user info', details: error.message });
 }
 });
@@ -654,10 +629,10 @@ router.post('/refresh-token', async (req, res) => {
     }
 
     const payload = issueTokens(user);
-    console.log('Token refreshed:', { userId: user._id, ip: req.ip, timestamp: new Date().toISOString() });
+    logger.info('Token refreshed: userId=' + (user && user._id));
     return res.json(payload);
   } catch (error) {
-    console.error('Token refresh error:', error);
+    logger.error('Token refresh error: ' + (error && error.message));
     return res.status(500).json({
       error: 'Failed to refresh token',
       code: 'REFRESH_ERROR'
@@ -690,7 +665,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
     });
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Generated OTP for password reset for email: ${email}`);
+      logger.info('Generated OTP for password reset');
     }
     
     // Store hashed OTP and expiry in the user document (never store plain OTP)
@@ -703,7 +678,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
     const emailResult = await sendPasswordResetEmail(email, otp);
     
     if (!emailResult.success) {
-      console.error('Failed to send password reset email:', emailResult);
+      logger.error('Failed to send password reset email: ' + (emailResult && (emailResult.message || String(emailResult))));
       
       // Return appropriate error based on the issue
       if (emailResult.transportError === 'INVALID_EMAIL') {
@@ -732,10 +707,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Forgot password error:', {
-      message: error.message, 
-      stack: error.stack
-    });
+    logger.error('Forgot password error: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to process password reset request',
       details: process.env.NODE_ENV === 'development' ? error.message : null
@@ -749,7 +721,7 @@ router.post('/verify-reset-otp', async (req, res) => {
     const { email, otp } = req.body;
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('Verify reset OTP request received for email:', email);
+      logger.info('Verify reset OTP request received for email');
     }
     
     if (!email || !otp) {
@@ -764,7 +736,7 @@ router.post('/verify-reset-otp', async (req, res) => {
       .select('+resetPasswordToken +resetPasswordExpires');
     
     if (!user) {
-      console.log(`User not found for email: ${email}`);
+      logger.info('User not found for email (verify reset OTP)');
       return res.status(400).json({ 
         success: false,
         error: 'Invalid email address'
@@ -802,7 +774,7 @@ router.post('/verify-reset-otp', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Reset OTP verification error:', error);
+    logger.error('Reset OTP verification error: ' + (error && error.message));
     return res.status(500).json({ 
       error: 'OTP verification failed',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -816,7 +788,7 @@ router.post('/reset-password', async (req, res) => {
     const { email, otp, newPassword } = req.body;
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('Reset password request received for email:', email);
+      logger.info('Reset password request received');
     }
     
     if (!email || !otp || !newPassword) {
@@ -842,7 +814,7 @@ router.post('/reset-password', async (req, res) => {
       .select('+resetPasswordToken +resetPasswordExpires');
     
     if (!user) {
-      console.log(`User not found for email: ${email}`);
+      logger.info('User not found for email (verify reset OTP)');
       return res.status(400).json({ error: 'Invalid email address' });
     }
     
@@ -864,19 +836,19 @@ router.post('/reset-password', async (req, res) => {
     
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    console.log('Password hashed successfully');
+    logger.info('Password hashed successfully');
     
     // Update user with new password and remove reset token fields
     user.password = hashedPassword;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();
-    console.log('Password reset successful for user:', email);
+    logger.info('Password reset successful for user');
     
     res.status(200).json({ message: 'Password has been reset successfully' });
     
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error('Reset password error: ' + (error && error.message));
     res.status(500).json({ 
       error: 'Failed to reset password',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined

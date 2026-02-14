@@ -1,4 +1,5 @@
 const NodeCache = require('node-cache');
+const logger = require('../config/logger');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -9,13 +10,13 @@ const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 const cacheMiddleware = (duration) => (req, res, next) => {
   // Skip caching if specifically requested
   if (req.headers['x-skip-cache'] === 'true') {
-    if (isDev) console.log(`Skipping cache for request: ${req.originalUrl}`);
+    if (isDev) logger.info('Skipping cache for request: ' + req.originalUrl);
     return next();
   }
 
   // Only cache GET requests
   if (req.method !== 'GET') {
-    if (isDev) console.log(`Not caching ${req.method} request to ${req.originalUrl}`);
+    if (isDev) logger.info('Not caching ' + req.method + ' request to ' + req.originalUrl);
     return next();
   }
 
@@ -27,11 +28,11 @@ const cacheMiddleware = (duration) => (req, res, next) => {
   const cachedResponse = cache.get(key);
 
   if (cachedResponse) {
-    if (isDev) console.log(`Cache hit for key: ${key}`);
+    if (isDev) logger.info('Cache hit for key: ' + key);
     return res.send(cachedResponse);
   }
 
-  if (isDev) console.log(`Cache miss for key: ${key}`);
+  if (isDev) logger.info('Cache miss for key: ' + key);
 
   // Monkey patch res.send: call originalSend first, then cache on success (avoids caching if send throws)
   res.originalSend = res.send;
@@ -40,12 +41,12 @@ const cacheMiddleware = (duration) => (req, res, next) => {
     try {
       if (res.statusCode >= 200 && res.statusCode < 300) {
         cache.set(key, body, duration);
-        if (isDev) console.log(`Cache set for key: ${key} with duration: ${duration}s`);
+        if (isDev) logger.info('Cache set for key: ' + key + ' with duration: ' + duration + 's');
       } else if (isDev) {
-        console.log(`Not caching response with status code: ${res.statusCode}`);
+        logger.info('Not caching response with status code: ' + res.statusCode);
       }
     } catch (error) {
-      console.error(`Error setting cache for ${key}:`, error);
+      logger.error('Error setting cache for ' + key + ': ' + (error && error.message));
     }
   };
 
@@ -63,7 +64,7 @@ const clearCacheForPattern = (routePattern) => {
   });
   keysToDelete.forEach(key => cache.del(key));
   if (keysToDelete.length > 0 && isDev) {
-    console.log(`Cleared ${keysToDelete.length} cache entries for pattern: ${routePattern}`);
+    logger.info('Cleared ' + keysToDelete.length + ' cache entries for pattern: ' + routePattern);
   }
 };
 
@@ -75,13 +76,13 @@ const clearCache = (routePattern) => {
       return;
     }
     if (typeof routePattern !== 'string') {
-      console.error('Invalid route pattern for cache clearing:', routePattern);
+      logger.error('Invalid route pattern for cache clearing: ' + routePattern);
       return;
     }
-    if (isDev) console.log(`Attempting to clear cache for pattern: ${routePattern}`);
+    if (isDev) logger.info('Attempting to clear cache for pattern: ' + routePattern);
     clearCacheForPattern(routePattern);
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    logger.error('Error clearing cache: ' + (error && error.message));
   }
 };
 
@@ -90,9 +91,9 @@ const clearAllCache = () => {
   try {
     const keysCount = cache.keys().length;
     cache.flushAll();
-    if (isDev) console.log(`Cleared all cache entries (${keysCount} items)`);
+    if (isDev) logger.info('Cleared all cache entries (' + keysCount + ' items)');
   } catch (error) {
-    console.error('Error clearing all cache:', error);
+    logger.error('Error clearing all cache: ' + (error && error.message));
   }
 };
 

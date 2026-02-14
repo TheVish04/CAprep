@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const User = require('../models/UserModel');
+const logger = require('../config/logger');
 
 /**
  * Check if an admin user exists and create one from env if not.
@@ -8,7 +9,7 @@ const User = require('../models/UserModel');
  */
 const checkAndCreateAdmin = async () => {
   try {
-    console.log('Checking for existing admin users...');
+    logger.info('Checking for existing admin users...');
 
     if (!User || typeof User.countDocuments !== 'function') {
       throw new Error('User model not properly initialized');
@@ -24,11 +25,11 @@ const checkAndCreateAdmin = async () => {
     while (retries > 0) {
       try {
         adminCount = await User.countDocuments({ role: 'admin' });
-        console.log(`Found ${adminCount} admin users in database`);
+        logger.info('Found ' + adminCount + ' admin users in database');
         break;
       } catch (err) {
         retries--;
-        console.error(`Error counting admin users (retries left: ${retries}):`, err.message);
+        logger.error('Error counting admin users (retries left: ' + retries + '): ' + (err && err.message));
         if (retries === 0) throw err;
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
@@ -46,13 +47,13 @@ const checkAndCreateAdmin = async () => {
         throw new Error('Admin password must be at least 8 characters long');
       }
 
-      console.log('No admin user found. Creating default admin account...');
+      logger.info('No admin user found. Creating default admin account...');
 
       let hashedPassword;
       try {
         hashedPassword = await bcrypt.hash(adminPassword, 12);
       } catch (err) {
-        console.error('Failed to hash admin password:', err);
+        logger.error('Failed to hash admin password: ' + (err && err.message));
         throw new Error('Admin creation failed: Password hashing error');
       }
 
@@ -71,53 +72,40 @@ const checkAndCreateAdmin = async () => {
         } catch (err) {
           retries--;
           if (err.code === 11000) {
-            console.warn('Admin user appears to exist (duplicate key error). Rechecking...');
+            logger.warn('Admin user appears to exist (duplicate key error). Rechecking...');
             const existingAdmin = await User.findOne({ email: adminEmail });
             if (existingAdmin) {
-              console.log('Admin user found on recheck:', {
-                fullName: existingAdmin.fullName,
-                email: existingAdmin.email,
-                role: existingAdmin.role
-              });
+              logger.info('Admin user found on recheck');
               return;
             }
           }
-          console.error(`Failed to create admin user (retries left: ${retries}):`, err.message);
+          logger.error('Failed to create admin user (retries left: ' + retries + '): ' + (err && err.message));
           if (retries === 0) throw err;
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
       if (admin) {
-        console.log('Admin user created successfully:', {
-          fullName: admin.fullName,
-          email: admin.email,
-          role: admin.role
-        });
+        logger.info('Admin user created successfully');
       } else {
         throw new Error('Failed to create admin user after multiple attempts');
       }
     } else {
-      console.log('Admin user already exists, skipping creation.');
+      logger.info('Admin user already exists, skipping creation.');
       try {
         const existingAdmin = await User.findOne({ role: 'admin' });
         if (existingAdmin) {
-          console.log('Existing admin details:', {
-            fullName: existingAdmin.fullName,
-            email: existingAdmin.email,
-            role: existingAdmin.role
-          });
+          logger.info('Existing admin details retrieved');
         } else {
-          console.warn('Admin count is non-zero but findOne returned no results. This is unexpected.');
+          logger.warn('Admin count is non-zero but findOne returned no results. This is unexpected.');
         }
       } catch (err) {
-        console.error('Error fetching existing admin details:', err.message);
+        logger.error('Error fetching existing admin details: ' + (err && err.message));
       }
     }
   } catch (error) {
-    console.error('Admin initialization error:', error.message);
-    console.error(error.stack);
-    console.warn('Server continuing without admin initialization. Admin features may not work correctly.');
+    logger.error('Admin initialization error: ' + (error && error.message));
+    logger.warn('Server continuing without admin initialization. Admin features may not work correctly.');
   }
 };
 

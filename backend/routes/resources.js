@@ -84,7 +84,7 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     if (typeof logger !== 'undefined' && logger.error) {
       logger.error(`Error retrieving resources: ${error.message}`);
     } else {
-      console.error(`Error retrieving resources: ${error.message}`);
+      logger.error(`Error retrieving resources: ${error.message}`);
     }
     res.status(500).json({ error: 'Failed to retrieve resources' });
   }
@@ -168,7 +168,7 @@ router.post('/', authMiddleware, adminMiddleware, upload.single('file'), async (
     }
     
     // Log upload attempt
-    console.log(`Attempting to upload file: ${req.file.originalname}, size: ${req.file.size}, mimetype: ${req.file.mimetype}`);
+    logger.log(`Attempting to upload file: ${req.file.originalname}, size: ${req.file.size}, mimetype: ${req.file.mimetype}`);
     
     // Upload file to Cloudinary
     const b64 = Buffer.from(req.file.buffer).toString('base64');
@@ -194,15 +194,15 @@ router.post('/', authMiddleware, adminMiddleware, upload.single('file'), async (
       overwrite: true
     };
     
-    console.log('Cloudinary upload options:', JSON.stringify(uploadOptions));
+    logger.log('Cloudinary upload options:', JSON.stringify(uploadOptions));
     
     const result = await cloudinary.uploader.upload(dataURI, uploadOptions)
       .catch(err => {
-        console.error('Cloudinary upload error details:', JSON.stringify(err));
+        logger.error('Cloudinary upload error details: ' + (err && (err.message || JSON.stringify(err))));
         throw err;
       });
     
-    console.log('Cloudinary upload successful. Result:', JSON.stringify({
+    logger.log('Cloudinary upload successful. Result:', JSON.stringify({
       public_id: result.public_id,
       format: result.format,
       resource_type: result.resource_type,
@@ -229,12 +229,12 @@ router.post('/', authMiddleware, adminMiddleware, upload.single('file'), async (
     
     clearCache('/api/resources');
     await logAudit(req.user.id, 'create', 'resource', savedResource._id, { title: savedResource.title, subject: savedResource.subject });
-    console.log('Resource saved successfully:', savedResource._id);
+    logger.log('Resource saved successfully:', savedResource._id);
     
     res.status(201).json(savedResource);
   } catch (error) {
-    console.error(`Error creating resource: ${error.message}`);
-    console.error(`Error stack: ${error.stack}`);
+    logger.error(`Error creating resource: ${error.message}`);
+    logger.error(`Error stack: ${error.stack}`);
     res.status(500).json({ 
       error: 'Failed to create resource',
       details: error.message
@@ -318,7 +318,7 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 // POST - Increment download count
 router.post('/:id/download', async (req, res) => {
   try {
-    console.log(`Incrementing download count for resource ID: ${req.params.id}`);
+    logger.log(`Incrementing download count for resource ID: ${req.params.id}`);
     
     // Check for authentication
     let token = null;
@@ -342,15 +342,15 @@ router.post('/:id/download', async (req, res) => {
     );
     
     if (!resource) {
-      console.log(`Resource not found: ${req.params.id}`);
+      logger.log(`Resource not found: ${req.params.id}`);
       return res.status(404).json({ error: 'Resource not found' });
     }
     
-    console.log(`Download count incremented for resource ID: ${req.params.id}, new count: ${resource.downloadCount}`);
+    logger.log(`Download count incremented for resource ID: ${req.params.id}, new count: ${resource.downloadCount}`);
     res.status(200).json({ downloadCount: resource.downloadCount });
   } catch (error) {
-    console.error(`Error incrementing download count: ${error.message}`);
-    console.error(`Error stack: ${error.stack}`);
+    logger.error(`Error incrementing download count: ${error.message}`);
+    logger.error(`Error stack: ${error.stack}`);
     res.status(500).json({ 
       error: 'Failed to increment download count',
       details: error.message
@@ -361,7 +361,7 @@ router.post('/:id/download', async (req, res) => {
 // GET - Stream a PDF file from Cloudinary
 router.get('/:id/download', async (req, res) => {
   try {
-    console.log(`PDF download request for resource ID: ${req.params.id}`);
+    logger.log(`PDF download request for resource ID: ${req.params.id}`);
     
     // Get token from query parameter or authorization header
     let token = null;
@@ -369,24 +369,24 @@ router.get('/:id/download', async (req, res) => {
     // Check for token in query parameter
     if (req.query.token) {
       token = req.query.token;
-      console.log('Using token from query parameter');
+      logger.log('Using token from query parameter');
     } 
     // Check for token in Authorization header as fallback
     else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
-      console.log('Using token from Authorization header');
+      logger.log('Using token from Authorization header');
     }
     
     // If no token is provided, return unauthorized
     if (!token) {
-      console.log('No token provided for download');
+      logger.log('No token provided for download');
       return res.status(401).json({ error: 'Authentication required' });
     }
     
     // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (!decoded || !decoded.id) {
-      console.log('Invalid token provided');
+      logger.log('Invalid token provided');
       return res.status(401).json({ error: 'Invalid authentication token' });
     }
     
@@ -394,7 +394,7 @@ router.get('/:id/download', async (req, res) => {
     const resource = await Resource.findById(req.params.id);
     
     if (!resource) {
-      console.log(`Resource not found: ${req.params.id}`);
+      logger.log(`Resource not found: ${req.params.id}`);
       return res.status(404).json({ error: 'Resource not found' });
     }
     
@@ -403,19 +403,19 @@ router.get('/:id/download', async (req, res) => {
     await resource.save();
     
     const fileUrl = resource.fileUrl;
-    console.log(`Resource URL: ${fileUrl}`);
+    logger.log(`Resource URL: ${fileUrl}`);
     
     if (!fileUrl) {
-      console.log(`No file URL found for resource: ${req.params.id}`);
+      logger.log(`No file URL found for resource: ${req.params.id}`);
       return res.status(404).json({ error: 'Resource file not found' });
     }
     
     // For Cloudinary URLs, proxy the PDF to avoid CORS issues
     if (fileUrl.includes('cloudinary')) {
-      console.log('Proxying Cloudinary PDF download');
+      logger.log('Proxying Cloudinary PDF download');
       
       try {
-        console.log(`Attempting to fetch from Cloudinary URL: ${fileUrl}`);
+        logger.log(`Attempting to fetch from Cloudinary URL: ${fileUrl}`);
         
         // Get the file from Cloudinary
         const response = await axios({
@@ -425,9 +425,9 @@ router.get('/:id/download', async (req, res) => {
           timeout: 30000 // 30 second timeout
         });
         
-        console.log('Successfully fetched file from Cloudinary');
-        console.log(`Response status: ${response.status}`);
-        console.log(`Response headers: ${JSON.stringify(response.headers)}`);
+        logger.log('Successfully fetched file from Cloudinary');
+        logger.log(`Response status: ${response.status}`);
+        logger.log(`Response headers: ${JSON.stringify(response.headers)}`);
         
         // Set appropriate headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
@@ -436,27 +436,27 @@ router.get('/:id/download', async (req, res) => {
         // Pipe the file to the response
         response.data.pipe(res);
       } catch (error) {
-        console.error(`Error streaming PDF from Cloudinary: ${error.message}`);
-        console.error(`Error name: ${error.name}`);
-        console.error(`Error stack: ${error.stack}`);
+        logger.error(`Error streaming PDF from Cloudinary: ${error.message}`);
+        logger.error(`Error name: ${error.name}`);
+        logger.error(`Error stack: ${error.stack}`);
         
         if (error.response) {
-          console.error(`Cloudinary response status: ${error.response.status}`);
-          console.error(`Cloudinary response headers: ${JSON.stringify(error.response.headers)}`);
-          console.error(`Cloudinary response data: ${JSON.stringify(error.response.data)}`);
+          logger.error(`Cloudinary response status: ${error.response.status}`);
+          logger.error(`Cloudinary response headers: ${JSON.stringify(error.response.headers)}`);
+          logger.error(`Cloudinary response data: ${JSON.stringify(error.response.data)}`);
           
           return res.status(error.response.status).json({ 
             error: 'Failed to download file from storage',
             details: `Cloudinary responded with status ${error.response.status}`
           });
         } else if (error.request) {
-          console.error('No response received from Cloudinary');
+          logger.error('No response received from Cloudinary');
           return res.status(504).json({ 
             error: 'Failed to download file from storage',
             details: 'No response received from storage provider'
           });
         } else {
-          console.error('Error setting up request to Cloudinary');
+          logger.error('Error setting up request to Cloudinary');
           return res.status(500).json({ 
             error: 'Failed to download file from storage',
             details: error.message
@@ -465,12 +465,12 @@ router.get('/:id/download', async (req, res) => {
       }
     } else {
       // For non-Cloudinary URLs, redirect to the file
-      console.log('Redirecting to direct file URL');
+      logger.log('Redirecting to direct file URL');
       return res.redirect(fileUrl);
     }
   } catch (error) {
-    console.error(`Error in download proxy: ${error.message}`);
-    console.error(`Error stack: ${error.stack}`);
+    logger.error(`Error in download proxy: ${error.message}`);
+    logger.error(`Error stack: ${error.stack}`);
     res.status(500).json({ 
       error: 'Failed to download resource',
       details: error.message
@@ -481,13 +481,13 @@ router.get('/:id/download', async (req, res) => {
 // Add a new route to generate a proper download URL for a resource
 router.get('/:id/download-url', authMiddleware, async (req, res) => {
   try {
-    console.log(`Download URL request for resource ID: ${req.params.id}`);
+    logger.log(`Download URL request for resource ID: ${req.params.id}`);
     
     // Find the resource
     const resource = await Resource.findById(req.params.id);
     
     if (!resource) {
-      console.log(`Resource not found: ${req.params.id}`);
+      logger.log(`Resource not found: ${req.params.id}`);
       return res.status(404).json({ error: 'Resource not found' });
     }
     
@@ -496,7 +496,7 @@ router.get('/:id/download-url', authMiddleware, async (req, res) => {
     await resource.save();
     
     if (!resource.fileUrl) {
-      console.log(`No file URL found for resource: ${req.params.id}`);
+      logger.log(`No file URL found for resource: ${req.params.id}`);
       return res.status(404).json({ error: 'Resource file not found' });
     }
     
@@ -510,7 +510,7 @@ router.get('/:id/download-url', authMiddleware, async (req, res) => {
         // Remove any existing flags or version info from the path
         const cleanPath = fullPath.replace(/^v\d+\//, '').replace(/\.[^/.]+$/, '');
         
-        console.log(`Extracted path: ${cleanPath}`);
+        logger.log(`Extracted path: ${cleanPath}`);
         
         // Generate Cloudinary URL using the full path as public ID
         try {
@@ -524,7 +524,7 @@ router.get('/:id/download-url', authMiddleware, async (req, res) => {
           });
           
           // Return both the direct URL for viewing and a download URL with attachment flag
-          console.log(`Generated base URL: ${baseUrl}`);
+          logger.log(`Generated base URL: ${baseUrl}`);
           
           return res.status(200).json({ 
             downloadUrl: baseUrl, // Clean URL for downloading
@@ -532,7 +532,7 @@ router.get('/:id/download-url', authMiddleware, async (req, res) => {
             filename: `${resource.title.replace(/[^\w\s.-]/g, '')}.pdf` 
           });
         } catch (err) {
-          console.error('Error generating URL as image type:', err);
+          logger.error('Error generating URL as image type: ' + (err && err.message));
           
           // If that fails, try as raw type
           try {
@@ -545,14 +545,14 @@ router.get('/:id/download-url', authMiddleware, async (req, res) => {
             // Add fl_attachment flag to URL
             const downloadUrl = baseUrl.replace('/upload/', '/upload/fl_attachment/');
             
-            console.log(`Generated download URL (raw type): ${downloadUrl}`);
+            logger.log(`Generated download URL (raw type): ${downloadUrl}`);
             
             return res.status(200).json({ 
               downloadUrl, 
               filename: `${resource.title.replace(/[^\w\s.-]/g, '')}.pdf` 
             });
           } catch (err2) {
-            console.error('Error generating URL as raw type:', err2);
+            logger.error('Error generating URL as raw type: ' + (err2 && err2.message));
             // Fall through to the direct URL approach
           }
         }
@@ -560,14 +560,14 @@ router.get('/:id/download-url', authMiddleware, async (req, res) => {
     }
     
     // If we couldn't generate a Cloudinary URL, return the original URL
-    console.log('Using original file URL:', resource.fileUrl);
+    logger.log('Using original file URL:', resource.fileUrl);
     return res.status(200).json({ 
       downloadUrl: resource.fileUrl,
       filename: `${resource.title.replace(/[^\w\s.-]/g, '')}.pdf`
     });
   } catch (error) {
-    console.error(`Error generating download URL: ${error.message}`);
-    console.error(`Error stack: ${error.stack}`);
+    logger.error(`Error generating download URL: ${error.message}`);
+    logger.error(`Error stack: ${error.stack}`);
     res.status(500).json({ 
       error: 'Failed to generate download URL',
       details: error.message

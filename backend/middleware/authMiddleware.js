@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/UserModel');
+const logger = require('../config/logger');
 
 const authMiddleware = async (req, res, next) => {
   // Check for authorization header
@@ -49,7 +50,7 @@ const authMiddleware = async (req, res, next) => {
   } catch (error) {
     // Handle specific JWT errors with secure error messages
     if (error.name === 'JsonWebTokenError') {
-      console.error('JWT Error:', { message: error.message, token: token ? `${token.substring(0, 10)}...` : 'undefined' });
+      logger.error('JWT Error: ' + (error && error.message));
       return res.status(401).json({ 
         error: 'Invalid token', 
         code: 'INVALID_TOKEN' 
@@ -60,7 +61,7 @@ const authMiddleware = async (req, res, next) => {
         code: 'TOKEN_EXPIRED' 
       });
     } else {
-      console.error('Token verification failed:', error.message);
+      logger.error('Token verification failed: ' + (error && error.message));
       return res.status(401).json({ 
         error: 'Authentication failed',
         code: 'AUTH_FAILED' 
@@ -74,11 +75,7 @@ const adminMiddleware = (req, res, next) => {
     next();
   } else {
     // Log all admin access attempts for security monitoring
-    console.warn('Unauthorized admin access attempt:', {
-      userId: req.user?.id || 'unknown',
-      ip: req.ip,
-      path: req.originalUrl
-    });
+    logger.warn('Unauthorized admin access attempt: userId=' + (req.user && req.user.id) + ', path=' + (req.originalUrl || ''));
     return res.status(403).json({ error: 'Forbidden - Admin access required' });
   }
 };

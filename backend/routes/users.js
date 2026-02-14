@@ -8,6 +8,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const User = require('../models/UserModel');
 const Question = require('../models/QuestionModel');
 const Resource = require('../models/ResourceModel'); // Import Resource model
+const logger = require('../config/logger');
 
 // Multer setup for memory storage
 const storage = multer.memoryStorage();
@@ -29,7 +30,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    logger.error('Error fetching user profile: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch user profile' });
   }
 });
@@ -68,7 +69,7 @@ router.get('/me/stats', authMiddleware, async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error fetching user stats:', error);
+    logger.error('Error fetching user stats: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch user stats' });
   }
 });
@@ -82,7 +83,7 @@ router.get('/me/bookmarks/ids', authMiddleware, async (req, res) => {
       }
       res.json({ bookmarkedQuestionIds: user.bookmarkedQuestions });
     } catch (error) {
-      console.error('Error fetching bookmarked question IDs:', error);
+      logger.error('Error fetching bookmarked question IDs: ' + (error && error.message));
       res.status(500).json({ error: 'Failed to fetch bookmarked question IDs' });
     }
   });
@@ -116,7 +117,7 @@ router.post('/me/bookmarks/:questionId', authMiddleware, async (req, res) => {
     res.json({ message: 'Bookmark added successfully', bookmarkedQuestionIds: user.bookmarkedQuestions });
 
   } catch (error) {
-    console.error('Error adding bookmark:', error);
+    logger.error('Error adding bookmark: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to add bookmark' });
   }
 });
@@ -143,7 +144,7 @@ router.delete('/me/bookmarks/:questionId', authMiddleware, async (req, res) => {
     res.json({ message: 'Bookmark removed successfully', bookmarkedQuestionIds: user.bookmarkedQuestions });
 
   } catch (error) {
-    console.error('Error removing bookmark:', error);
+    logger.error('Error removing bookmark: ' + (error && error.message));
     if (error.name === 'CastError' && error.kind === 'ObjectId') {
         return res.status(400).json({ error: 'Invalid ID format' });
     }
@@ -162,7 +163,7 @@ router.get('/me/bookmarks/resources/ids', authMiddleware, async (req, res) => {
       }
       res.json({ bookmarkedResourceIds: user.bookmarkedResources });
     } catch (error) {
-      console.error('Error fetching bookmarked resource IDs:', error);
+      logger.error('Error fetching bookmarked resource IDs: ' + (error && error.message));
       res.status(500).json({ error: 'Failed to fetch bookmarked resource IDs' });
     }
   });
@@ -193,7 +194,7 @@ router.post('/me/bookmarks/resource/:resourceId', authMiddleware, async (req, re
     res.json({ message: 'Resource bookmark added', bookmarkedResourceIds: user.bookmarkedResources });
 
   } catch (error) {
-    console.error('Error adding resource bookmark:', error);
+    logger.error('Error adding resource bookmark: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to add resource bookmark' });
   }
 });
@@ -219,7 +220,7 @@ router.delete('/me/bookmarks/resource/:resourceId', authMiddleware, async (req, 
     res.json({ message: 'Resource bookmark removed', bookmarkedResourceIds: user.bookmarkedResources });
 
   } catch (error) {
-    console.error('Error removing resource bookmark:', error);
+    logger.error('Error removing resource bookmark: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to remove resource bookmark' });
   }
 });
@@ -304,8 +305,7 @@ router.post('/me/quiz-history', authMiddleware, async (req, res) => {
         res.status(201).json(user.quizHistory[0]);
 
     } catch (error) {
-        console.error('Error saving quiz history:', error);
-        console.error('Error details:', error.stack);
+        logger.error('Error saving quiz history: ' + (error && error.message));
         res.status(500).json({ 
             error: 'Failed to save quiz history',
             details: error.message 
@@ -326,7 +326,7 @@ router.get('/me/quiz-history', authMiddleware, async (req, res) => {
         res.json(user.quizHistory || []);
 
     } catch (error) {
-        console.error('Error fetching quiz history:', error);
+        logger.error('Error fetching quiz history: ' + (error && error.message));
         res.status(500).json({ error: 'Failed to fetch quiz history' });
     }
 });
@@ -378,7 +378,7 @@ router.put('/me', authMiddleware, async (req, res) => {
 
         res.json(updatedUser);
     } catch (error) {
-        console.error('Error updating user profile:', error);
+        logger.error('Error updating user profile: ' + (error && error.message));
         if (error.name === 'ValidationError') {
             return res.status(400).json({ error: error.message });
         }
@@ -412,7 +412,7 @@ router.put('/me/password', authMiddleware, async (req, res) => {
         await user.save();
         res.json({ message: 'Password updated successfully' });
     } catch (error) {
-        console.error('Error changing password:', error);
+        logger.error('Error changing password: ' + (error && error.message));
         res.status(500).json({ error: 'Failed to change password' });
     }
 });
@@ -433,7 +433,7 @@ router.post('/me/profile-image', authMiddleware, upload.single('profileImage'), 
             },
             async (error, result) => {
                 if (error) {
-                    console.error('Cloudinary upload error:', error);
+                    logger.error('Cloudinary upload error: ' + (error && error.message));
                     return res.status(500).json({ error: 'Failed to upload profile picture' });
                 }
 
@@ -458,7 +458,7 @@ router.post('/me/profile-image', authMiddleware, upload.single('profileImage'), 
         uploadStream.end(req.file.buffer);
 
     } catch (error) {
-        console.error('Error processing profile picture upload:', error);
+        logger.error('Error processing profile picture upload: ' + (error && error.message));
         res.status(500).json({ error: 'Server error during profile picture upload' });
     }
 });
@@ -478,7 +478,7 @@ router.delete('/me/profile-image', authMiddleware, async (req, res) => {
         }
         res.json(updatedUser);
     } catch (error) {
-        console.error('Error removing profile picture:', error);
+        logger.error('Error removing profile picture: ' + (error && error.message));
         res.status(500).json({ error: 'Failed to remove profile picture' });
     }
 });
@@ -511,7 +511,7 @@ router.delete('/me', authMiddleware, async (req, res) => {
         
         res.json({ message: 'Account successfully deleted' });
     } catch (error) {
-        console.error('Error deleting user account:', error);
+        logger.error('Error deleting user account: ' + (error && error.message));
         res.status(500).json({ error: 'Failed to delete account' });
     }
 });
@@ -525,7 +525,7 @@ router.get('/me/bookmark-folders', authMiddleware, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ bookmarkFolders: user.bookmarkFolders || [] });
   } catch (error) {
-    console.error('Error fetching bookmark folders:', error);
+    logger.error('Error fetching bookmark folders: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to fetch bookmark folders' });
   }
 });
@@ -550,7 +550,7 @@ router.post('/me/bookmark-folders', authMiddleware, async (req, res) => {
     await user.save();
     res.status(201).json({ bookmarkFolders: user.bookmarkFolders });
   } catch (error) {
-    console.error('Error creating bookmark folder:', error);
+    logger.error('Error creating bookmark folder: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to create bookmark folder' });
   }
 });
@@ -572,7 +572,7 @@ router.put('/me/bookmark-folders/:folderId', authMiddleware, async (req, res) =>
     await user.save();
     res.json({ bookmarkFolders: user.bookmarkFolders });
   } catch (error) {
-    console.error('Error renaming bookmark folder:', error);
+    logger.error('Error renaming bookmark folder: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to rename bookmark folder' });
   }
 });
@@ -594,7 +594,7 @@ router.delete('/me/bookmark-folders/:folderId', authMiddleware, async (req, res)
     
     res.json({ bookmarkFolders: user.bookmarkFolders });
   } catch (error) {
-    console.error('Error deleting bookmark folder:', error);
+    logger.error('Error deleting bookmark folder: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to delete bookmark folder' });
   }
 });
@@ -619,7 +619,7 @@ router.post('/me/bookmark-folders/:folderId/items', authMiddleware, async (req, 
     await user.save();
     res.status(201).json({ folder });
   } catch (error) {
-    console.error('Error adding bookmark to folder:', error);
+    logger.error('Error adding bookmark to folder: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to add bookmark to folder' });
   }
 });
@@ -640,7 +640,7 @@ router.delete('/me/bookmark-folders/:folderId/items/:itemId', authMiddleware, as
     await user.save();
     res.json({ folder });
   } catch (error) {
-    console.error('Error removing bookmark from folder:', error);
+    logger.error('Error removing bookmark from folder: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to remove bookmark from folder' });
   }
 });
@@ -664,7 +664,7 @@ router.put('/me/bookmark-folders/:folderId/items/:itemId/note', authMiddleware, 
     await user.save();
     res.json({ folder });
   } catch (error) {
-    console.error('Error updating bookmark note:', error);
+    logger.error('Error updating bookmark note: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to update bookmark note' });
   }
 });
@@ -694,7 +694,7 @@ router.post('/me/bookmark-folders/:folderId/items/:itemId/move', authMiddleware,
     await user.save();
     res.json({ sourceFolder, targetFolder });
   } catch (error) {
-    console.error('Error moving bookmark:', error);
+    logger.error('Error moving bookmark: ' + (error && error.message));
     res.status(500).json({ error: 'Failed to move bookmark' });
   }
 });

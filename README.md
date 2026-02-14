@@ -23,7 +23,7 @@
 15. [Business Ideas (Freemium Monetization)](#15-business-ideas-freemium-monetization)
 16. [Future Roadmap](#16-future-roadmap)
 17. [Contribution Guidelines](#17-contribution-guidelines)
-18. [Observations](#18-observations)
+18. [Logging](#18-logging)
 
 ---
 
@@ -936,13 +936,53 @@ Ideas to monetize CAprep using a **freemium** model—free core access with paid
 
 ---
 
-## 18. Observations
+## 18. Logging
 
-- **Resource schema:** Includes `resourceType` (default `'pdf'`) for display and dashboard; dashboard and routes use it consistently.
-- **Logger:** `config/logger.js` is used in `server.js` and `bootstrap/routes.js` for startup, errors, and route initialization; individual route handlers may adopt it for consistency.
-- **Audit log:** Written via `utils/auditLog.logAudit` on admin announcement create/update/delete and on admin question/resource create/update/delete; audit entries are visible in Admin → Audit log.
-- **Contact submissions:** Feature requests and issue reports are stored in `contactsubmissions`; admin views them under Admin → Feature requests and Report issues. No policy routes (Privacy, Terms, Refund); FAQ and Footer direct users to Contact Us for policy-related questions.
-- **verified_emails.json:** Stored under `backend/database/`; directory is in `.gitignore`; the server creates the directory at startup if it does not exist.
+### What is a logger?
+
+A **logger** is a small utility that centralizes how your application writes messages (info, warnings, errors) instead of calling `console.log`, `console.warn`, or `console.error` directly. In this project it lives in `backend/config/logger.js` and exposes four methods: `logger.info()`, `logger.warn()`, `logger.error()`, and `logger.debug()`.
+
+### Why use a logger instead of console?
+
+| Aspect | `console.log` / `console.error` | Logger |
+|--------|---------------------------------|--------|
+| **Consistency** | No standard format; every file can log differently. | Same format everywhere (e.g. `[INFO] 2025-02-14T... - message`). |
+| **Control** | Hard to turn off or filter in production. | You can change `logger.js` once to write to a file, send to a service, or disable debug in production. |
+| **Levels** | No built-in notion of “info” vs “error” vs “debug”. | Clear levels (info, warn, error, debug) so you can filter or redirect by severity. |
+| **Routing** | Output only to stdout/stderr. | Later you can send errors to a log file or external service without changing route code. |
+
+So the logger is used **over** console to keep logging consistent and to make it easy to change where and how logs go (files, services, or filtering by level) without touching every file.
+
+### How to use it in this project
+
+1. **Require the logger** in any backend file (routes, services, middleware, etc.):
+
+   ```js
+   const logger = require('../config/logger');   // from routes/
+   const logger = require('./logger');            // from config/
+   ```
+
+2. **Call one of the four methods with a single string** (the logger accepts one message per call):
+
+   ```js
+   logger.info('Server started on port ' + port);
+   logger.warn('Rate limit approaching for IP: ' + req.ip);
+   logger.error('Database error: ' + (err && err.message));
+   logger.debug('Request body: ' + JSON.stringify(req.body));  // dev only
+   ```
+
+3. **Avoid logging sensitive data** (passwords, full tokens, PII). Prefer short, safe messages (e.g. “Login failed” instead of logging the email).
+
+4. **In catch blocks**, pass a string that includes the error message:
+
+   ```js
+   } catch (error) {
+     logger.error('Operation failed: ' + (error && error.message));
+     res.status(500).json({ error: 'Something went wrong' });
+   }
+   ```
+
+The backend uses this logger in `server.js`, `bootstrap/routes.js`, all route modules, `otpService`, auth/cache middleware, `adminBootstrap`, `config/database.js`, and `utils/auditLog.js`. The implementation in `config/logger.js` currently forwards to `console` with a timestamp and level prefix; you can later replace that with file or external logging without changing the rest of the codebase.
 
 ---
 
