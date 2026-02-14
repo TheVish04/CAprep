@@ -246,28 +246,30 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     subgraph Client["Client (Browser)"]
-        direction LR
+        direction TB
         subgraph FrontendCore["Frontend core"]
-            Main["main.jsx<br/>createRoot, SW register"]
-            App["App.jsx<br/>Routes, ProtectedRoute,<br/>ErrorBoundary, AuthRedirect"]
+            Main["main.jsx · createRoot, SW"]
+            App["App.jsx · Routes, ProtectedRoute, ErrorBoundary, AuthRedirect"]
             Router["React Router 7"]
             Main --> App --> Router
         end
         subgraph Pages["Pages & features"]
-            Landing["Landing, About,<br/>Contact Us, FAQ"]
-            AuthPages["auth: Login, Register,<br/>ForgotPassword, ResetPassword"]
-            AppPages["content: Questions, Quiz,<br/>Resources, Dashboard, QuizHistory,<br/>DiscussionModal · user: UserProfile,<br/>EditProfile, BookmarksPage"]
+            direction TB
+            Landing["Landing, About, Contact Us, FAQ"]
+            AuthPages["auth: Login, Register, ForgotPassword, ResetPassword"]
+            AppPages["content: Questions, Quiz, Resources, Dashboard, QuizHistory, DiscussionModal · user: UserProfile, EditProfile, BookmarksPage"]
             Chat["ChatBotPage"]
-            AdminPages["admin: AdminPanel,<br/>ResourceUploader, AdminAnnouncements,<br/>Analytics, Feature requests, Report issues"]
-            LayoutShared["layout: Navbar, Footer ·<br/>shared: ErrorBoundary, Skeleton,<br/>MoreMenu, etc."]
+            AdminPages["admin: AdminPanel, ResourceUploader, AdminAnnouncements, Analytics, Feature requests, Report issues"]
+            LayoutShared["layout: Navbar, Footer · shared: ErrorBoundary, Skeleton, MoreMenu, etc."]
         end
         subgraph FrontendUtils["Utils & state"]
-            AxiosConfig["axiosConfig.js<br/>baseURL, interceptors<br/>Bearer token, 401 refresh"]
-            ApiUtils["apiUtils.js<br/>getApiBaseUrl, getAuthToken,<br/>refreshToken, get/post"]
-            Logger["logger.js<br/>no-op prod, console dev"]
-            LocalStorage["localStorage<br/>auth, token, expires"]
+            direction TB
+            AxiosConfig["axiosConfig · baseURL, interceptors, Bearer, 401 refresh"]
+            ApiUtils["apiUtils · getApiBaseUrl, getAuthToken, refreshToken, get/post"]
+            Logger["logger · no-op prod, console dev"]
+            LocalStorage["localStorage · auth, token, expires"]
         end
-        PWA["PWA: manifest.json<br/>sw cache static"]
+        PWA["PWA: manifest.json, sw cache static"]
         Router --> Pages
         Pages --> AxiosConfig
         AxiosConfig --> ApiUtils
@@ -277,34 +279,34 @@ flowchart LR
     end
 
     subgraph Backend["Backend (Node.js / Express)"]
-        direction LR
-        Server["server.js<br/>Trust proxy, startServer"]
+        direction TB
+        Server["server.js · Trust proxy, startServer"]
         subgraph Security["Security & global middleware"]
-            direction LR
+            direction TB
             Helmet["Helmet"]
             XSS["xss-clean"]
             MongoSanitize["mongo-sanitize"]
-            RateLimit["rate-limit<br/>200/15min"]
-            BodyParser["json 20MB<br/>urlencoded"]
+            RateLimit["rate-limit 200/15min"]
+            BodyParser["json 20MB, urlencoded"]
             CORS["CORS allowlist"]
         end
-        Bootstrap["bootstrap/routes.js<br/>mountRoutes"]
+        Bootstrap["bootstrap/routes.js · mountRoutes"]
         subgraph RouteGroups["API route groups"]
-            direction LR
-            R1["/auth: send-otp, verify-otp,<br/>login, register, me, refresh,<br/>forgot, verify-reset, reset"]
-            R2["/questions: CRUD admin, list,<br/>count, quiz, subjects, batch"]
-            R3["/resources: list, get, rate,<br/>CRUD admin, download"]
-            R4["/users: me, bookmarks,<br/>quiz-history, profile, folders"]
-            R5["/admin: users, analytics,<br/>announcements, audit, contact, cache"]
+            direction TB
+            R1["/auth: send-otp, verify-otp, login, register, me, refresh, forgot, reset"]
+            R2["/questions: CRUD admin, list, count, quiz, subjects, batch"]
+            R3["/resources: list, get, rate, CRUD admin, download"]
+            R4["/users: me, bookmarks, quiz-history, profile, folders"]
+            R5["/admin: users, analytics, announcements, audit, contact, cache"]
             R6["/ai-quiz: generate, ask"]
-            R7["/discussions: user/me,<br/>messages, like, edit, delete"]
-            R8["/dashboard: data, study-session,<br/>views, resource-engagement"]
+            R7["/discussions: user/me, messages, like, edit, delete"]
+            R8["/dashboard: data, study-session, views, resource-engagement"]
             R9["/announcements: GET active"]
             R10["/notifications: list, read"]
             R11["/contact: POST feature, issue"]
         end
         subgraph BackendMiddleware["Per-route middleware"]
-            direction LR
+            direction TB
             AuthMW["authMiddleware"]
             AdminMW["adminMiddleware"]
             CacheMW["cacheMiddleware"]
@@ -318,10 +320,10 @@ flowchart LR
     end
 
     subgraph DataLayer["Data layer"]
-        direction LR
-        Mongoose["Mongoose<br/>connectDB, models"]
+        direction TB
+        Mongoose["Mongoose · connectDB, models"]
         subgraph MongoDB["MongoDB collections"]
-            direction LR
+            direction TB
             Users[(users)]
             Questions[(questions)]
             Resources[(resources)]
@@ -335,13 +337,13 @@ flowchart LR
     end
 
     subgraph External["External services"]
-        direction LR
-        Cloudinary["Cloudinary<br/>PDF, profile image"]
-        SendGrid["SendGrid<br/>OTP, reset"]
-        Gemini["Gemini<br/>AI quiz, chat"]
+        direction TB
+        Cloudinary["Cloudinary · PDF, profile image"]
+        SendGrid["SendGrid · OTP, reset"]
+        Gemini["Gemini · AI quiz, chat"]
     end
 
-    Client -->|HTTPS REST<br/>Authorization Bearer| Backend
+    Client -->|HTTPS · Bearer| Backend
     Backend --> Mongoose
     Backend --> Cloudinary
     Backend --> SendGrid
