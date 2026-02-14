@@ -322,17 +322,7 @@ flowchart LR
     subgraph DataLayer["Data layer"]
         direction TB
         Mongoose["Mongoose · connectDB, models"]
-        subgraph MongoDB["MongoDB collections"]
-            direction TB
-            Users[(users)]
-            Questions[(questions)]
-            Resources[(resources)]
-            Discussions[(discussions)]
-            Notifications[(notifications)]
-            Announcements[(announcements)]
-            AuditLogs[(auditlogs)]
-            ContactSubmissions[(contactsubmissions)]
-        end
+        MongoDB[(MongoDB: users, questions, resources, discussions, notifications, announcements, auditlogs, contactsubmissions)]
         Mongoose --> MongoDB
     end
 
