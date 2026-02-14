@@ -4,9 +4,12 @@ import { motion } from 'framer-motion';
 import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import NotificationsDropdown from './NotificationsDropdown';
+import ProfilePlaceholder from './ProfilePlaceholder';
 import './Navbar.css';
 
 const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
+
+const hasCustomProfileImage = (url) => url && url !== defaultAvatar;
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -218,11 +221,15 @@ const Navbar = () => {
                     aria-haspopup="true"
                     title="Profile menu"
                   >
-                    <img
-                      src={profilePicture || defaultAvatar}
-                      alt="Profile"
-                      className="nav-profile-avatar"
-                    />
+                    {hasCustomProfileImage(profilePicture) ? (
+                      <img
+                        src={profilePicture}
+                        alt="Profile"
+                        className="nav-profile-avatar"
+                      />
+                    ) : (
+                      <ProfilePlaceholder className="nav-profile-placeholder" />
+                    )}
                   </button>
                   {profileDropdownOpen && (
                     <ul className="nav-dropdown-menu nav-profile-dropdown-menu" role="menu">

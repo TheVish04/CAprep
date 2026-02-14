@@ -60,9 +60,17 @@
   width: 100%;
 }
 
+.nav-link.chat-link::after {
+  display: none;
+}
+
 .nav-link:hover {
   color: #239ecf;
   background-color: #121212;
+}
+
+.nav-link.chat-link:hover {
+  background: #03a9f4;
 }
 
 .nav-button {
@@ -135,8 +143,29 @@
   cursor: pointer;
   font-size: 1.125rem;
   font-weight: 500;
-  color: inherit;
+  color: #b0b0b0;
   padding: 0.5rem 0;
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-dropdown-trigger::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: #03a9f4;
+  transition: width 0.3s ease;
+}
+
+.nav-dropdown-trigger:hover {
+  color: #239ecf;
+}
+
+.nav-dropdown-trigger:hover::after {
+  width: 100%;
 }
 
 .nav-dropdown-trigger .nav-dropdown-chevron {
@@ -221,6 +250,11 @@
   border-radius: 50%;
   object-fit: cover;
   display: block;
+}
+
+.nav-profile-placeholder {
+  width: 40px;
+  height: 40px;
 }
 
 .nav-profile-dropdown-menu {

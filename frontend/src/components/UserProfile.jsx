@@ -3,8 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import Navbar from './Navbar';
-import './UserProfile.css';
 import EditProfile from './EditProfile';
+import ProfilePlaceholder from './ProfilePlaceholder';
+import './UserProfile.css';
+
+const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
+const hasCustomProfileImage = (url) => url && url !== defaultAvatar;
 
 const UserProfile = () => {
     const navigate = useNavigate();
@@ -128,11 +132,15 @@ const UserProfile = () => {
                 <div className="profile-details card">
                     <div className="profile-header">
                         <div className="profile-picture-container">
-                            <img 
-                                src={userData.profilePicture || 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png'} 
-                                alt="Profile" 
-                                className="profile-picture" 
-                            />
+                            {hasCustomProfileImage(userData.profilePicture) ? (
+                                <img
+                                    src={userData.profilePicture}
+                                    alt="Profile"
+                                    className="profile-picture"
+                                />
+                            ) : (
+                                <ProfilePlaceholder className="profile-picture-placeholder" />
+                            )}
                         </div>
                         <div className="profile-info">
                             <h2>Account Information</h2>

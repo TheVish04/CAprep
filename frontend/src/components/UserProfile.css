@@ -179,9 +179,13 @@
     gap: 10px;
 }
 
-.profile-picture {
+.profile-picture,
+.profile-picture-placeholder {
     width: 150px;
     height: 150px;
+}
+
+.profile-picture {
     border-radius: 50%;
     object-fit: cover;
     border: 3px solid #03a9f4;

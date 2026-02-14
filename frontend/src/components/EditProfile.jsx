@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
+import ProfilePlaceholder from './ProfilePlaceholder';
 import './EditProfile.css';
 
 const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
+const hasCustomProfileImage = (url) => url && url !== defaultAvatar;
 
 const EditProfile = ({ userData, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
@@ -189,11 +191,15 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                         <div className="edit-profile-photo-col">
                             <div className="edit-profile-photo-row">
                                 <div className="edit-profile-avatar-wrap">
-                                    <img
-                                        src={previewUrl || defaultAvatar}
-                                        alt=""
-                                        className="edit-profile-avatar"
-                                    />
+                                    {hasCustomProfileImage(previewUrl) ? (
+                                        <img
+                                            src={previewUrl}
+                                            alt=""
+                                            className="edit-profile-avatar"
+                                        />
+                                    ) : (
+                                        <ProfilePlaceholder className="edit-profile-placeholder" />
+                                    )}
                                 </div>
                                 <button
                                     type="button"
