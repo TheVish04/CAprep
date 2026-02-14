@@ -213,6 +213,33 @@ const verifyOTP = (email, otp) => {
   return { valid: true, message: 'OTP verified successfully.' };
 };
 
+// --- Email change verification (per user, short-lived) ---
+const emailChangeVerified = new Map(); // userId -> { newEmail, expiresAt }
+const EMAIL_CHANGE_VERIFIED_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+const setEmailChangeVerified = (userId, newEmail) => {
+  const key = String(userId);
+  emailChangeVerified.set(key, {
+    newEmail: newEmail.trim().toLowerCase(),
+    expiresAt: Date.now() + EMAIL_CHANGE_VERIFIED_TTL_MS
+  });
+};
+
+const getEmailChangeVerified = (userId) => {
+  const key = String(userId);
+  const data = emailChangeVerified.get(key);
+  if (!data) return null;
+  if (Date.now() > data.expiresAt) {
+    emailChangeVerified.delete(key);
+    return null;
+  }
+  return data.newEmail;
+};
+
+const clearEmailChangeVerified = (userId) => {
+  emailChangeVerified.delete(String(userId));
+};
+
 // Check if an email has been verified by OTP
 const isEmailVerified = (email) => {
   const lowercaseEmail = email.toLowerCase();
@@ -367,5 +394,8 @@ module.exports = {
   markEmailAsVerified,
   removeVerifiedEmail,
   sendPasswordResetEmail,
-  sendReplyNotificationEmail
+  sendReplyNotificationEmail,
+  setEmailChangeVerified,
+  getEmailChangeVerified,
+  clearEmailChangeVerified
 };

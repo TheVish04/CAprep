@@ -10,6 +10,7 @@ const Question = require('../models/QuestionModel');
 const Resource = require('../models/ResourceModel'); // Import Resource model
 const logger = require('../config/logger');
 const { sendErrorResponse } = require('../utils/errorResponse');
+const { generateOTP, sendOTPEmail, verifyOTP, setEmailChangeVerified, getEmailChangeVerified, clearEmailChangeVerified } = require('../services/otpService');
 
 // Multer setup for memory storage
 const storage = multer.memoryStorage();
@@ -330,7 +331,69 @@ router.get('/me/quiz-history', authMiddleware, async (req, res) => {
 
 // --- Profile Management ---
 
+// POST Send OTP to new email for email change (must be logged in)
+router.post('/me/send-email-change-otp', authMiddleware, async (req, res) => {
+    try {
+        const { newEmail } = req.body;
+        const trimmed = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
+        if (!trimmed) {
+            return res.status(400).json({ error: 'New email is required' });
+        }
+        if (!/^\S+@\S+\.\S+$/.test(trimmed)) {
+            return res.status(400).json({ error: 'Please use a valid email address' });
+        }
+        const user = await User.findById(req.user.id).select('email');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const currentEmail = (user.email || '').toLowerCase();
+        if (trimmed === currentEmail) {
+            return res.status(400).json({ error: 'New email is the same as your current email' });
+        }
+        const existing = await User.findOne({ email: trimmed });
+        if (existing) {
+            return res.status(400).json({ error: 'This email is already in use' });
+        }
+        let otp;
+        try {
+            otp = generateOTP(trimmed);
+        } catch (err) {
+            return res.status(429).json({ error: err.message || 'Rate limit exceeded. Try again later.' });
+        }
+        const emailResult = await sendOTPEmail(trimmed, otp);
+        if (!emailResult.success) {
+            if (emailResult.transportError === 'NO_SENDGRID_KEY' || emailResult.transportError === 'NO_CREDENTIALS') {
+                return res.status(500).json({ error: 'Email service is not configured. Please try again later.' });
+            }
+            return res.status(500).json({ error: emailResult.error || 'Failed to send OTP' });
+        }
+        res.json({ message: 'OTP sent to your new email. Check your inbox.' });
+    } catch (error) {
+        logger.error('Error sending email-change OTP: ' + (error && error.message));
+        res.status(500).json({ error: 'Failed to send OTP' });
+    }
+});
+
+// POST Verify OTP for email change (must be logged in)
+router.post('/me/verify-email-change-otp', authMiddleware, async (req, res) => {
+    try {
+        const { newEmail, otp } = req.body;
+        const trimmed = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
+        if (!trimmed || !otp) {
+            return res.status(400).json({ error: 'New email and OTP are required' });
+        }
+        const verification = verifyOTP(trimmed, String(otp).trim());
+        if (!verification.valid) {
+            return res.status(400).json({ error: verification.message });
+        }
+        setEmailChangeVerified(req.user.id, trimmed);
+        res.json({ success: true, message: 'Email verified. You can now save your profile to update your email.' });
+    } catch (error) {
+        logger.error('Error verifying email-change OTP: ' + (error && error.message));
+        res.status(500).json({ error: 'Verification failed' });
+    }
+});
+
 // PUT Update user profile (fullName, email; profile picture via separate endpoint)
+// Email change requires prior OTP verification via send-email-change-otp and verify-email-change-otp.
 router.put('/me', authMiddleware, async (req, res) => {
     try {
         const { fullName, email } = req.body;
@@ -351,12 +414,21 @@ router.put('/me', authMiddleware, async (req, res) => {
             if (!/^\S+@\S+\.\S+$/.test(trimmed)) {
                 return res.status(400).json({ error: 'Please use a valid email address' });
             }
-            const existing = await User.findOne({ email: trimmed });
-            const currentUserId = String(req.user.id);
-            if (existing && existing._id.toString() !== currentUserId) {
-                return res.status(400).json({ error: 'This email is already in use' });
+            const user = await User.findById(req.user.id).select('email');
+            if (!user) return res.status(404).json({ error: 'User not found' });
+            const currentEmail = (user.email || '').toLowerCase();
+            if (trimmed !== currentEmail) {
+                const verifiedNewEmail = getEmailChangeVerified(req.user.id);
+                if (verifiedNewEmail !== trimmed) {
+                    return res.status(400).json({ error: 'Please verify your new email with OTP before saving. Use "Send OTP" and enter the code sent to your new email.' });
+                }
+                const existing = await User.findOne({ email: trimmed });
+                if (existing) {
+                    return res.status(400).json({ error: 'This email is already in use' });
+                }
+                updateData.email = trimmed;
+                clearEmailChangeVerified(req.user.id);
             }
-            updateData.email = trimmed;
         }
 
         if (Object.keys(updateData).length === 0) {

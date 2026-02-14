@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/axiosConfig';
 import apiUtils from '../../utils/apiUtils';
 import ProfilePlaceholder from '../shared/ProfilePlaceholder';
@@ -20,11 +20,26 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [banner, setBanner] = useState(null); // { type: 'success' | 'error', message }
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
     const [showChangePhotoModal, setShowChangePhotoModal] = useState(false);
     const [photoActionLoading, setPhotoActionLoading] = useState(false);
+    const [emailVerifiedForChange, setEmailVerifiedForChange] = useState(null);
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpValue, setOtpValue] = useState('');
+    const [otpSending, setOtpSending] = useState(false);
+    const [otpVerifying, setOtpVerifying] = useState(false);
     const fileInputRef = React.useRef(null);
+
+    const showBanner = useCallback((type, message) => {
+        setBanner({ type, message });
+        setError(null);
+        if (type === 'success') {
+            const t = setTimeout(() => setBanner(null), 4000);
+            return () => clearTimeout(t);
+        }
+    }, []);
 
     useEffect(() => {
         if (userData) {
@@ -35,6 +50,9 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             });
             setPreviewUrl(userData.profilePicture || '');
         }
+        setEmailVerifiedForChange(null);
+        setOtpSent(false);
+        setOtpValue('');
     }, [userData]);
 
     useEffect(() => {
@@ -48,11 +66,59 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'email') {
+            setEmailVerifiedForChange(null);
+            setOtpSent(false);
+            setOtpValue('');
+        }
     };
 
     const handlePasswordChange = (e) => {
         const { name, value } = e.target;
         setPasswordData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSendEmailChangeOtp = async () => {
+        const newEmail = formData.email?.trim();
+        if (!newEmail || !/^\S+@\S+\.\S+$/.test(newEmail)) {
+            setBanner({ type: 'error', message: 'Please enter a valid email address.' });
+            return;
+        }
+        setOtpSending(true);
+        setBanner(null);
+        setError(null);
+        try {
+            await api.post('/users/me/send-email-change-otp', { newEmail });
+            setOtpSent(true);
+            setOtpValue('');
+            showBanner('success', 'OTP sent to your new email. Check your inbox.');
+        } catch (err) {
+            const msg = err.response?.data?.error || 'Failed to send OTP. Try again later.';
+            setBanner({ type: 'error', message: msg });
+        } finally {
+            setOtpSending(false);
+        }
+    };
+
+    const handleVerifyEmailChangeOtp = async () => {
+        const newEmail = formData.email?.trim();
+        if (!newEmail || !otpValue.trim()) {
+            setBanner({ type: 'error', message: 'Enter the OTP you received.' });
+            return;
+        }
+        setOtpVerifying(true);
+        setBanner(null);
+        setError(null);
+        try {
+            await api.post('/users/me/verify-email-change-otp', { newEmail, otp: otpValue.trim() });
+            setEmailVerifiedForChange(newEmail.toLowerCase());
+            showBanner('success', 'Email verified. Click "Save changes" to update your email.');
+        } catch (err) {
+            const msg = err.response?.data?.error || 'Invalid or expired OTP. Request a new one.';
+            setBanner({ type: 'error', message: msg });
+        } finally {
+            setOtpVerifying(false);
+        }
     };
 
     const handleFileChange = async (e) => {
@@ -61,6 +127,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
         if (showChangePhotoModal) {
             setPhotoActionLoading(true);
             setError(null);
+            setBanner(null);
             try {
                 const fd = new FormData();
                 fd.append('profileImage', selectedFile);
@@ -71,8 +138,10 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 setFile(null);
                 if (onUpdate) onUpdate(res.data);
                 setShowChangePhotoModal(false);
+                showBanner('success', 'Profile photo updated successfully.');
             } catch (err) {
-                setError(err.response?.data?.error || 'Failed to upload photo');
+                const msg = err.response?.data?.error || 'Failed to upload photo.';
+                setBanner({ type: 'error', message: msg });
             } finally {
                 setPhotoActionLoading(false);
             }
@@ -92,6 +161,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     const handleRemovePhoto = async () => {
         setPhotoActionLoading(true);
         setError(null);
+        setBanner(null);
         try {
             const res = await api.delete('/users/me/profile-image');
             const url = res.data.profilePicture || defaultAvatar;
@@ -100,8 +170,10 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             setFile(null);
             if (onUpdate) onUpdate(res.data);
             setShowChangePhotoModal(false);
+            showBanner('success', 'Profile photo removed.');
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to remove photo');
+            const msg = err.response?.data?.error || 'Failed to remove photo.';
+            setBanner({ type: 'error', message: msg });
         } finally {
             setPhotoActionLoading(false);
         }
@@ -111,6 +183,17 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setBanner(null);
+
+        const newEmail = formData.email?.trim() || '';
+        const currentEmail = (userData?.email || '').toLowerCase();
+        const emailChanged = newEmail && newEmail.toLowerCase() !== currentEmail;
+
+        if (emailChanged && emailVerifiedForChange !== newEmail.toLowerCase()) {
+            setError('Please verify your new email with OTP before saving. Use "Send OTP" and enter the code sent to your new email.');
+            setLoading(false);
+            return;
+        }
 
         const { newPassword, confirmPassword, currentPassword } = passwordData;
         if (newPassword || confirmPassword || currentPassword) {
@@ -138,9 +221,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             }
 
             const payload = { fullName: formData.fullName.trim() };
-            const newEmail = formData.email?.trim() || '';
-            const currentEmail = (userData?.email || '').toLowerCase();
-            if (newEmail && newEmail.toLowerCase() !== currentEmail) {
+            if (emailChanged && emailVerifiedForChange) {
                 payload.email = newEmail;
             }
             const response = await api.put('/users/me', payload);
@@ -153,14 +234,27 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
             }
 
+            showBanner('success', 'Profile updated successfully.');
             if (onUpdate) onUpdate(response.data);
-            if (onClose) onClose();
+            setEmailVerifiedForChange(null);
+            setOtpSent(false);
+            setOtpValue('');
+            setTimeout(() => {
+                if (onClose) onClose();
+            }, 1500);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to update profile');
+            const msg = err.response?.data?.error || 'Failed to update profile.';
+            setBanner({ type: 'error', message: msg });
+            setError(msg);
         } finally {
             setLoading(false);
         }
     };
+
+    const currentEmail = (userData?.email || '').toLowerCase();
+    const newEmailTrimmed = formData.email?.trim().toLowerCase();
+    const emailChanged = newEmailTrimmed && newEmailTrimmed !== currentEmail;
+    const emailVerified = emailChanged && emailVerifiedForChange === newEmailTrimmed;
 
     return (
         <div className="edit-profile-modal" role="dialog" aria-labelledby="edit-profile-title">
@@ -178,6 +272,14 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                     </button>
                 </header>
 
+                {banner && (
+                    <div
+                        className={`edit-profile-banner edit-profile-banner-${banner.type}`}
+                        role="alert"
+                    >
+                        {banner.message}
+                    </div>
+                )}
                 {error && <div className="edit-profile-error" role="alert">{error}</div>}
 
                 <input
@@ -215,76 +317,116 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                             </div>
                         </div>
                         <div className="edit-profile-fields-col">
-                    <section className="edit-profile-section" aria-labelledby="account-heading">
-                        <h3 id="account-heading" className="edit-profile-section-title">Account</h3>
-                        <div className="form-group">
-                            <label htmlFor="fullName">Full name</label>
-                            <input
-                                type="text"
-                                id="fullName"
-                                name="fullName"
-                                value={formData.fullName}
-                                onChange={handleChange}
-                                required
-                                autoComplete="name"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="email">Email</label>
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                autoComplete="email"
-                            />
-                        </div>
-                    </section>
+                            <section className="edit-profile-section" aria-labelledby="account-heading">
+                                <h3 id="account-heading" className="edit-profile-section-title">Account</h3>
+                                <div className="form-group">
+                                    <label htmlFor="fullName">Full name</label>
+                                    <input
+                                        type="text"
+                                        id="fullName"
+                                        name="fullName"
+                                        value={formData.fullName}
+                                        onChange={handleChange}
+                                        required
+                                        autoComplete="name"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="email">Email</label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        required
+                                        autoComplete="email"
+                                    />
+                                    {emailChanged && (
+                                        <div className="edit-profile-email-otp">
+                                            {!emailVerified ? (
+                                                <>
+                                                    {!otpSent ? (
+                                                        <button
+                                                            type="button"
+                                                            className="edit-profile-otp-btn"
+                                                            onClick={handleSendEmailChangeOtp}
+                                                            disabled={otpSending}
+                                                        >
+                                                            {otpSending ? 'Sending…' : 'Send OTP to new email'}
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                maxLength={6}
+                                                                placeholder="Enter 6-digit OTP"
+                                                                value={otpValue}
+                                                                onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ''))}
+                                                                className="edit-profile-otp-input"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className="edit-profile-otp-btn"
+                                                                onClick={handleVerifyEmailChangeOtp}
+                                                                disabled={otpVerifying || otpValue.length < 6}
+                                                            >
+                                                                {otpVerifying ? 'Verifying…' : 'Verify OTP'}
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <span className="edit-profile-email-verified">✓ New email verified. Save changes to update.</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
 
-                    <section className="edit-profile-section edit-profile-password-section" aria-labelledby="password-heading">
-                        <h3 id="password-heading" className="edit-profile-section-title">Password (optional)</h3>
-                        <div className="form-group">
-                            <label htmlFor="currentPassword">Current password</label>
-                            <input
-                                type="password"
-                                id="currentPassword"
-                                name="currentPassword"
-                                value={passwordData.currentPassword}
-                                onChange={handlePasswordChange}
-                                placeholder="Enter current password"
-                                autoComplete="current-password"
-                                className="edit-profile-password-input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="newPassword">New password</label>
-                            <input
-                                type="password"
-                                id="newPassword"
-                                name="newPassword"
-                                value={passwordData.newPassword}
-                                onChange={handlePasswordChange}
-                                placeholder="Enter new password"
-                                autoComplete="new-password"
-                                className="edit-profile-password-input"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="confirmPassword">Confirm new password</label>
-                            <input
-                                type="password"
-                                id="confirmPassword"
-                                name="confirmPassword"
-                                value={passwordData.confirmPassword}
-                                onChange={handlePasswordChange}
-                                placeholder="Confirm new password"
-                                autoComplete="new-password"
-                                className="edit-profile-password-input"
-                            />
-                        </div>
-                    </section>
+                            <section className="edit-profile-section edit-profile-password-section" aria-labelledby="password-heading">
+                                <h3 id="password-heading" className="edit-profile-section-title">Password (optional)</h3>
+                                <div className="form-group">
+                                    <label htmlFor="currentPassword">Current password</label>
+                                    <input
+                                        type="password"
+                                        id="currentPassword"
+                                        name="currentPassword"
+                                        value={passwordData.currentPassword}
+                                        onChange={handlePasswordChange}
+                                        placeholder="Enter current password"
+                                        autoComplete="current-password"
+                                        className="edit-profile-password-input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="newPassword">New password</label>
+                                    <input
+                                        type="password"
+                                        id="newPassword"
+                                        name="newPassword"
+                                        value={passwordData.newPassword}
+                                        onChange={handlePasswordChange}
+                                        placeholder="Enter new password"
+                                        autoComplete="new-password"
+                                        className="edit-profile-password-input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="confirmPassword">Confirm new password</label>
+                                    <input
+                                        type="password"
+                                        id="confirmPassword"
+                                        name="confirmPassword"
+                                        value={passwordData.confirmPassword}
+                                        onChange={handlePasswordChange}
+                                        placeholder="Confirm new password"
+                                        autoComplete="new-password"
+                                        className="edit-profile-password-input"
+                                    />
+                                </div>
+                            </section>
                         </div>
                     </div>
 
