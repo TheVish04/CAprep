@@ -221,29 +221,6 @@ const UserProfile = () => {
                          <Link to="/bookmarks" className="profile-link full-width-link">Manage Bookmark Folders</Link>
                     </div>
                 </div>
-                <div className="profile-contribution card">
-                    <h2>My Contribution</h2>
-                    {userData.totalContribution > 0 ? (
-                        <div className="contribution-prompt">
-                            <p>
-                                Thank you for your generous contribution of 
-                                <strong> ₹{userData.totalContribution.toFixed(2)} </strong>! 
-                                Your support helps keep CAprep running and improving.
-                            </p>
-                            <p className="retention-message">
-                                Consistent support helps us enhance our platform with new features and content.
-                                Consider becoming a recurring supporter to help us serve the CA community better!
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="contribution-prompt">
-                            <p>
-                                Help support CAprep by making a donation. Every contribution makes a difference!
-                            </p>
-                        </div>
-                    )}
-                </div>
-
                 <div className="profile-actions">
                     <button onClick={handleLogout} className="logout-button">Logout</button>
                     <button onClick={() => setShowDeleteConfirm(true)} className="delete-account-button">Delete Account</button>

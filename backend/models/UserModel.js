@@ -132,11 +132,6 @@ const UserSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Resource'
   }],
-  totalContribution: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
   studyHours: {
     type: [StudyHourSchema],
     default: [],

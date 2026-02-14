@@ -108,9 +108,14 @@ CAprep addresses these by providing a single platform for questions, resources, 
 - **Notifications**
   - In-app notifications (announcement, reply, system, general); list (paginated), unread count, mark one or all as read.
 
+- **Contact / feedback**
+  - Authenticated users can submit feature requests (title, category, description) and issue reports (subject, description) from the Contact Us page.
+  - Submissions stored in ContactSubmission model (type: feature | issue, status: new | read | archived).
+  - Admin panel: view feature requests and issue reports (Admin → Feature requests, Report issues).
+
 - **Admin**
   - Bootstrap: if no admin exists, one is created from `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FULL_NAME`.
-  - Admin panel: user list (paginated), analytics (top downloaded resources, quizzes per subject, total “donations” from user.totalContribution), audit log (paginated), announcements CRUD, clear cache.
+  - Admin panel: user list (paginated), analytics (top downloaded resources, quizzes per subject, total quiz attempts, new users, resources/questions by subject), audit log (paginated), announcements CRUD, feature requests and issue reports (from Contact Us), clear cache.
 
 - **PWA**
   - manifest.json and service worker (cache-first for same-origin static assets; API requests not cached).
@@ -168,6 +173,7 @@ flowchart TB
         subgraph Engage["Engage & organize"]
             Discuss["Discussions<br/>One thread per question or resource<br/>Reply, like, edit, delete"]
             Bookmark["Bookmarks<br/>Save questions and resources<br/>Folders with notes, move between folders"]
+            Contact["Contact Us<br/>Submit feature requests and issue reports<br/>Admin views in Feature requests / Report issues"]
         end
         subgraph Track["Track progress"]
             Dash["Dashboard<br/>Quiz score trends, study hours<br/>Recent and bookmarked content<br/>New resources, announcements"]
@@ -215,6 +221,7 @@ sequenceDiagram
     participant Resources
     participant Chat
     participant Bookmarks
+    participant ContactUs
 
     User->>Landing: Visit /
     User->>Register: Register: OTP then Verify then Form then Submit
@@ -228,6 +235,7 @@ sequenceDiagram
     User->>Resources: Browse, download, rate, bookmark
     User->>Chat: Chat (api from axiosConfig)
     User->>Bookmarks: Folders, add/remove/move
+    User->>ContactUs: Submit feature request or issue report (auth)
 ```
 
 ---
@@ -246,11 +254,11 @@ flowchart TB
             App --> Router
         end
         subgraph Pages["Pages & features"]
-            Landing["Landing, About,<br/>Contact, FAQ"]
+            Landing["Landing, About,<br/>Contact Us, FAQ"]
             AuthPages["Login, Register,<br/>ForgotPassword, ResetPassword"]
             AppPages["Dashboard, Questions,<br/>Quiz, QuizHistory, Resources,<br/>Bookmarks, UserProfile"]
             Chat["ChatBotPage<br/>(AI assistant)"]
-            AdminPages["AdminPanel, ResourceUploader,<br/>AdminAnnouncements, Analytics"]
+            AdminPages["AdminPanel, ResourceUploader,<br/>AdminAnnouncements, Analytics,<br/>Feature requests, Report issues"]
         end
         subgraph FrontendUtils["Utils & state"]
             AxiosConfig["axiosConfig.js<br/>baseURL, interceptors<br/>Bearer token, 401 refresh"]
@@ -288,6 +296,7 @@ flowchart TB
             R8["/api/dashboard<br/>data, study-session,<br/>views, resource-engagement"]
             R9["/api/announcements<br/>GET active"]
             R10["/api/notifications<br/>list, read-all, mark read"]
+            R11["/api/contact<br/>POST feature, issue (auth)"]
         end
         subgraph BackendMiddleware["Per-route middleware"]
             AuthMW["authMiddleware<br/>JWT verify, req.user"]
@@ -311,6 +320,7 @@ flowchart TB
             Notifications[(notifications)]
             Announcements[(announcements)]
             AuditLogs[(auditlogs)]
+            ContactSubmissions[(contactsubmissions)]
         end
         Mongoose["Mongoose<br/>connectDB, models"]
     end
@@ -462,11 +472,17 @@ flowchart TB
         end
         subgraph AdminRoutes["admin.js"]
             AD1["users, analytics<br/>announcements CRUD, audit"]
+            AD2["contact/feature-requests<br/>contact/report-issues"]
             AD1 --> UserModel
             AD1 --> ResourceModel
             AD1 --> AnnouncementModel
             AD1 --> AuditLogModel
             AD1 --> NotificationModel
+            AD2 --> ContactSubmissionModel
+        end
+        subgraph ContactRoutes["contact.js"]
+            C1["POST feature, issue (auth)"]
+            C1 --> ContactSubmissionModel
         end
         subgraph AiQuizRoutes["aiQuiz.js"]
             AI1["generate, ask"]
@@ -509,6 +525,7 @@ flowchart TB
         NotificationModel["Notification"]
         AnnouncementModel["Announcement"]
         AuditLogModel["AuditLog"]
+        ContactSubmissionModel["ContactSubmission"]
     end
 
     subgraph Support["Support layer"]
@@ -551,7 +568,7 @@ flowchart TB
 
 - **Backend:**  
   - **Entry:** `server.js` — connect DB, run admin bootstrap, mount routes from `bootstrap/routes.js`, then start listen.  
-  - **Routes:** Mounted under `/api/*`: auth, questions, resources, users, admin, ai-quiz, discussions, dashboard, announcements (with auth), notifications (with auth).  
+  - **Routes:** Mounted under `/api/*`: auth, questions, resources, users, admin, ai-quiz, discussions, dashboard, announcements (with auth), notifications (with auth), contact (POST /feature, /issue with auth).  
   - **Layers:** Route handlers use models and services directly (no separate service/repository folders); validators (e.g. Joi) and middleware (auth, admin, cache) are used per route.
 
 ### 5.3 Request–response lifecycle
@@ -599,20 +616,21 @@ CAPrep/
 │   │   ├── index.css             # Global styles (Tailwind entry)
 │   │   ├── utils/
 │   │   │   ├── axiosConfig.js    # Axios instance (baseURL from apiUtils), interceptors (token, 401 refresh/redirect)
-│   │   │   └── apiUtils.js       # getApiBaseUrl, get/set/clear auth token, refreshToken, get/post, handleError
+│   │   │   ├── apiUtils.js       # getApiBaseUrl, get/set/clear auth token, refreshToken, get/post, handleError
+│   │   │   └── authUtils.js      # Token expiry handling (e.g. handleTokenExpiration for admin)
 │   │   ├── components/           # Reusable UI and feature components
 │   │   │   ├── Login.jsx, Register.jsx, ForgotPassword.jsx, ResetPassword.jsx
-│   │   │   ├── Navbar.jsx, UserProfile.jsx, EditProfile.jsx
+│   │   │   ├── Navbar.jsx, Footer.jsx, UserProfile.jsx, EditProfile.jsx, ProfilePlaceholder.jsx
 │   │   │   ├── Questions.jsx, Quiz.jsx, QuizHistory.jsx, Resources.jsx, ResourceUploader.jsx
 │   │   │   ├── Dashboard.jsx, BookmarksPage.jsx, BookmarkFolderSelector.jsx
 │   │   │   ├── DiscussionModal.jsx, NotificationsDropdown.jsx
-│   │   │   ├── AdminPanel.jsx, AdminAnnouncements.jsx, AdminAnalytics.jsx
-│   │   │   ├── ErrorBoundary.jsx, Skeleton.jsx
+│   │   │   ├── AdminPanel.jsx, AdminAnnouncements.jsx, AdminAnalytics.jsx, AdminFeatureRequests.jsx, AdminReportIssues.jsx
+│   │   │   ├── PreviewPanel.jsx, MoreMenu.jsx, ErrorBoundary.jsx, Skeleton.jsx
 │   │   │   └── *.css for components
 │   │   └── pages/
 │   │       ├── LandingPage.jsx, About.jsx, ContactUs.jsx, FAQ.jsx
 │   │       ├── ChatBotPage.jsx, QuizReview.jsx
-│   │       └── ChatBotPage.css
+│   │       └── ChatBotPage.css, Content.css (ContactUs/About shared), FAQ.css
 │   └── dist/                    # Production build output (git may ignore or commit)
 │
 └── backend/
@@ -633,26 +651,30 @@ CAPrep/
     ├── models/
     │   ├── UserModel.js         # User: auth, profile, quizHistory, bookmarks, studyHours, bookmarkFolders, etc.
     │   ├── QuestionModel.js      # Question: subject, paperType, year, month, examStage, questionText, subQuestions
-    │   ├── ResourceModel.js     # Resource: title, subject, fileUrl, fileType, rating, downloadCount, etc.
+    │   ├── ResourceModel.js     # Resource: title, subject, fileUrl, fileType, resourceType, rating, downloadCount, etc.
     │   ├── DiscussionModel.js   # Discussion: itemType/itemId, messages (with userId, likes, parent), participants
     │   ├── NotificationModel.js # Notification: user, type, title, body, read, refId, refType
     │   ├── AnnouncementModel.js  # Announcement: title, content, type, priority, targetSubjects, validUntil, createdBy
-    │   └── AuditLogModel.js     # AuditLog: actor, action, resource, resourceId, details
+    │   ├── AuditLogModel.js     # AuditLog: actor, action, resource, resourceId, details
+    │   └── ContactSubmissionModel.js # ContactSubmission: type (feature|issue), name, email, subject/featureTitle, category, description, status
     ├── routes/
     │   ├── auth.js              # send-otp, verify-otp, login, register, me, refresh-token, forgot-password, verify-reset-otp, reset-password
     │   ├── questions.js         # CRUD (admin), list (filter, pagination), count, quiz (MCQ sample), available-subjects, all-subjects, batch
     │   ├── resources.js        # List, count, get by id, rate, create (admin upload), update/delete (admin), download (proxy/URL), download count increment
     │   ├── users.js             # me (profile, bookmarks), bookmarks CRUD, quiz-history CRUD, profile update, profile image upload, delete account, bookmark folders CRUD
-    │   ├── admin.js             # users list, analytics, announcements CRUD, audit log
+    │   ├── admin.js             # users list, analytics, announcements CRUD, audit log, contact/feature-requests, contact/report-issues
     │   ├── dashboard.js        # GET dashboard data, study-session, resource-engagement, question-view, resource-view, announcements
     │   ├── aiQuiz.js            # POST generate (AI MCQs), POST ask (chat with Gemini)
     │   ├── discussions.js       # user/me, get by itemType+itemId, post message, like, edit, delete message
-    │   ├── announcements.js     # GET active announcements (public under /api/announcements but route mounted with authMiddleware)
-    │   └── notifications.js     # GET list, PATCH read-all, PATCH :id/read
+    │   ├── announcements.js     # GET active announcements (mounted with authMiddleware)
+    │   ├── notifications.js     # GET list, PATCH read-all, PATCH :id/read
+    │   └── contact.js           # POST /feature (auth), POST /issue (auth) — feature requests and issue reports
     ├── services/
     │   └── otpService.js        # generateOTP, verifyOTP, sendOTPEmail, isEmailVerified, markEmailAsVerified, removeVerifiedEmail, sendPasswordResetEmail; in-memory + file (database/verified_emails.json)
     ├── validators/
     │   └── questionValidator.js # Joi questionSchema for create/update
+    ├── utils/
+    │   └── auditLog.js          # logAudit(actorId, action, resource, resourceId, details) for admin actions
     └── database/               # Optional local file storage (e.g. verified_emails.json); may be gitignored
 ```
 
@@ -673,12 +695,13 @@ CAPrep/
 | `/api/questions` | Mixed | GET / (auth, cache), GET /count (cache), GET /quiz, /available-subjects, /all-subjects (auth), POST /batch (auth); POST/PUT/DELETE (admin) |
 | `/api/resources` | Mixed | GET /, GET /count, GET /:id (auth where required); POST /:id/rate (auth); POST / (admin, multipart); PUT/DELETE /:id (admin); GET/POST /:id/download, GET /:id/download-url (auth for download) |
 | `/api/users` | Auth | Profile, bookmarks, quiz history, profile image, bookmark folders |
-| `/api/admin` | Auth + Admin | users, analytics, announcements CRUD, audit, clear-cache (POST) |
+| `/api/admin` | Auth + Admin | users, analytics, announcements CRUD, audit, contact/feature-requests, contact/report-issues, clear-cache (POST) |
 | `/api/ai-quiz` | Auth | POST /generate, POST /ask |
 | `/api/discussions` | Auth | user/me, :itemType/:itemId, message, like, edit, delete |
 | `/api/dashboard` | Auth | GET /, study-session, resource-engagement, question-view, resource-view, announcements |
 | `/api/announcements` | Auth (mount) | GET / (active announcements) |
 | `/api/notifications` | Auth (mount) | GET /, PATCH read-all, PATCH :id/read |
+| `/api/contact` | Auth (per route) | POST /feature, POST /issue (authenticated; feature request and issue report) |
 
 ### Sample request/response
 
@@ -698,21 +721,34 @@ CAPrep/
   Body: `{ "subject", "paperType", "year", "month", "examStage", "questionNumber", "questionText", "answerText", "subQuestions" }`  
   Response: `201` — `{ "id", ...questionData }`
 
+- **Submit feature request**  
+  `POST /api/contact/feature`  
+  Headers: `Authorization: Bearer <token>`  
+  Body: `{ "featureTitle", "category" (optional), "description" }`  
+  Response: `201` — `{ "success": true, "id", "message" }`
+
+- **Submit issue report**  
+  `POST /api/contact/issue`  
+  Headers: `Authorization: Bearer <token>`  
+  Body: `{ "subject", "description" }`  
+  Response: `201` — `{ "success": true, "id", "message" }`
+
 ---
 
 ## 8. Database Design
 
 - **Database:** MongoDB; connection via Mongoose from `config/database.js` using `MONGODB_URI`.
 - **Collections (Mongoose models):**
-  - **users:** fullName, email (unique), password (select:false), role (user|admin), profilePicture, resetPasswordToken/Expires, createdAt/updatedAt; bookmarkedQuestions[], bookmarkedResources[], quizHistory[] (with questionsAttempted), studyHours[], recentlyViewedQuestions[], recentlyViewedResources[], subjectStrengths[], resourceEngagement[], bookmarkFolders[] (name, type, items with itemId, note); totalContribution. Validators cap array lengths (e.g. quizHistory ≤ 100, studyHours ≤ 365).
+  - **users:** fullName, email (unique), password (select:false), role (user|admin), profilePicture, resetPasswordToken/Expires, createdAt/updatedAt; bookmarkedQuestions[], bookmarkedResources[], quizHistory[] (with questionsAttempted), studyHours[], recentlyViewedQuestions[], recentlyViewedResources[], subjectStrengths[], resourceEngagement[], bookmarkFolders[] (name, type, items with itemId, note). Validators cap array lengths (e.g. quizHistory ≤ 100, studyHours ≤ 365).
   - **questions:** subject, paperType, year, month, examStage, questionNumber, questionText, answerText, subQuestions[] (subQuestionText, subOptions[] with optionText, isCorrect), difficulty, viewCount, attemptCount, correctCount. Indexes for filters and text search.
   - **resources:** title, subject, paperType, year, month, examStage, fileUrl, fileType, fileSize, downloadCount, viewCount, description, rating (average, count), lastUpdated. Indexes for filters and text search.
   - **discussions:** itemType (question|resource), itemId, itemModel (Question|Resource), lastActivityAt, messageCount, participantCount, messages[] (userId, content, timestamp, parentMessageId, likes[], edited, deleted), participants[]. Indexes for itemType+itemId (unique), participants, lastActivityAt.
   - **notifications:** user, type (announcement|reply|system|general), title, body, read, refId, refType, timestamps.
   - **announcements:** title, content, type, priority, targetSubjects[], validUntil, createdBy, viewCount, dismissedBy[], acknowledgedBy[], needsAcknowledgment. Indexes for type, priority, validUntil, text search.
   - **auditlogs:** actor, action, resource, resourceId, details, timestamps.
+  - **contactsubmissions:** type (feature|issue), name, email, subject (issue), featureTitle/category (feature), description, status (new|read|archived), timestamps. Indexes for type, status, createdAt.
 
-- **Relationships:** User references in Discussion (participants, messages.userId), Announcement (createdBy), Notification (user), AuditLog (actor). Discussion references Question/Resource via itemId + itemModel. User bookmarks reference Question and Resource by ObjectId.
+- **Relationships:** User references in Discussion (participants, messages.userId), Announcement (createdBy), Notification (user), AuditLog (actor). ContactSubmission stores submitter name/email (no ref to User). Discussion references Question/Resource via itemId + itemModel. User bookmarks reference Question and Resource by ObjectId.
 
 - **Constraints:** Unique email on users; unique (itemType, itemId) on discussions; Joi and Mongoose validators on inputs and schema (e.g. question subject by examStage, array caps).
 
@@ -874,11 +910,10 @@ CAPrep/
 
 ## 18. Observations
 
-- **(Removed)** Resource schema now includes `resourceType`; no longer a limitation. With Mongoose’s default strict mode, this field may not be persisted. The dashboard and dashboard route reference `resourceType` (with fallback `'PDF'`). Adding `resourceType` to the Resource schema is recommended for consistency.
-- **Policy pages:** App comments mention “Policy page routes removed”; no policy routes or components are present.
+- **Resource schema:** Includes `resourceType`; (default 'pdf') for display and dashboard; dashboard and routes use it consistently.
 - **Logger:** `config/logger.js` is a thin wrapper around console; not all routes use it (some use `console.log`/`console.error` directly).
-- **Analytics “donations”:** Admin analytics uses `totalContribution` from users; there is no payment or donation flow in the codebase, so this may be a placeholder for future use.
-- **Audit log:** Written on admin announcement create/update/delete; other admin actions (e.g. question/resource CRUD) do not write to AuditLog.
+- **Audit log:** Written via `utils/auditLog.logAudit` on admin announcement create/update/delete; other admin actions (e.g. question/resource CRUD) do not write to AuditLog.
+- **Contact submissions:** Feature requests and issue reports are stored in `contactsubmissions`; admin views them under Admin → Feature requests and Report issues. No policy or terms routes; FAQ links to `/privacy` but no privacy route exists in the app.
 - **verified_emails.json:** Stored under `backend/database/`; directory is in `.gitignore`; the server creates the directory at startup if it does not exist.
 
 ---

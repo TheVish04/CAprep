@@ -44,9 +44,9 @@ const About = () => {
           <div className="support-section">
             <h2>Support Our Work</h2>
             <p>
-              We are committed to keeping our platform accessible to all CA Aspirants. Your support
-              helps us maintain and improve our services. Consider making a small donation if you
-              find our platform valuable.
+              We are committed to keeping our platform accessible to all CA Aspirants. Your feedback
+              and engagement help us maintain and improve our services. Share your experience and
+              suggestions via the Contact Us page if you find our platform valuable.
             </p>
           </div>
         </section>
