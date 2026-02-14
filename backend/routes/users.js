@@ -363,7 +363,12 @@ router.post('/me/send-email-change-otp', authMiddleware, async (req, res) => {
             if (emailResult.transportError === 'NO_SENDGRID_KEY' || emailResult.transportError === 'NO_CREDENTIALS') {
                 return res.status(500).json({ error: 'Email service is not configured. Please try again later.' });
             }
-            return res.status(500).json({ error: emailResult.error || 'Failed to send OTP' });
+            const msg = emailResult.error || '';
+            const isSendGridAuthError = /authorization grant|invalid.*expired|revoked/i.test(msg);
+            const userMessage = isSendGridAuthError
+                ? 'Email service is temporarily unavailable. Please try again later or contact support.'
+                : (msg || 'Failed to send OTP. Please try again later.');
+            return res.status(500).json({ error: userMessage });
         }
         res.json({ message: 'OTP sent to your new email. Check your inbox.' });
     } catch (error) {
