@@ -1,5 +1,4 @@
 const otpGenerator = require('otp-generator');
-const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -10,7 +9,7 @@ require('dotenv').config();
 // Get API key at sendgrid.com; verify one sender at Sender Authentication (Single Sender).
 const useSendGrid = () => !!process.env.SENDGRID_API_KEY;
 const getSendGridFrom = () =>
-  process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_FROM || process.env.EMAIL_USER || 'noreply@example.com';
+  process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_FROM || 'noreply@example.com';
 
 if (useSendGrid()) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -89,30 +88,6 @@ setInterval(() => {
     saveVerifiedEmailsToDisk();
   }
 }, 60000); // Clean up every minute
-
-// Nodemailer transporter (lazy, only when not using SendGrid)
-let transporter = null;
-const getTransporter = () => {
-  if (!transporter && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT, 10) || 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      },
-      debug: process.env.NODE_ENV === 'development',
-      logger: process.env.NODE_ENV === 'development'
-    });
-    transporter.verify((err) => {
-      if (err) console.error('SMTP verify error:', err.message);
-      else console.log('SMTP server is ready to take our messages');
-    });
-  }
-  return transporter;
-};
 
 // Send email via SendGrid API (transactional). No DNS required with Single Sender Verification.
 const sendViaSendGrid = async (to, subject, html, text = '') => {
@@ -277,7 +252,7 @@ const removeVerifiedEmail = (email) => {
   saveVerifiedEmailsToDisk(); // Save to disk immediately
 };
 
-// Send OTP via email (SendGrid when SENDGRID_API_KEY set; else nodemailer/SMTP)
+// Send OTP via email (SendGrid only)
 const sendOTPEmail = async (email, otp) => {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     console.error(`Invalid email format: ${email}`);
@@ -288,68 +263,20 @@ const sendOTPEmail = async (email, otp) => {
     };
   }
 
-  if (useSendGrid()) {
-    return await sendViaSendGrid(
-      email,
-      'Your OTP for CAprep Registration',
-      generateEmailTemplate(email, otp),
-      `Your OTP is ${otp}. Valid for 10 minutes.`
-    );
-  }
-
-  const transport = getTransporter();
-  if (!transport) {
+  if (!useSendGrid()) {
     return {
       success: false,
-      error: 'Email service is not configured. Set SENDGRID_API_KEY or EMAIL_USER + EMAIL_PASSWORD.',
+      error: 'Email service is not configured. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL.',
       transportError: 'NO_CREDENTIALS'
     };
   }
 
-  const mailOptions = {
-    from: `"CAprep Support" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: 'Your OTP for CAprep Registration',
-    html: generateEmailTemplate(email, otp),
-    priority: 'high',
-    headers: {
-      'X-Priority': '1',
-      'X-MSMail-Priority': 'High',
-      'Importance': 'High'
-    }
-  };
-
-  try {
-    console.log(`Attempting to send OTP email (SMTP) to: ${email}`);
-    const info = await transport.sendMail(mailOptions);
-    console.log(`Email sent successfully to ${email}. Message ID: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error('Error sending OTP email:', {
-      error: error.message,
-      code: error.code,
-      response: error.response,
-      responseCode: error.responseCode,
-      stack: error.stack,
-      email: email
-    });
-    
-    // More descriptive error based on the code
-    let errorMessage = 'Failed to send email';
-    if (error.code === 'EENVELOPE' || error.code === 'ERECIPIENT') {
-      errorMessage = 'Email address appears to be invalid or not reachable';
-    } else if (error.code === 'ESOCKET') {
-      errorMessage = 'Network error when connecting to email server';
-    } else if (error.code === 'EAUTH') {
-      errorMessage = 'Email authentication failed, check sender credentials';
-    }
-    
-    return { 
-      success: false, 
-      error: errorMessage,
-      transportError: error.code || 'UNKNOWN'
-    };
-  }
+  return await sendViaSendGrid(
+    email,
+    'Your OTP for CAprep Registration',
+    generateEmailTemplate(email, otp),
+    `Your OTP is ${otp}. Valid for 10 minutes.`
+  );
 };
 
 const generateEmailTemplate = (name, otp) => {
@@ -367,7 +294,7 @@ const generateEmailTemplate = (name, otp) => {
   `;
 };
 
-// Send password reset email with OTP (SendGrid when configured; else SMTP)
+// Send password reset email with OTP (SendGrid only)
 const sendPasswordResetEmail = async (email, otp) => {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     console.error(`Invalid email format: ${email}`);
@@ -378,68 +305,20 @@ const sendPasswordResetEmail = async (email, otp) => {
     };
   }
 
-  if (useSendGrid()) {
-    return await sendViaSendGrid(
-      email,
-      'Password Reset OTP for CAprep',
-      generatePasswordResetTemplate(email, otp),
-      `Your password reset OTP is ${otp}. Valid for 5 minutes.`
-    );
-  }
-
-  const transport = getTransporter();
-  if (!transport) {
+  if (!useSendGrid()) {
     return {
       success: false,
-      error: 'Email service is not configured. Set SENDGRID_API_KEY or EMAIL_USER + EMAIL_PASSWORD.',
+      error: 'Email service is not configured. Set SENDGRID_API_KEY and SENDGRID_FROM_EMAIL.',
       transportError: 'NO_CREDENTIALS'
     };
   }
 
-  const mailOptions = {
-    from: `"CAprep Support" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: 'Password Reset OTP for CAprep',
-    html: generatePasswordResetTemplate(email, otp),
-    priority: 'high',
-    headers: {
-      'X-Priority': '1',
-      'X-MSMail-Priority': 'High',
-      'Importance': 'High'
-    }
-  };
-
-  try {
-    console.log(`Attempting to send password reset email (SMTP) to: ${email}`);
-    const info = await transport.sendMail(mailOptions);
-    console.log(`Password reset email sent successfully to ${email}. Message ID: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error('Error sending password reset email:', {
-      error: error.message,
-      code: error.code,
-      response: error.response,
-      responseCode: error.responseCode,
-      stack: error.stack,
-      email: email
-    });
-    
-    // More descriptive error based on the code
-    let errorMessage = 'Failed to send email';
-    if (error.code === 'EENVELOPE' || error.code === 'ERECIPIENT') {
-      errorMessage = 'Email address appears to be invalid or not reachable';
-    } else if (error.code === 'ESOCKET') {
-      errorMessage = 'Network error when connecting to email server';
-    } else if (error.code === 'EAUTH') {
-      errorMessage = 'Email authentication failed, check sender credentials';
-    }
-    
-    return { 
-      success: false, 
-      error: errorMessage,
-      transportError: error.code || 'UNKNOWN'
-    };
-  }
+  return await sendViaSendGrid(
+    email,
+    'Password Reset OTP for CAprep',
+    generatePasswordResetTemplate(email, otp),
+    `Your password reset OTP is ${otp}. Valid for 5 minutes.`
+  );
 };
 
 const generatePasswordResetTemplate = (email, otp) => {
@@ -473,24 +352,10 @@ const sendReplyNotificationEmail = async (toEmail, replyAuthorName, itemType, it
       <p style="font-size: 12px; color: #777;">This is an automated notification.</p>
     </div>
   `;
-  if (useSendGrid()) {
-    return await sendViaSendGrid(toEmail, subject, html, text);
+  if (!useSendGrid()) {
+    return { success: false, error: 'Email not configured. Set SENDGRID_API_KEY.' };
   }
-  const transport = getTransporter();
-  if (!transport) return { success: false, error: 'Email not configured' };
-  try {
-    await transport.sendMail({
-      from: `"CAprep" <${process.env.EMAIL_USER}>`,
-      to: toEmail,
-      subject,
-      html,
-      text
-    });
-    return { success: true };
-  } catch (err) {
-    console.error('Reply notification email error:', err.message);
-    return { success: false, error: err.message };
-  }
+  return await sendViaSendGrid(toEmail, subject, html, text);
 };
 
 module.exports = {

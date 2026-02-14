@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { generateOTP, verifyOTP, sendOTPEmail, isEmailVerified, removeVerifiedEmail, markEmailAsVerified, sendPasswordResetEmail } = require('../services/otpService');
 const otpGenerator = require('otp-generator');
-const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 // Route-specific rate limiters (stricter than global API limit)
@@ -882,120 +881,6 @@ router.post('/reset-password', async (req, res) => {
       error: 'Failed to reset password',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  }
-});
-
-// Test Email Service - For debugging only (development only)
-router.post('/test-email', async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ error: 'Not available in production mode' });
-  }
-  try {
-    const { email } = req.body;
-    
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ error: 'Please provide a valid email address' });
-    }
-
-    console.log(`Test email request to: ${email}`);
-
-    // Create a simple test email
-    const testEmailContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-        <h2 style="color: #0288d1;">CAprep - Test Email</h2>
-        <p>This is a test email to verify that the email service is working correctly.</p>
-        <p>If you received this email, it means our email delivery system is functioning properly.</p>
-        <p>Time sent: ${new Date().toISOString()}</p>
-        <p style="margin-top: 30px; font-size: 12px; color: #777;">This is an automated message for testing purposes only, please do not reply.</p>
-      </div>
-    `;
-
-    // Create a transporter instance just for this test
-    const testTransporter = nodemailer.createTransport({
-      service: 'gmail',
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      },
-      debug: true
-    });
-
-    const mailOptions = {
-      from: `"CAprep Support" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'CAprep Email Service Test',
-      html: testEmailContent,
-      priority: 'high'
-    };
-
-    const info = await testTransporter.sendMail(mailOptions);
-    console.log(`Test email sent successfully to ${email}. Message ID: ${info.messageId}`);
-
-    res.status(200).json({
-      success: true,
-      message: 'Test email sent successfully',
-      details: {
-        messageId: info.messageId,
-        accepted: info.accepted,
-        rejected: info.rejected
-      }
-    });
-  } catch (error) {
-    console.error('Test email error:', {
-      message: error.message,
-      code: error.code,
-      response: error.response,
-      stack: error.stack
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to send test email',
-      details: {
-        message: error.message,
-        code: error.code,
-        response: error.response || 'No response'
-      }
-    });
-  }
-});
-
-// Debug route to check email configuration
-router.get('/debug-email', async (req, res) => {
-  // Only available in development mode
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ error: 'Not available in production mode' });
-  }
-  
-  try {
-    // Mask email password for security
-    const maskedPassword = process.env.EMAIL_PASSWORD ? 
-      '*'.repeat(process.env.EMAIL_PASSWORD.length) : 'not set';
-    
-    res.json({
-      email_config: {
-        EMAIL_USER: process.env.EMAIL_USER || 'not set',
-        EMAIL_PASSWORD_SET: !!process.env.EMAIL_PASSWORD,
-        EMAIL_PASSWORD_LENGTH: process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.length : 0,
-        EMAIL_PASSWORD_MASKED: maskedPassword
-      },
-      smtp_test: {
-        service: 'gmail',
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-      },
-      environment: {
-        NODE_ENV: process.env.NODE_ENV || 'development',
-        CORS_ORIGIN: process.env.CORS_ORIGIN || 'default'
-      }
-    });
-  } catch (error) {
-    console.error('Debug email error:', error);
-    res.status(500).json({ error: 'Error getting email debug info' });
   }
 });
 

@@ -38,7 +38,7 @@
   - Discussions on questions and resources
   - Bookmarks (flat and folder-based), profile, and dashboard with study analytics
 
-The system is built as a **monolith**: a React (Vite) frontend and an Express.js backend that connects to MongoDB, with file storage on Cloudinary and email via SendGrid or SMTP.
+The system is built as a **monolith**: a React (Vite) frontend and an Express.js backend that connects to MongoDB, with file storage on Cloudinary and email via SendGrid.
 
 ---
 
@@ -59,7 +59,7 @@ CAprep addresses these by providing a single platform for questions, resources, 
 ## 3. Key Features
 
 - **Authentication & user management**
-  - Email/password registration with **OTP email verification** (SendGrid or SMTP).
+  - Email/password registration with **OTP email verification** (SendGrid).
   - Login with rate limiting and optional token refresh.
   - Forgot password flow: request OTP → verify OTP → set new password.
   - Profile: update name, profile picture (Cloudinary), view bookmarks and quiz history.
@@ -126,7 +126,7 @@ CAprep addresses these by providing a single platform for questions, resources, 
 | **Database** | MongoDB (no separate ORM; Mongoose as ODM) |
 | **Auth** | JWT (access token, optional refresh via `/auth/refresh-token`), bcrypt for passwords |
 | **File storage** | Cloudinary (PDF upload, optional proxy for download) |
-| **Email** | SendGrid (preferred) or Nodemailer (SMTP, e.g. Gmail) |
+| **Email** | SendGrid |
 | **AI** | Google Gemini (`@google/generative-ai`); model configurable via `GEMINI_MODEL` (default `gemini-2.5-flash-lite`) |
 | **Validation** | Joi (e.g. question create/update) |
 | **Security** | Helmet, xss-clean, express-mongo-sanitize, express-rate-limit (global + route-specific), CORS allowlist |
@@ -317,7 +317,7 @@ flowchart TB
 
     subgraph External["External services"]
         Cloudinary["Cloudinary<br/>PDF upload, profile image<br/>folder ca-exam-platform/resources"]
-        SendGrid["SendGrid or SMTP<br/>OTP email, password reset<br/>verified_emails.json fallback"]
+        SendGrid["SendGrid<br/>OTP email, password reset<br/>verified_emails.json fallback"]
         Gemini["Google Gemini<br/>AI quiz generate<br/>Chat ask with system prompt"]
     end
 
@@ -325,7 +325,7 @@ flowchart TB
     Backend --> Mongoose
     Mongoose --> MongoDB
     Backend -->|upload_stream, destroy| Cloudinary
-    Backend -->|sgMail or nodemailer| SendGrid
+    Backend -->|sgMail| SendGrid
     Backend -->|generateContent, startChat| Gemini
 ```
 
@@ -521,7 +521,7 @@ flowchart TB
     subgraph External["External"]
         Cloudinary["Cloudinary"]
         Gemini["Google Gemini"]
-        SendGrid["SendGrid or SMTP"]
+        SendGrid["SendGrid"]
     end
 
     Req --> Global
@@ -573,7 +573,7 @@ flowchart TB
 
 - **Authentication:** JWT in `Authorization: Bearer <token>`. Verified in `authMiddleware` (algorithm HS256, expiry from `JWT_EXPIRES_IN`); user loaded from DB and `req.user` set to `{ id, fullName, email, role }`.
 - **Authorization:** Role-based: `adminMiddleware` allows only `role === 'admin'`. Routes that need “any logged-in user” use only `authMiddleware`; admin-only routes use both.
-- **Registration:** OTP sent to email (SendGrid or SMTP); user must verify OTP before `/api/auth/register` succeeds; password hashed with bcrypt (12 rounds).
+- **Registration:** OTP sent to email (SendGrid); user must verify OTP before `/api/auth/register` succeeds; password hashed with bcrypt (12 rounds).
 - **Password reset:** Forgot password sends OTP by email; user verifies OTP then submits new password; reset tokens stored hashed and with expiry on User model.
 
 ---
@@ -639,7 +639,7 @@ CAPrep/
     │   ├── AnnouncementModel.js  # Announcement: title, content, type, priority, targetSubjects, validUntil, createdBy
     │   └── AuditLogModel.js     # AuditLog: actor, action, resource, resourceId, details
     ├── routes/
-    │   ├── auth.js              # send-otp, verify-otp, login, register, me, refresh-token, forgot-password, verify-reset-otp, reset-password, test-email, debug-email
+    │   ├── auth.js              # send-otp, verify-otp, login, register, me, refresh-token, forgot-password, verify-reset-otp, reset-password
     │   ├── questions.js         # CRUD (admin), list (filter, pagination), count, quiz (MCQ sample), available-subjects, all-subjects, batch
     │   ├── resources.js        # List, count, get by id, rate, create (admin upload), update/delete (admin), download (proxy/URL), download count increment
     │   ├── users.js             # me (profile, bookmarks), bookmarks CRUD, quiz-history CRUD, profile update, profile image upload, delete account, bookmark folders CRUD
@@ -669,7 +669,7 @@ CAPrep/
 
 | Prefix | Auth | Description |
 |--------|------|-------------|
-| `/api/auth` | Mixed | send-otp, verify-otp, login, register (public); me, refresh-token (Bearer); forgot-password, verify-reset-otp, reset-password (public); test-email, debug-email (dev only) |
+| `/api/auth` | Mixed | send-otp, verify-otp, login, register (public); me, refresh-token (Bearer); forgot-password, verify-reset-otp, reset-password (public) |
 | `/api/questions` | Mixed | GET / (auth, cache), GET /count (cache), GET /quiz, /available-subjects, /all-subjects (auth), POST /batch (auth); POST/PUT/DELETE (admin) |
 | `/api/resources` | Mixed | GET /, GET /count, GET /:id (auth where required); POST /:id/rate (auth); POST / (admin, multipart); PUT/DELETE /:id (admin); GET/POST /:id/download, GET /:id/download-url (auth for download) |
 | `/api/users` | Auth | Profile, bookmarks, quiz history, profile image, bookmark folders |
@@ -743,8 +743,7 @@ CAPrep/
 | `GEMINI_API_KEY` | Google Gemini API key for AI quiz and chat |
 | `GEMINI_MODEL` | Optional; model name (default gemini-2.5-flash-lite) |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary for PDF and profile images |
-| `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL` | SendGrid for OTP and password reset (preferred) |
-| `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_FROM` | Optional; SMTP (e.g. Gmail) if not using SendGrid |
+| `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL` | SendGrid for OTP and password reset |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FULL_NAME` | Bootstrap first admin if none exist |
 | `CACHE_TTL`, `CACHE_CHECK_PERIOD` | Optional; node-cache tuning |
 | `RATE_LIMIT_MAX_REQUESTS`, `RATE_LIMIT_WINDOW_MS` | Optional; override default rate limit |
@@ -795,7 +794,7 @@ CAPrep/
 
 - **Backend**
   - Set `NODE_ENV=production`.
-  - Set all required env vars (MongoDB, JWT, CORS, Gemini, Cloudinary, SendGrid or SMTP, admin bootstrap).
+  - Set all required env vars (MongoDB, JWT, CORS, Gemini, Cloudinary, SendGrid, admin bootstrap).
   - Run `npm install --omit=dev` and start with `node server.js` or a process manager (e.g. PM2).
   - No Docker or Dockerfile is present in the repo; you can add one if needed.
 
@@ -807,7 +806,7 @@ CAPrep/
 - **Required services**
   - MongoDB (Atlas or self-hosted).
   - Cloudinary (for PDFs and profile images).
-  - SendGrid or SMTP (for OTP and password reset).
+  - SendGrid (for OTP and password reset).
   - Google AI (Gemini) for AI quiz and chat.
 
 ---
