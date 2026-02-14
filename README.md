@@ -19,11 +19,8 @@
 11. [Installation Guide](#11-installation-guide)
 12. [Production Deployment Guide](#12-production-deployment-guide)
 13. [Scripts & Commands](#13-scripts--commands)
-14. [Scalability & Performance Considerations](#14-scalability--performance-considerations)
+14. [Scalability, Performance & Future Roadmap](#14-scalability-performance--future-roadmap)
 15. [Business Ideas (Freemium Monetization)](#15-business-ideas-freemium-monetization)
-16. [Future Roadmap](#16-future-roadmap)
-17. [Contribution Guidelines](#17-contribution-guidelines)
-18. [Logging](#18-logging)
 
 ---
 
@@ -67,12 +64,14 @@ CAprep addresses these by providing a single platform for questions, resources, 
 
 - **Questions**
   - List/filter questions by subject, paper type, year, month, exam stage, search, and bookmarked.
+  - Search query is escaped before use in MongoDB `$regex` to prevent injection and ensure predictable behavior.
   - Pagination (default 20, max 100 per page).
   - Admin: create, update, delete questions (Joi validation).
   - Question model supports main question, sub-questions, and sub-options (MCQs).
 
 - **Resources (PDFs)**
   - List/filter by subject, paper type, exam stage, year, month, search, bookmarked.
+  - Search query is escaped before use in MongoDB `$regex` (title/description) for safe, literal matching.
   - Pagination; single resource by ID.
   - Admin: upload PDF (multer → Cloudinary, 20MB limit), update metadata, delete (Cloudinary asset removed).
   - Download: authenticated; backend can proxy Cloudinary PDF or return download URL; download count incremented.
@@ -102,6 +101,7 @@ CAprep addresses these by providing a single platform for questions, resources, 
 
 - **Announcements**
   - Admin: create/update/delete; type, priority, target subjects, valid until.
+  - Joi validation on create/update: type and priority enums, targetSubjects array shape and length, validUntil as ISO date or timestamp; 400 on invalid payload.
   - On create, in-app notifications are created for all users (fire-and-forget).
   - Users: list active announcements (by validity and priority).
 
@@ -109,7 +109,8 @@ CAprep addresses these by providing a single platform for questions, resources, 
   - In-app notifications (announcement, reply, system, general); list (paginated), unread count, mark one or all as read.
 
 - **Contact / feedback**
-  - Authenticated users can submit feature requests (title, category, description) and issue reports (subject, description) from the Contact Us page.
+  - Authenticated users can submit feature requests (featureTitle, optional category, description) and issue reports (subject, description) from the Contact Us page.
+  - Joi validation enforces type, length limits (aligned with ContactSubmission schema), and trim; 400 with clear messages when limits are exceeded.
   - Submissions stored in ContactSubmission model (type: feature | issue, status: new | read | archived).
   - Admin panel: view feature requests and issue reports (Admin → Feature requests, Report issues).
 
@@ -133,8 +134,8 @@ CAprep addresses these by providing a single platform for questions, resources, 
 | **File storage** | Cloudinary (PDF upload, optional proxy for download) |
 | **Email** | SendGrid |
 | **AI** | Google Gemini (`@google/generative-ai`); model configurable via `GEMINI_MODEL` (default `gemini-2.5-flash-lite`) |
-| **Validation** | Joi (e.g. question create/update) |
-| **Security** | Helmet, xss-clean, express-mongo-sanitize, express-rate-limit (global + route-specific), CORS allowlist |
+| **Validation** | Joi for questions, contact (feature/issue), and announcements (create/update); search input escaped before MongoDB `$regex` (no regex injection) |
+| **Security** | Helmet, xss-clean, express-mongo-sanitize, express-rate-limit (global + route-specific), CORS allowlist; server errors return generic message in production (no stack or internal details); auth logging avoids PII in production |
 | **Caching** | node-cache (in-memory); cache middleware for GET routes; admin clear-cache endpoint |
 | **DevOps / Hosting** | Frontend: Vercel (vercel.json with SPA rewrite, buildCommand, outputDirectory `dist`). Backend: not in repo (e.g. Render); no Docker or CI config in repo |
 
@@ -243,68 +244,73 @@ sequenceDiagram
 ### Architecture diagram (high-level, detailed)
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph Client["Client (Browser)"]
-        direction TB
+        direction LR
         subgraph FrontendCore["Frontend core"]
-            Router["React Router 7"]
             Main["main.jsx<br/>createRoot, SW register"]
             App["App.jsx<br/>Routes, ProtectedRoute,<br/>ErrorBoundary, AuthRedirect"]
-            Main --> App
-            App --> Router
+            Router["React Router 7"]
+            Main --> App --> Router
         end
         subgraph Pages["Pages & features"]
             Landing["Landing, About,<br/>Contact Us, FAQ"]
-            AuthPages["Login, Register,<br/>ForgotPassword, ResetPassword"]
-            AppPages["Dashboard, Questions,<br/>Quiz, QuizHistory, Resources,<br/>Bookmarks, UserProfile"]
-            Chat["ChatBotPage<br/>(AI assistant)"]
-            AdminPages["AdminPanel, ResourceUploader,<br/>AdminAnnouncements, Analytics,<br/>Feature requests, Report issues"]
+            AuthPages["auth: Login, Register,<br/>ForgotPassword, ResetPassword"]
+            AppPages["content: Questions, Quiz,<br/>Resources, Dashboard, QuizHistory,<br/>DiscussionModal · user: UserProfile,<br/>EditProfile, BookmarksPage"]
+            Chat["ChatBotPage"]
+            AdminPages["admin: AdminPanel,<br/>ResourceUploader, AdminAnnouncements,<br/>Analytics, Feature requests, Report issues"]
+            LayoutShared["layout: Navbar, Footer ·<br/>shared: ErrorBoundary, Skeleton,<br/>MoreMenu, etc."]
         end
         subgraph FrontendUtils["Utils & state"]
             AxiosConfig["axiosConfig.js<br/>baseURL, interceptors<br/>Bearer token, 401 refresh"]
             ApiUtils["apiUtils.js<br/>getApiBaseUrl, getAuthToken,<br/>refreshToken, get/post"]
-            LocalStorage["localStorage<br/>auth object, token, expires"]
+            Logger["logger.js<br/>no-op prod, console dev"]
+            LocalStorage["localStorage<br/>auth, token, expires"]
         end
-        PWA["PWA: manifest.json<br/>Service worker cache static"]
+        PWA["PWA: manifest.json<br/>sw cache static"]
         Router --> Pages
         Pages --> AxiosConfig
         AxiosConfig --> ApiUtils
+        AxiosConfig --> Logger
         ApiUtils --> LocalStorage
         FrontendCore --> PWA
     end
 
     subgraph Backend["Backend (Node.js / Express)"]
-        direction TB
+        direction LR
         Server["server.js<br/>Trust proxy, startServer"]
         subgraph Security["Security & global middleware"]
+            direction LR
             Helmet["Helmet"]
             XSS["xss-clean"]
-            MongoSanitize["express-mongo-sanitize"]
-            RateLimit["express-rate-limit<br/>200 req / 15 min per IP"]
-            BodyParser["express.json 20MB<br/>urlencoded 20MB"]
-            CORS["CORS allowlist<br/>credentials true"]
+            MongoSanitize["mongo-sanitize"]
+            RateLimit["rate-limit<br/>200/15min"]
+            BodyParser["json 20MB<br/>urlencoded"]
+            CORS["CORS allowlist"]
         end
         Bootstrap["bootstrap/routes.js<br/>mountRoutes"]
         subgraph RouteGroups["API route groups"]
-            R1["/api/auth<br/>send-otp, verify-otp, login,<br/>register, me, refresh-token,<br/>forgot-password, reset-password"]
-            R2["/api/questions<br/>CRUD admin, list, count,<br/>quiz, available-subjects, batch"]
-            R3["/api/resources<br/>list, get, rate, CRUD admin,<br/>download, download-url"]
-            R4["/api/users<br/>me, bookmarks, quiz-history,<br/>profile, bookmark-folders"]
-            R5["/api/admin<br/>users, analytics, announcements,<br/>audit, clear-cache"]
-            R6["/api/ai-quiz<br/>generate, ask"]
-            R7["/api/discussions<br/>user/me, item messages,<br/>like, edit, delete"]
-            R8["/api/dashboard<br/>data, study-session,<br/>views, resource-engagement"]
-            R9["/api/announcements<br/>GET active"]
-            R10["/api/notifications<br/>list, read-all, mark read"]
-            R11["/api/contact<br/>POST feature, issue (auth)"]
+            direction LR
+            R1["/auth: send-otp, verify-otp,<br/>login, register, me, refresh,<br/>forgot, verify-reset, reset"]
+            R2["/questions: CRUD admin, list,<br/>count, quiz, subjects, batch"]
+            R3["/resources: list, get, rate,<br/>CRUD admin, download"]
+            R4["/users: me, bookmarks,<br/>quiz-history, profile, folders"]
+            R5["/admin: users, analytics,<br/>announcements, audit, contact, cache"]
+            R6["/ai-quiz: generate, ask"]
+            R7["/discussions: user/me,<br/>messages, like, edit, delete"]
+            R8["/dashboard: data, study-session,<br/>views, resource-engagement"]
+            R9["/announcements: GET active"]
+            R10["/notifications: list, read"]
+            R11["/contact: POST feature, issue"]
         end
         subgraph BackendMiddleware["Per-route middleware"]
-            AuthMW["authMiddleware<br/>JWT verify, req.user"]
-            AdminMW["adminMiddleware<br/>role admin"]
-            CacheMW["cacheMiddleware<br/>GET cache by user+URL"]
+            direction LR
+            AuthMW["authMiddleware"]
+            AdminMW["adminMiddleware"]
+            CacheMW["cacheMiddleware"]
         end
         Server --> Security
-        Server --> Bootstrap
+        Security --> Bootstrap
         Bootstrap --> RouteGroups
         RouteGroups --> AuthMW
         RouteGroups --> AdminMW
@@ -312,7 +318,10 @@ flowchart TB
     end
 
     subgraph DataLayer["Data layer"]
+        direction LR
+        Mongoose["Mongoose<br/>connectDB, models"]
         subgraph MongoDB["MongoDB collections"]
+            direction LR
             Users[(users)]
             Questions[(questions)]
             Resources[(resources)]
@@ -322,21 +331,21 @@ flowchart TB
             AuditLogs[(auditlogs)]
             ContactSubmissions[(contactsubmissions)]
         end
-        Mongoose["Mongoose<br/>connectDB, models"]
+        Mongoose --> MongoDB
     end
 
     subgraph External["External services"]
-        Cloudinary["Cloudinary<br/>PDF upload, profile image<br/>folder ca-exam-platform/resources"]
-        SendGrid["SendGrid<br/>OTP email, password reset<br/>verified_emails.json fallback"]
-        Gemini["Google Gemini<br/>AI quiz generate<br/>Chat ask with system prompt"]
+        direction LR
+        Cloudinary["Cloudinary<br/>PDF, profile image"]
+        SendGrid["SendGrid<br/>OTP, reset"]
+        Gemini["Gemini<br/>AI quiz, chat"]
     end
 
     Client -->|HTTPS REST<br/>Authorization Bearer| Backend
     Backend --> Mongoose
-    Mongoose --> MongoDB
-    Backend -->|upload_stream, destroy| Cloudinary
-    Backend -->|sgMail| SendGrid
-    Backend -->|generateContent, startChat| Gemini
+    Backend --> Cloudinary
+    Backend --> SendGrid
+    Backend --> Gemini
 ```
 
 ### Request–response flow diagram (detailed)
@@ -531,6 +540,10 @@ flowchart TB
     subgraph Support["Support layer"]
         otpService["otpService<br/>generateOTP, verifyOTP<br/>sendOTPEmail, sendPasswordReset"]
         questionValidator["questionValidator<br/>Joi questionSchema"]
+        contactValidator["contactValidator<br/>Joi featureRequestSchema, issueReportSchema"]
+        announcementValidator["announcementValidator<br/>Joi create/update schemas"]
+        errorResponse["utils/errorResponse<br/>sendErrorResponse (no leak in prod)"]
+        escapeRegex["utils/escapeRegex<br/>safe search for $regex"]
         cloudinary["config/cloudinary"]
         database["config/database<br/>connectDB"]
     end
@@ -563,13 +576,17 @@ flowchart TB
 - **Frontend:**  
   - `main.jsx`: mounts App, registers service worker in production.  
   - `App.jsx`: Router, ErrorBoundary, route definitions, ProtectedRoute / RedirectIfLoggedIn, AuthRedirectSetup (axios 401 → navigate to login).  
-  - Pages/components call API via `axios` instance (from `axiosConfig.js`) or `apiUtils` (get/post, token refresh, error handling).  
+  - **Components** are grouped by feature under `components/`: `auth/` (Login, Register, ForgotPassword, ResetPassword), `admin/` (AdminPanel, ResourceUploader, AdminAnnouncements, etc.), `layout/` (Navbar, Footer), `shared/` (ErrorBoundary, Skeleton, ProfilePlaceholder, NotificationsDropdown, MoreMenu, BookmarkFolderSelector, PreviewPanel), `user/` (UserProfile, EditProfile, BookmarksPage), `content/` (Questions, Quiz, Resources, Dashboard, QuizHistory, DiscussionModal).  
+  - Pages live in `pages/`; they and components call API via `axios` instance (from `axiosConfig.js`) or `apiUtils` (get/post, token refresh, error handling).  
+  - Frontend `utils/logger.js`: no-op in production, forwards to console in development (e.g. API request log in axiosConfig).  
   - Auth state: JWT and optional expiry in `localStorage` (`auth` object; fallback `token` key).
 
 - **Backend:**  
   - **Entry:** `server.js` — connect DB, run admin bootstrap, mount routes from `bootstrap/routes.js`, then start listen.  
   - **Routes:** Mounted under `/api/*`: auth, questions, resources, users, admin, ai-quiz, discussions, dashboard, announcements (with auth), notifications (with auth), contact (POST /feature, /issue with auth).  
-  - **Layers:** Route handlers use models and services directly (no separate service/repository folders); validators (e.g. Joi) and middleware (auth, admin, cache) are used per route.
+  - **Layers:** Route handlers use models and services directly (no separate service/repository folders); validators (Joi for questions, contact, announcements) and middleware (auth, admin, cache) are used per route.  
+  - **Error responses:** A shared `sendErrorResponse(res, statusCode, { message, error })` logs server-side and returns generic message in production; in development optional `details` (error.message) may be included.  
+  - **Search:** User search input is escaped via `escapeRegex()` before use in MongoDB `$regex` to avoid injection and unstable behavior.
 
 ### 5.3 Request–response lifecycle
 
@@ -577,7 +594,8 @@ flowchart TB
 2. Global rate limiter (e.g. 200 req/15 min per IP) and CORS run first.
 3. Route-specific middleware: e.g. `authMiddleware` (verify JWT, attach `req.user`), `adminMiddleware` (require `req.user.role === 'admin'`), `cacheMiddleware(duration)` (GET only; cache key by user id + URL; skip if `x-skip-cache: true`).
 4. Handler reads DB (Mongoose), optionally clears cache on mutations, returns JSON.
-5. If an error is thrown, global error handler and 404 handler at the end of the chain return 500/404 JSON.
+5. On server errors, route handlers use a shared error-response helper: the error is logged server-side; the client receives a generic message in production (no stack or internal error text); in development optional details may be included.
+6. Global error handler and 404 handler at the end of the chain return 500/404 JSON when no response was sent.
 
 ### 5.4 Data flow (typical)
 
@@ -617,16 +635,16 @@ CAPrep/
 │   │   ├── utils/
 │   │   │   ├── axiosConfig.js    # Axios instance (baseURL from apiUtils), interceptors (token, 401 refresh/redirect)
 │   │   │   ├── apiUtils.js       # getApiBaseUrl, get/set/clear auth token, refreshToken, get/post, handleError
-│   │   │   └── authUtils.js      # Token expiry handling (e.g. handleTokenExpiration for admin)
-│   │   ├── components/           # Reusable UI and feature components
-│   │   │   ├── Login.jsx, Register.jsx, ForgotPassword.jsx, ResetPassword.jsx
-│   │   │   ├── Navbar.jsx, Footer.jsx, UserProfile.jsx, EditProfile.jsx, ProfilePlaceholder.jsx
-│   │   │   ├── Questions.jsx, Quiz.jsx, QuizHistory.jsx, Resources.jsx, ResourceUploader.jsx
-│   │   │   ├── Dashboard.jsx, BookmarksPage.jsx, BookmarkFolderSelector.jsx
-│   │   │   ├── DiscussionModal.jsx, NotificationsDropdown.jsx
-│   │   │   ├── AdminPanel.jsx, AdminAnnouncements.jsx, AdminAnalytics.jsx, AdminFeatureRequests.jsx, AdminReportIssues.jsx
-│   │   │   ├── PreviewPanel.jsx, MoreMenu.jsx, ErrorBoundary.jsx, Skeleton.jsx
-│   │   │   └── *.css for components
+│   │   │   ├── authUtils.js      # Token expiry handling (e.g. handleTokenExpiration for admin)
+│   │   │   ├── logger.js         # No-op in production, console in development (used by axiosConfig)
+│   │   │   └── pdfGenerator.js   # generateQuestionsPDF, savePDF for question export
+│   │   ├── components/           # Feature-grouped UI and feature components
+│   │   │   ├── auth/             # Login.jsx, Register.jsx, ForgotPassword.jsx, ResetPassword.jsx (+ .css)
+│   │   │   ├── admin/            # AdminPanel, AdminAnnouncements, AdminAnalytics, AdminFeatureRequests, AdminReportIssues, ResourceUploader (+ .css)
+│   │   │   ├── layout/           # Navbar.jsx, Footer.jsx (+ .css)
+│   │   │   ├── shared/           # ErrorBoundary, Skeleton, ProfilePlaceholder, NotificationsDropdown, MoreMenu, BookmarkFolderSelector, PreviewPanel (+ .css)
+│   │   │   ├── user/             # UserProfile.jsx, EditProfile.jsx, BookmarksPage.jsx (+ .css)
+│   │   │   └── content/          # Questions.jsx, Quiz.jsx, Resources.jsx, Dashboard.jsx, QuizHistory.jsx, DiscussionModal.jsx (+ .css)
 │   │   └── pages/
 │   │       ├── LandingPage.jsx, About.jsx, ContactUs.jsx, FAQ.jsx
 │   │       ├── ChatBotPage.jsx, QuizReview.jsx
@@ -641,7 +659,7 @@ CAPrep/
     ├── config/
     │   ├── database.js          # connectDB (MongoDB with retry and connection options)
     │   ├── cloudinary.js         # Cloudinary v2 config from env
-    │   └── logger.js            # Simple console logger (info, error, warn, debug)
+    │   └── logger.js            # Logger (info, error, warn, debug); used throughout backend instead of console
     ├── bootstrap/
     │   ├── routes.js            # mountRoutes: mount all route modules under /api/*
     │   └── adminBootstrap.js    # checkAndCreateAdmin from env if no admin exists
@@ -672,10 +690,14 @@ CAPrep/
     ├── services/
     │   └── otpService.js        # generateOTP, verifyOTP, sendOTPEmail, isEmailVerified, markEmailAsVerified, removeVerifiedEmail, sendPasswordResetEmail; in-memory + file (database/verified_emails.json)
     ├── validators/
-    │   └── questionValidator.js # Joi questionSchema for create/update
+    │   ├── questionValidator.js   # Joi questionSchema for question create/update
+    │   ├── contactValidator.js    # Joi featureRequestSchema, issueReportSchema (length, trim)
+    │   └── announcementValidator.js # Joi announcementCreateSchema, announcementUpdateSchema (type, priority, targetSubjects, validUntil)
     ├── utils/
-    │   └── auditLog.js          # logAudit(actorId, action, resource, resourceId, details) for admin actions
-    └── database/               # Optional local file storage (e.g. verified_emails.json); may be gitignored
+    │   ├── auditLog.js            # logAudit(actorId, action, resource, resourceId, details) for admin actions
+    │   ├── errorResponse.js       # sendErrorResponse(res, statusCode, { message, error }) — log server-side, generic response in production
+    │   └── escapeRegex.js         # escapeRegex(str) — escape metacharacters for safe use in MongoDB $regex
+    └── database/                 # Optional local file storage (e.g. verified_emails.json); may be gitignored
 ```
 
 ---
@@ -718,20 +740,20 @@ CAPrep/
 - **Create question (admin)**  
   `POST /api/questions`  
   Headers: `Authorization: Bearer <admin-token>`  
-  Body: `{ "subject", "paperType", "year", "month", "examStage", "questionNumber", "questionText", "answerText", "subQuestions" }`  
-  Response: `201` — `{ "id", ...questionData }`
+  Body: `{ "subject", "paperType", "year", "month", "examStage", "questionNumber", "questionText", "answerText", "subQuestions" }` (Joi-validated).  
+  Response: `201` — `{ "id", ...questionData }`; `400` on validation error.
 
 - **Submit feature request**  
   `POST /api/contact/feature`  
   Headers: `Authorization: Bearer <token>`  
-  Body: `{ "featureTitle", "category" (optional), "description" }`  
-  Response: `201` — `{ "success": true, "id", "message" }`
+  Body: `{ "featureTitle", "category" (optional), "description" }` (Joi: length limits, trim).  
+  Response: `201` — `{ "success": true, "id", "message" }`; `400` if validation fails (e.g. length exceeded).
 
 - **Submit issue report**  
   `POST /api/contact/issue`  
   Headers: `Authorization: Bearer <token>`  
-  Body: `{ "subject", "description" }`  
-  Response: `201` — `{ "success": true, "id", "message" }`
+  Body: `{ "subject", "description" }` (Joi: length limits, trim).  
+  Response: `201` — `{ "success": true, "id", "message" }`; `400` if validation fails.
 
 ---
 
@@ -759,6 +781,8 @@ CAPrep/
 - **Token handling:** JWT access token stored in frontend `localStorage` (key `auth` with token and expires; fallback `token`). Axios request interceptor adds `Authorization: Bearer <token>`. On 401 (e.g. TOKEN_EXPIRED), frontend attempts refresh via POST `/api/auth/refresh-token`; on success retries request; on failure clears token and redirects to login.
 - **Role-based access:** Admin-only routes use `adminMiddleware` after `authMiddleware`; non-admin users receive 403.
 - **Security measures:** Helmet, xss-clean, express-mongo-sanitize; global API rate limit (e.g. 200/15 min per IP); stricter limits on login, send-otp, forgot-password; login attempt tracking per email+IP with block after 5 failures; bcrypt (12 rounds); OTP and reset token hashed (SHA-256) and expiry; CORS allowlist from env (`CORS_ORIGIN`); JWT algorithm and expiry enforced.
+- **Error handling:** Server errors are returned via a shared helper; in production the JSON response does not include error messages or stack traces (they are logged server-side only). Auth and other routes avoid logging PII (e.g. email) in production error logs.
+- **Search safety:** User-provided search strings are escaped before use in MongoDB `$regex` so special regex characters do not change query behavior or cause performance issues.
 
 ---
 
@@ -868,14 +892,22 @@ CAPrep/
 
 ---
 
-## 14. Scalability & Performance Considerations
+## 14. Scalability, Performance & Future Roadmap
 
-- **Caching:** In-memory (node-cache) for GET responses (per user + URL); TTL and pattern-based clear on mutations; admin can clear all cache. Not distributed; for multi-instance backends, consider Redis.
-- **Rate limiting:** Global and per-route limits reduce abuse; login/send-otp/forgot-password have stricter limits.
-- **Pagination:** Questions, resources, users, notifications, audit log, and announcements use limit/skip or equivalent to avoid large responses.
-- **Indexes:** Mongoose schemas define indexes for common filters (subject, examStage, paperType, year, month) and text search where used.
-- **File uploads:** 20MB body limit and multer limit; Cloudinary handles storage and CDN; download can be proxied or URL-returned.
-- **OTP/verified emails:** In-memory with optional file persistence (`database/verified_emails.json`); for horizontal scaling, move to Redis or DB.
+**Scalability & performance**
+
+- **Caching:** In-memory cache (node-cache) for GET routes (e.g. questions list, count, quiz, resources); cache key includes user id and URL; admin can clear cache via POST `/api/admin/clear-cache`. Reduces repeated DB and external calls.
+- **Rate limiting:** Global limit (e.g. 200 requests per 15 min per IP) and stricter limits on auth endpoints (login, send-otp, forgot-password) reduce abuse and burst load.
+- **Database:** Mongoose indexes on frequently filtered fields (subject, examStage, type, validUntil, etc.) and text indexes where search is used; array length caps on user documents (e.g. quizHistory, studyHours) to keep documents bounded.
+- **Search:** User search input is escaped before `$regex` to avoid expensive or malicious regex patterns.
+- **Static assets:** PWA service worker caches same-origin static assets; API responses are not cached by the service worker. Frontend build output can be served via CDN.
+
+**Future roadmap**
+
+- Code-splitting and lazy loading for admin and heavy pages to reduce initial bundle size.
+- Optional Docker and CI configuration for reproducible builds and deployments.
+- Unit and integration tests for critical paths (auth, quiz, contact, admin).
+- Optional Redis or external cache for multi-instance deployments.
 
 ---
 
@@ -917,73 +949,4 @@ Ideas to monetize CAprep using a **freemium** model—free core access with paid
 
 ---
 
-## 16. Future Roadmap
-
-- Extend question year validation and paper types/subjects as per ICAI when new exams are announced.
-- Introduce Redis (or similar) for cache and OTP/verification state when scaling to multiple backend instances.
-- Add unit and integration tests; optional CI (e.g. GitHub Actions) for lint and test.
-- Optional refresh token rotation and stricter token revocation (e.g. blocklist or short-lived refresh tokens).
-- Improve offline support (e.g. cache critical API responses in service worker where appropriate).
-
----
-
-## 17. Contribution Guidelines
-
-- Follow existing code style (ESLint for frontend).
-- For new API routes, use existing middleware (auth, admin, cache) and error response format.
-- For schema changes, consider indexes and backward compatibility; document in README or migrations.
-- Keep `.env` and secrets out of version control; update `.env.example` when adding new variables.
-
----
-
-## 18. Logging
-
-### What is a logger?
-
-A **logger** is a small utility that centralizes how your application writes messages (info, warnings, errors) instead of calling `console.log`, `console.warn`, or `console.error` directly. In this project it lives in `backend/config/logger.js` and exposes four methods: `logger.info()`, `logger.warn()`, `logger.error()`, and `logger.debug()`.
-
-### Why use a logger instead of console?
-
-| Aspect | `console.log` / `console.error` | Logger |
-|--------|---------------------------------|--------|
-| **Consistency** | No standard format; every file can log differently. | Same format everywhere (e.g. `[INFO] 2025-02-14T... - message`). |
-| **Control** | Hard to turn off or filter in production. | You can change `logger.js` once to write to a file, send to a service, or disable debug in production. |
-| **Levels** | No built-in notion of “info” vs “error” vs “debug”. | Clear levels (info, warn, error, debug) so you can filter or redirect by severity. |
-| **Routing** | Output only to stdout/stderr. | Later you can send errors to a log file or external service without changing route code. |
-
-So the logger is used **over** console to keep logging consistent and to make it easy to change where and how logs go (files, services, or filtering by level) without touching every file.
-
-### How to use it in this project
-
-1. **Require the logger** in any backend file (routes, services, middleware, etc.):
-
-   ```js
-   const logger = require('../config/logger');   // from routes/
-   const logger = require('./logger');            // from config/
-   ```
-
-2. **Call one of the four methods with a single string** (the logger accepts one message per call):
-
-   ```js
-   logger.info('Server started on port ' + port);
-   logger.warn('Rate limit approaching for IP: ' + req.ip);
-   logger.error('Database error: ' + (err && err.message));
-   logger.debug('Request body: ' + JSON.stringify(req.body));  // dev only
-   ```
-
-3. **Avoid logging sensitive data** (passwords, full tokens, PII). Prefer short, safe messages (e.g. “Login failed” instead of logging the email).
-
-4. **In catch blocks**, pass a string that includes the error message:
-
-   ```js
-   } catch (error) {
-     logger.error('Operation failed: ' + (error && error.message));
-     res.status(500).json({ error: 'Something went wrong' });
-   }
-   ```
-
-The backend uses this logger in `server.js`, `bootstrap/routes.js`, all route modules, `otpService`, auth/cache middleware, `adminBootstrap`, `config/database.js`, and `utils/auditLog.js`. The implementation in `config/logger.js` currently forwards to `console` with a timestamp and level prefix; you can later replace that with file or external logging without changing the rest of the codebase.
-
----
-
-*This README was generated from a full codebase analysis. For the latest API and env details, refer to the source and `.env.example` files.*
+*This README reflects the current codebase. For the latest API and env details, refer to the source and `.env.example` files.*
