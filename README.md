@@ -425,7 +425,7 @@ sequenceDiagram
     end
 ```
 
-### Request–response flow diagram (compact, half size)
+### Request–response flow diagram (compact)
 
 <div style="width:50%;">
 
