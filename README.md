@@ -257,7 +257,7 @@ flowchart LR
             direction TB
             Landing["Landing, About, Contact Us, FAQ"]
             AuthPages["auth: Login, Register, ForgotPassword, ResetPassword"]
-            AppPages["content: Questions, Quiz, Resources, Dashboard, QuizHistory, DiscussionModal · user: UserProfile, EditProfile, BookmarksPage"]
+            AppPages["content: Questions, Quiz, Resources, Dashboard, QuizHistory, QuizReview, DiscussionModal · user: UserProfile, EditProfile, BookmarksPage"]
             Chat["ChatBotPage"]
             AdminPages["admin: AdminPanel, ResourceUploader, AdminAnnouncements, Analytics, Feature requests, Report issues"]
             LayoutShared["layout: Navbar, Footer · shared: ErrorBoundary, Skeleton, MoreMenu, etc."]
@@ -295,18 +295,18 @@ flowchart LR
             direction TB
             subgraph Row1[" "]
                 direction LR
-                R1["/auth: send-otp, verify-otp, login, register, me, refresh, forgot, reset"]
+                R1["/auth: send-otp, verify-otp, login, register, me, refresh, forgot, verify-reset, reset"]
                 R2["/questions: CRUD admin, list, count, quiz, subjects, batch"]
                 R3["/resources: list, get, rate, CRUD admin, download"]
                 R4["/users: me, bookmarks, quiz-history, profile, folders"]
-                R5["/admin: users, analytics, announcements, audit, contact, cache"]
+                R5["/admin: users, analytics, announcements, audit, contact"]
                 R6["/ai-quiz: generate, ask"]
             end
             subgraph Row2[" "]
                 direction LR
                 R7["/discussions: user/me, messages, like, edit, delete"]
-                R8["/dashboard: data, study-session, views, resource-engagement"]
-                R9["/announcements: GET active"]
+                R8["/dashboard: data, study-session, views, resource-engagement, announcements"]
+                R9["/announcements: GET, dismiss, acknowledge"]
                 R10["/notifications: list, read"]
                 R11["/contact: POST feature, issue"]
             end
@@ -432,78 +432,25 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User
-    participant Page as Page/Component
-    participant Axios as Axios instance
-    participant ApiUtils as apiUtils
+    participant Page as Page
+    participant Axios as Axios
     participant Backend as Express
-    participant AuthMW as authMiddleware
-    participant CacheMW as cacheMiddleware
-    participant Handler as Route handler
-    participant DB as MongoDB
-    participant Ext as Cloudinary/Gemini/SendGrid
+    participant DB as DB / External
 
     User->>Page: Click or navigate
-    Page->>Axios: api.get/post with config
-    Axios->>ApiUtils: getAuthToken from localStorage
-    ApiUtils-->>Axios: token or null
-    Axios->>Axios: Request interceptor add Authorization Bearer
-    Axios->>Backend: HTTP request to /api/...
+    Page->>Axios: api.get/post (Bearer token)
+    Axios->>Backend: HTTP /api/...
 
-    Backend->>Backend: Helmet, xss-clean, mongo-sanitize
-    Backend->>Backend: Rate limit check per IP
-    Backend->>Backend: CORS check origin
-    Backend->>Backend: express.json parse body
-
-    alt Route needs auth
-        Backend->>AuthMW: authMiddleware
-        AuthMW->>AuthMW: Extract Bearer token from header
-        AuthMW->>AuthMW: jwt.verify with JWT_SECRET
-        AuthMW->>DB: User.findById decoded.id
-        DB-->>AuthMW: user doc
-        AuthMW->>Backend: req.user set, next
-    end
-
-    alt GET and cache enabled
-        Backend->>CacheMW: cacheMiddleware
-        CacheMW->>CacheMW: key = userId + originalUrl
-        alt cache hit
-            CacheMW->>Axios: res.send cached body
-            Axios->>Page: response
-            Page->>User: Render UI
-        else cache miss
-            CacheMW->>Backend: next, patch res.send to cache on 2xx
-        end
-    end
-
-    Backend->>Handler: Route handler runs
-    alt Read path
-        Handler->>DB: Model.find, aggregate, etc.
-        DB-->>Handler: documents
-        Handler->>Axios: res.json data
-    else Write path or external
-        Handler->>DB: Model.create, update, delete
-        Handler->>Handler: clearCache for affected keys
-        alt Upload or AI or email
-            Handler->>Ext: Cloudinary upload, Gemini API, SendGrid send
-            Ext-->>Handler: result
-        end
-        Handler->>Axios: res.status 201/200 json
-    end
+    Backend->>Backend: Security, rate limit, CORS, body parse
+    Backend->>Backend: auth/cache if needed, then route handler
+    Backend->>DB: Read or write (MongoDB / Cloudinary / Gemini / SendGrid)
+    DB-->>Backend: result
+    Backend->>Axios: res.json
 
     Axios->>Page: response
     Page->>User: Update UI
 
-    alt Response 401 and not refresh endpoint
-        Axios->>Axios: Response interceptor
-        Axios->>ApiUtils: refreshToken POST /auth/refresh-token
-        alt Refresh success
-            ApiUtils->>ApiUtils: setAuthToken new token
-            Axios->>Backend: Retry request with new token
-        else Refresh fail
-            ApiUtils->>ApiUtils: clearAuthToken
-            Axios->>Page: Navigate to /login
-        end
-    end
+    Note over Axios,Backend: 401 → refresh token or redirect to login
 ```
 
 </div>
@@ -532,12 +479,12 @@ flowchart TB
         direction TB
         subgraph AuthRoutes["auth.js"]
             A1["send-otp, verify-otp<br/>login, register"]
-            A2["me, refresh-token<br/>forgot, verify-reset, reset"]
+            A2["me, refresh-token<br/>forgot-password, verify-reset-otp, reset-password"]
             A1 --> UserModel
             A2 --> UserModel
         end
         subgraph QuestionRoutes["questions.js"]
-            Q1["GET list, count, quiz<br/>batch, available-subjects"]
+            Q1["GET list, count, quiz<br/>batch, available-subjects, all-subjects"]
             Q2["POST PUT DELETE<br/>admin only"]
             Q1 --> QuestionModel
             Q1 --> UserModel
@@ -585,18 +532,18 @@ flowchart TB
             D1 --> UserModel
         end
         subgraph DashboardRoutes["dashboard.js"]
-            DH1["GET dashboard<br/>study-session, views"]
+            DH1["GET dashboard<br/>study-session, resource-engagement, views, announcements"]
             DH1 --> UserModel
             DH1 --> QuestionModel
             DH1 --> ResourceModel
             DH1 --> AnnouncementModel
         end
         subgraph AnnounceRoutes["announcements.js"]
-            AN1["GET active"]
+            AN1["GET, PATCH dismiss, PATCH acknowledge"]
             AN1 --> AnnouncementModel
         end
         subgraph NotifRoutes["notifications.js"]
-            N1["GET list<br/>PATCH read"]
+            N1["GET list<br/>PATCH read-all, PATCH :id/read"]
             N1 --> NotificationModel
         end
     end
