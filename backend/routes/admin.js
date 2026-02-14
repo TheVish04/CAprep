@@ -57,21 +57,9 @@ router.get('/analytics', authMiddleware, adminMiddleware, async (req, res) => {
             { $sort: { count: -1 } }
         ]).hint({ 'quizHistory.date': -1 });
 
-        // 3. Total Donations Received
-        // $group calculates the sum of totalContribution across all users
-        const totalDonationsResult = await User.aggregate([
-            { $group: {
-                _id: null, // Group all users together
-                total: { $sum: '$totalContribution' }
-            }}
-        ]);
-        const totalDonations = totalDonationsResult.length > 0 ? totalDonationsResult[0].total : 0;
-
-        // Combine results
         const analytics = {
             topDownloadedResources: topResources,
-            quizzesTakenPerSubject: quizzesPerSubject,
-            totalDonationsReceived: totalDonations
+            quizzesTakenPerSubject: quizzesPerSubject
         };
 
         res.json(analytics);

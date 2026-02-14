@@ -106,11 +106,6 @@ const AdminAnalytics = () => {
         <div className="admin-analytics-container">
             <h2>Platform Analytics</h2>
 
-            <div className="analytics-card donations-card">
-                <h3>Total Donations Received</h3>
-                <p className="donation-amount">₹{analytics.totalDonationsReceived?.toFixed(2) || '0.00'}</p>
-            </div>
-
             <div className="analytics-card quizzes-card">
                 <h3>Quizzes Taken Per Subject</h3>
                 {analytics.quizzesTakenPerSubject?.length > 0 ? (
