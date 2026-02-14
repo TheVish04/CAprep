@@ -22,7 +22,7 @@
 
 .navbar-logo {
   color: #239ecf;
-  font-size: 1.8rem;
+  font-size: 2.05rem;
   font-weight: 700;
   text-decoration: none;
   display: flex;
@@ -38,7 +38,7 @@
 
 .nav-link {
   color: #b0b0b0;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 500;
   text-decoration: none;
   padding: 0.5rem 0;
@@ -74,7 +74,7 @@
   border: none;
   padding: 10px 18px;
   border-radius: 50px;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -165,7 +165,7 @@
   padding: 0.5rem 1rem;
   color: #b0b0b0;
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   transition: background 0.15s, color 0.15s;
 }
 
