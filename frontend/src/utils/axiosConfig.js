@@ -22,6 +22,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    // FormData must use multipart/form-data with boundary - remove Content-Type so browser sets it
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     if (process.env.NODE_ENV === 'development') {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     }
