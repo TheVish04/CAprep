@@ -9,8 +9,20 @@ const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNavDropdownOpen, setIsNavDropdownOpen] = useState(false);
+  const navDropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (navDropdownRef.current && !navDropdownRef.current.contains(e.target)) {
+        setIsNavDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
 
 
@@ -83,104 +95,45 @@ const Navbar = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <motion.li 
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link to="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-              Home
-            </Link>
-          </motion.li>
-          
-          <motion.li 
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link to="/about" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-              About
-            </Link>
-          </motion.li>
-          
-          <motion.li 
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link to="/contactus" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-              Contact Us
-            </Link>
-          </motion.li>
-          
+          {/* Desktop: single "Menu" dropdown for all page links */}
+          <li className="nav-dropdown-wrap" ref={navDropdownRef}>
+            <button
+              type="button"
+              className="nav-dropdown-trigger"
+              onClick={() => setIsNavDropdownOpen(!isNavDropdownOpen)}
+              aria-expanded={isNavDropdownOpen}
+              aria-haspopup="true"
+            >
+              Menu
+              <svg className={`nav-dropdown-chevron ${isNavDropdownOpen ? 'open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            <ul className={`nav-dropdown-menu ${isNavDropdownOpen ? 'open' : ''}`}>
+              <li><Link to="/" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Home</Link></li>
+              <li><Link to="/about" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>About</Link></li>
+              <li><Link to="/contactus" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Contact Us</Link></li>
+              {isLoggedIn && (
+                <>
+                  <li><Link to="/questions" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Questions</Link></li>
+                  <li><Link to="/quiz" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Quiz</Link></li>
+                  <li><Link to="/resources" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Resources</Link></li>
+                  <li><Link to="/dashboard" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Dashboard</Link></li>
+                  <li><Link to="/profile" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Profile</Link></li>
+                  {isAdmin && (
+                    <li><Link to="/admin" className="nav-dropdown-link" onClick={() => { setIsNavDropdownOpen(false); setIsMenuOpen(false); }}>Admin</Link></li>
+                  )}
+                </>
+              )}
+            </ul>
+          </li>
+
           {isLoggedIn ? (
             <>
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/questions" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Questions
-                </Link>
-              </motion.li>
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/quiz" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Quiz
-                </Link>
-              </motion.li>
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/resources" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Resources
-                </Link>
-              </motion.li>
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/dashboard" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Dashboard
-                </Link>
-              </motion.li>
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Profile
-                </Link>
-              </motion.li>
-
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="nav-item notifications-nav-item"
-              >
+              <motion.li className="nav-item notifications-nav-item" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                 <NotificationsDropdown />
               </motion.li>
-              
-              {isAdmin && (
-                <motion.li 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Link to="/admin" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                    Admin
-                  </Link>
-                </motion.li>
-              )}
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="nav-item chat-nav-item"
-              >
+              <motion.li className="nav-item chat-nav-item" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                 <Link to="/chat" className="nav-link chat-link" onClick={() => setIsMenuOpen(false)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="12" rx="2" ry="2"></rect>
@@ -193,43 +146,19 @@ const Navbar = () => {
                   Chat
                 </Link>
               </motion.li>
-              
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <button onClick={handleLogout} className="nav-button logout-btn">
-                  Logout
-                </button>
+              <motion.li whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                <button onClick={handleLogout} className="nav-button logout-btn">Logout</button>
               </motion.li>
             </>
           ) : (
             <>
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/login" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Login
-                </Link>
+              <motion.li whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                <Link to="/login" className="nav-link" onClick={() => setIsMenuOpen(false)}>Login</Link>
               </motion.li>
-
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/register" className="nav-button register-btn" onClick={() => setIsMenuOpen(false)}>
-                  Register
-                </Link>
+              <motion.li whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                <Link to="/register" className="nav-button register-btn" onClick={() => setIsMenuOpen(false)}>Register</Link>
               </motion.li>
-
-
-
-              <motion.li 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="nav-item chat-nav-item"
-              >
+              <motion.li className="nav-item chat-nav-item" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                 <Link to="/chat" className="nav-link chat-link" onClick={() => setIsMenuOpen(false)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="12" rx="2" ry="2"></rect>
