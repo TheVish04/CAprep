@@ -359,9 +359,9 @@ section {
   margin-bottom: 20px;
 }
 
-.foundation-icon::before { content: '🔍'; }
+/* .foundation-icon::before { content: '🔍'; }
 .intermediate-icon::before { content: '📚'; }
-.final-icon::before { content: '🏆'; }
+.final-icon::before { content: '🏆'; } */
 
 .level-card h3 {
   font-size: 1.8rem;
