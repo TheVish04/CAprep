@@ -1,0 +1,45 @@
+/* Skeleton loading effect - dark theme shimmer */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #2a2a2a 0%,
+    #3a3a3a 50%,
+    #2a2a2a 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Page-level skeleton containers */
+.skeleton-questions-list,
+.skeleton-resources-list,
+.skeleton-dashboard {
+  width: 100%;
+}
+
+.skeleton-questions-list .skeleton-item,
+.skeleton-resources-list .skeleton-item {
+  margin-bottom: 16px;
+}
+
+.skeleton-dashboard .skeleton-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.skeleton-dashboard .skeleton-card {
+  flex: 1;
+  min-width: 200px;
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../layout/Navbar';
+import { ResourcesListSkeleton } from '../shared/Skeleton';
 import './Resources.css';
 import axios from 'axios';
 import apiUtils from '../../utils/apiUtils';
@@ -368,7 +369,7 @@ const Resources = () => {
         <div className="resources-container">
           <h1>Study Resources</h1>
           
-          {loading && <div className="loading-indicator">Loading resources...</div>}
+          {loading && <ResourcesListSkeleton />}
           {error && <div className="error"><p>Error: {error}</p></div>}
 
           <div className="resources-actions">
