@@ -11,6 +11,44 @@
     color: var(--primary-color, #03a9f4);
 }
 
+.analytics-summary-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.analytics-summary-card {
+    background-color: var(--card-bg-color, #333);
+    padding: 1.25rem 1rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color, #444);
+}
+
+.analytics-summary-value {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-color, #03a9f4);
+    line-height: 1.2;
+}
+
+.analytics-summary-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-color-secondary, #aaa);
+    margin-top: 4px;
+}
+
+.analytics-summary-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-color-secondary, #888);
+    margin-top: 6px;
+}
+
 .analytics-card {
     background-color: var(--card-bg-color, #333);
     padding: 1.5rem;

@@ -90,6 +90,30 @@ const AdminAnalytics = () => {
         }],
     };
 
+    const resourcesBySubject = analytics.resourcesBySubject || [];
+    const resourcesBySubjectData = {
+        labels: resourcesBySubject.map((r) => r._id || 'Unknown'),
+        datasets: [{
+            label: 'Resources',
+            data: resourcesBySubject.map((r) => r.count),
+            backgroundColor: resourcesBySubject.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+            borderColor: CHART_COLORS.map((c) => c.replace('0.8', '1')),
+            borderWidth: 1,
+        }],
+    };
+
+    const questionsBySubject = analytics.questionsBySubject || [];
+    const questionsBySubjectData = {
+        labels: questionsBySubject.map((q) => q._id || 'Unknown'),
+        datasets: [{
+            label: 'Questions',
+            data: questionsBySubject.map((q) => q.count),
+            backgroundColor: questionsBySubject.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+            borderColor: CHART_COLORS.map((c) => c.replace('0.8', '1')),
+            borderWidth: 1,
+        }],
+    };
+
     const quizzesChartOptions = {
         ...chartOptions,
         indexAxis: 'y',
@@ -102,9 +126,47 @@ const AdminAnalytics = () => {
         plugins: { ...chartOptions.plugins, title: { display: true, text: 'Top resources by downloads', color: '#aaa' } },
     };
 
+    const barChartOptions = {
+        ...chartOptions,
+        indexAxis: 'x',
+        plugins: { ...chartOptions.plugins, title: { display: false } },
+    };
+
+    const usersByRole = analytics.usersByRole || {};
+    const adminCount = usersByRole.admin ?? 0;
+    const userCount = analytics.totalUsers != null ? analytics.totalUsers - adminCount : 0;
+
     return (
         <div className="admin-analytics-container">
             <h2>Platform Analytics</h2>
+
+            <div className="analytics-summary-row">
+                <div className="analytics-summary-card">
+                    <span className="analytics-summary-value">{analytics.totalUsers ?? 0}</span>
+                    <span className="analytics-summary-label">Total users</span>
+                    <span className="analytics-summary-meta">{userCount} users, {adminCount} admins</span>
+                </div>
+                <div className="analytics-summary-card">
+                    <span className="analytics-summary-value">{analytics.newUsersLast30Days ?? 0}</span>
+                    <span className="analytics-summary-label">New users (30 days)</span>
+                </div>
+                <div className="analytics-summary-card">
+                    <span className="analytics-summary-value">{analytics.totalQuizAttempts ?? 0}</span>
+                    <span className="analytics-summary-label">Total quiz attempts</span>
+                </div>
+                <div className="analytics-summary-card">
+                    <span className="analytics-summary-value">{analytics.totalResources ?? 0}</span>
+                    <span className="analytics-summary-label">Resources</span>
+                </div>
+                <div className="analytics-summary-card">
+                    <span className="analytics-summary-value">{analytics.totalQuestions ?? 0}</span>
+                    <span className="analytics-summary-label">Questions</span>
+                </div>
+                <div className="analytics-summary-card">
+                    <span className="analytics-summary-value">{analytics.totalDiscussions ?? 0}</span>
+                    <span className="analytics-summary-label">Discussions</span>
+                </div>
+            </div>
 
             <div className="analytics-card quizzes-card">
                 <h3>Quizzes Taken Per Subject</h3>
@@ -125,6 +187,28 @@ const AdminAnalytics = () => {
                     </div>
                 ) : (
                     <p>No resource download data available.</p>
+                )}
+            </div>
+
+            <div className="analytics-card">
+                <h3>Resources by Subject</h3>
+                {resourcesBySubject.length > 0 ? (
+                    <div className="admin-analytics-chart">
+                        <Bar data={resourcesBySubjectData} options={barChartOptions} />
+                    </div>
+                ) : (
+                    <p>No resource data by subject.</p>
+                )}
+            </div>
+
+            <div className="analytics-card">
+                <h3>Questions by Subject</h3>
+                {questionsBySubject.length > 0 ? (
+                    <div className="admin-analytics-chart">
+                        <Bar data={questionsBySubjectData} options={barChartOptions} />
+                    </div>
+                ) : (
+                    <p>No question data by subject.</p>
                 )}
             </div>
         </div>

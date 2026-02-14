@@ -3,6 +3,8 @@ const router = express.Router();
 const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
 const User = require('../models/UserModel');
 const Resource = require('../models/ResourceModel');
+const Question = require('../models/QuestionModel');
+const Discussion = require('../models/DiscussionModel');
 const Announcement = require('../models/AnnouncementModel');
 const AuditLog = require('../models/AuditLogModel');
 const Notification = require('../models/NotificationModel');
@@ -38,28 +40,64 @@ router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
 // GET /api/admin/analytics - Fetch aggregated analytics data
 router.get('/analytics', authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        // 1. Most Downloaded Resources (Top 10)
-        const topResources = await Resource.find({ downloadCount: { $gt: 0 } })
-                                            .sort({ downloadCount: -1 })
-                                            .limit(10)
-                                            .select('title downloadCount'); // Select only needed fields
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-        // 2. Quizzes Taken Per Subject
-        // $unwind breaks the quizHistory array into individual documents
-        // $group groups them by subject and counts
-        // $sort sorts by count descending
-        const quizzesPerSubject = await User.aggregate([
-            { $unwind: '$quizHistory' },
-            { $group: { 
-                _id: '$quizHistory.subject',
-                count: { $sum: 1 }
-            }},
-            { $sort: { count: -1 } }
-        ]).hint({ 'quizHistory.date': -1 });
+        const [
+            topResources,
+            quizzesPerSubject,
+            totalUsers,
+            usersByRole,
+            totalResources,
+            totalQuestions,
+            totalDiscussions,
+            totalQuizAttemptsResult,
+            newUsersLast30Days,
+            resourcesBySubject,
+            questionsBySubject
+        ] = await Promise.all([
+            Resource.find({ downloadCount: { $gt: 0 } })
+                .sort({ downloadCount: -1 })
+                .limit(10)
+                .select('title downloadCount'),
+            User.aggregate([
+                { $unwind: '$quizHistory' },
+                { $group: { _id: '$quizHistory.subject', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ]).hint({ 'quizHistory.date': -1 }),
+            User.countDocuments({}),
+            User.aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }]),
+            Resource.countDocuments({}),
+            Question.countDocuments({}),
+            Discussion.countDocuments({}),
+            User.aggregate([
+                { $project: { count: { $size: { $ifNull: ['$quizHistory', []] } } } },
+                { $group: { _id: null, total: { $sum: '$count' } } }
+            ]),
+            User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+            Resource.aggregate([
+                { $group: { _id: '$subject', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ]),
+            Question.aggregate([
+                { $group: { _id: '$subject', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ])
+        ]);
+
+        const totalQuizAttempts = totalQuizAttemptsResult[0]?.total ?? 0;
 
         const analytics = {
             topDownloadedResources: topResources,
-            quizzesTakenPerSubject: quizzesPerSubject
+            quizzesTakenPerSubject: quizzesPerSubject,
+            totalUsers,
+            usersByRole: usersByRole.reduce((acc, r) => ({ ...acc, [r._id]: r.count }), {}),
+            totalResources,
+            totalQuestions,
+            totalDiscussions,
+            totalQuizAttempts,
+            newUsersLast30Days,
+            resourcesBySubject,
+            questionsBySubject
         };
 
         res.json(analytics);
