@@ -1,5 +1,11 @@
 const Joi = require('joi');
 
+// Allow question years from 2023 through current year + 1 (e.g. 2026 when current is 2025)
+const currentYear = new Date().getFullYear();
+const minYear = 2023;
+const maxYear = currentYear + 1;
+const allowedYears = Array.from({ length: maxYear - minYear + 1 }, (_, i) => String(minYear + i));
+
 /**
  * Joi schema for question validation (create and update).
  * Subject values depend on examStage: Foundation, Intermediate, or Final.
@@ -36,7 +42,7 @@ const questionSchema = Joi.object({
       })
     }),
   paperType: Joi.string().required().valid('MTP', 'RTP', 'PYQS', 'Model TP'),
-  year: Joi.string().required().valid('2025', '2024', '2023'),
+  year: Joi.string().required().valid(...allowedYears),
   month: Joi.string().required().valid(
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'

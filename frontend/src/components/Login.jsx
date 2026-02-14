@@ -74,9 +74,15 @@ const Login = () => {
       console.log('Login response received:', response.status);
       
       if (response.data && response.data.token) {
-        const { token, expires, user } = response.data;
+        const { token, expires, user, refreshToken, refreshExpires } = response.data;
         // Store auth object for token refresh flow (apiUtils + axios interceptor)
-        apiUtils.setAuthToken({ token, expires, user });
+        apiUtils.setAuthToken({
+          token,
+          expires,
+          user,
+          ...(refreshToken && { refreshToken }),
+          ...(refreshExpires && { refreshExpires })
+        });
         const role = user?.role ?? (() => {
           const parts = token.split('.');
           if (parts.length !== 3) return 'user';

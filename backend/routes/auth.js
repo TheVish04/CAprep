@@ -304,7 +304,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn }
+      { expiresIn, algorithm: 'HS256' }
     );
 
     // Compute expiry time for client (for token refresh flow)
@@ -316,10 +316,30 @@ router.post('/login', loginLimiter, async (req, res) => {
       : 24 * 60 * 60;
     expiry.setSeconds(expiry.getSeconds() + expirySeconds);
 
+    // Optional: issue refresh token when JWT_REFRESH_SECRET is set (rotation support)
+    let refreshToken = null;
+    let refreshExpires = null;
+    if (process.env.JWT_REFRESH_SECRET && process.env.JWT_REFRESH_EXPIRES_IN) {
+      const refreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
+      refreshToken = jwt.sign(
+        { id: user._id, type: 'refresh' },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: refreshExpiresIn, algorithm: 'HS256' }
+      );
+      const refExpiry = new Date();
+      const refSeconds = typeof refreshExpiresIn === 'string' && refreshExpiresIn.endsWith('d')
+        ? parseInt(refreshExpiresIn, 10) * 24 * 60 * 60
+        : typeof refreshExpiresIn === 'string' && refreshExpiresIn.endsWith('h')
+        ? parseInt(refreshExpiresIn, 10) * 60 * 60
+        : 7 * 24 * 60 * 60;
+      refExpiry.setSeconds(refExpiry.getSeconds() + refSeconds);
+      refreshExpires = refExpiry.toISOString();
+    }
+
     console.log(`Login successful for user: ${email}`);
     
-    // Send response (include expires for frontend token refresh)
-    res.status(200).json({
+    // Send response (include expires and optional refreshToken for rotation)
+    const payload = {
       message: 'Login successful',
       token,
       expires: expiry.toISOString(),
@@ -329,7 +349,12 @@ router.post('/login', loginLimiter, async (req, res) => {
         email: user.email,
         role: user.role
       }
-    });
+    };
+    if (refreshToken) {
+      payload.refreshToken = refreshToken;
+      payload.refreshExpires = refreshExpires;
+    }
+    res.status(200).json(payload);
   } catch (error) {
     // Extract email from request body first
     const { email } = req.body;
@@ -440,6 +465,7 @@ router.post('/register', async (req, res) => {
     });
     
     // Create token
+    const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
     const token = jwt.sign(
       { 
         id: user._id, 
@@ -448,25 +474,38 @@ router.post('/register', async (req, res) => {
         email: user.email
       },
       process.env.JWT_SECRET,
-      { 
-        expiresIn: process.env.JWT_EXPIRES_IN || '1d',
-        algorithm: 'HS256'
-      }
+      { expiresIn, algorithm: 'HS256' }
     );
     
-    // Calculate expiry time for client
-    const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
     const expiry = new Date();
     const expirySeconds = typeof expiresIn === 'string' && expiresIn.endsWith('d')
       ? parseInt(expiresIn) * 24 * 60 * 60 
       : typeof expiresIn === 'string' && expiresIn.endsWith('h')
       ? parseInt(expiresIn) * 60 * 60
-      : 24 * 60 * 60; // Default 1 day
-    
+      : 24 * 60 * 60;
     expiry.setSeconds(expiry.getSeconds() + expirySeconds);
+
+    // Optional: issue refresh token when JWT_REFRESH_SECRET is set
+    let refreshToken = null;
+    let refreshExpires = null;
+    if (process.env.JWT_REFRESH_SECRET && process.env.JWT_REFRESH_EXPIRES_IN) {
+      const refreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
+      refreshToken = jwt.sign(
+        { id: user._id, type: 'refresh' },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: refreshExpiresIn, algorithm: 'HS256' }
+      );
+      const refExpiry = new Date();
+      const refSeconds = typeof refreshExpiresIn === 'string' && refreshExpiresIn.endsWith('d')
+        ? parseInt(refreshExpiresIn, 10) * 24 * 60 * 60
+        : typeof refreshExpiresIn === 'string' && refreshExpiresIn.endsWith('h')
+        ? parseInt(refreshExpiresIn, 10) * 60 * 60
+        : 7 * 24 * 60 * 60;
+      refExpiry.setSeconds(refExpiry.getSeconds() + refSeconds);
+      refreshExpires = refExpiry.toISOString();
+    }
     
-    // Return success with user data
-    res.status(201).json({
+    const payload = {
       token,
       expires: expiry.toISOString(),
       user: {
@@ -476,7 +515,12 @@ router.post('/register', async (req, res) => {
         role: user.role
       },
       message: 'Registration successful'
-    });
+    };
+    if (refreshToken) {
+      payload.refreshToken = refreshToken;
+      payload.refreshExpires = refreshExpires;
+    }
+    res.status(201).json(payload);
     
   } catch (error) {
     console.error('Registration error:', error);
@@ -512,71 +556,110 @@ res.status(500).json({ error: 'Failed to fetch user info', details: error.messag
 });
 
 /**
- * Refresh token endpoint
- * Issues a new token if the current one is valid but approaching expiration
+ * Helper: issue access token and optional refresh token for a user
  */
-router.post('/refresh-token', authMiddleware, async (req, res) => {
+function issueTokens(user) {
+  const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
+  const token = jwt.sign(
+    { id: user._id, role: user.role, fullName: user.fullName, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn, algorithm: 'HS256' }
+  );
+  const expiry = new Date();
+  const expirySeconds = typeof expiresIn === 'string' && expiresIn.endsWith('d')
+    ? parseInt(expiresIn, 10) * 24 * 60 * 60
+    : typeof expiresIn === 'string' && expiresIn.endsWith('h')
+    ? parseInt(expiresIn, 10) * 60 * 60
+    : 24 * 60 * 60;
+  expiry.setSeconds(expiry.getSeconds() + expirySeconds);
+
+  const payload = {
+    token,
+    expires: expiry.toISOString(),
+    user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role }
+  };
+
+  if (process.env.JWT_REFRESH_SECRET && process.env.JWT_REFRESH_EXPIRES_IN) {
+    const refreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
+    payload.refreshToken = jwt.sign(
+      { id: user._id, type: 'refresh' },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: refreshExpiresIn, algorithm: 'HS256' }
+    );
+    const refExpiry = new Date();
+    const refSeconds = typeof refreshExpiresIn === 'string' && refreshExpiresIn.endsWith('d')
+      ? parseInt(refreshExpiresIn, 10) * 24 * 60 * 60
+      : typeof refreshExpiresIn === 'string' && refreshExpiresIn.endsWith('h')
+      ? parseInt(refreshExpiresIn, 10) * 60 * 60
+      : 7 * 24 * 60 * 60;
+    refExpiry.setSeconds(refExpiry.getSeconds() + refSeconds);
+    payload.refreshExpires = refExpiry.toISOString();
+  }
+  return payload;
+}
+
+/**
+ * Refresh token endpoint
+ * - If body.refreshToken and JWT_REFRESH_SECRET: verify refresh token and issue new access (and new refresh).
+ * - Else if Authorization Bearer: verify access token (allow expired) and issue new access (and optional refresh).
+ */
+router.post('/refresh-token', async (req, res) => {
   try {
-    // User is already authenticated via authMiddleware
-    const userId = req.user.id;
-    
-    // Fetch latest user data to ensure it's current
-    const user = await User.findById(userId);
+    let user = null;
+
+    // 1) Refresh token in body (when JWT_REFRESH_SECRET is set)
+    const refreshTokenFromBody = req.body?.refreshToken;
+    if (refreshTokenFromBody && process.env.JWT_REFRESH_SECRET) {
+      try {
+        const decoded = jwt.verify(refreshTokenFromBody, process.env.JWT_REFRESH_SECRET, {
+          algorithms: ['HS256']
+        });
+        if (decoded.type === 'refresh' && decoded.id) {
+          user = await User.findById(decoded.id);
+        }
+      } catch (e) {
+        return res.status(401).json({
+          error: 'Invalid or expired refresh token',
+          code: 'INVALID_REFRESH_TOKEN'
+        });
+      }
+    }
+
+    // 2) Fallback: Bearer access token (allow expired so client can refresh)
     if (!user) {
-      return res.status(401).json({ 
-        error: 'User not found',
-        code: 'USER_NOT_FOUND'
+      const authHeader = req.headers['authorization'];
+      const bearer = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      if (bearer) {
+        try {
+          const decoded = jwt.verify(bearer, process.env.JWT_SECRET, {
+            algorithms: ['HS256'],
+            ignoreExpiration: true
+          });
+          if (decoded.id) {
+            user = await User.findById(decoded.id);
+          }
+        } catch (e) {
+          return res.status(401).json({
+            error: 'Invalid token',
+            code: 'INVALID_TOKEN'
+          });
+        }
+      }
+    }
+
+    if (!user) {
+      return res.status(401).json({
+        error: 'Refresh token or valid access token required',
+        code: 'AUTH_REQUIRED'
       });
     }
-    
-    // Create a new token
-    const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
-    const token = jwt.sign(
-      { 
-        id: user._id, 
-        role: user.role, 
-        fullName: user.fullName,
-        email: user.email
-      },
-      process.env.JWT_SECRET,
-      { 
-        expiresIn,
-        algorithm: 'HS256'
-      }
-    );
-    
-    // Calculate expiry time for client
-    const expiry = new Date();
-    const expirySeconds = typeof expiresIn === 'string' && expiresIn.endsWith('d')
-      ? parseInt(expiresIn) * 24 * 60 * 60
-      : typeof expiresIn === 'string' && expiresIn.endsWith('h')
-      ? parseInt(expiresIn) * 60 * 60
-      : 24 * 60 * 60; // Default 1 day
-    
-    expiry.setSeconds(expiry.getSeconds() + expirySeconds);
-    
-    // Log token refresh for security auditing
-    console.log('Token refreshed:', {
-      userId: user._id,
-      ip: req.ip,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Return the new token and user information
-    return res.json({
-      token,
-      expires: expiry.toISOString(),
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role
-      }
-    });
-    
+
+    const payload = issueTokens(user);
+    console.log('Token refreshed:', { userId: user._id, ip: req.ip, timestamp: new Date().toISOString() });
+    return res.json(payload);
   } catch (error) {
     console.error('Token refresh error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to refresh token',
       code: 'REFRESH_ERROR'
     });

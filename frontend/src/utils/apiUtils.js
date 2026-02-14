@@ -51,7 +51,7 @@ const apiUtils = {
       console.error('Invalid auth data provided');
       return;
     }
-    
+    // Persist token, expires, user, and optional refreshToken/refreshExpires
     localStorage.setItem('auth', JSON.stringify(authData));
   },
   
@@ -142,28 +142,46 @@ const apiUtils = {
    * Refresh the authentication token
    * @returns {Promise<boolean>} True if successful, false otherwise
    */
-  refreshToken: async () => {
-    // Don't attempt refresh if no token exists
-    if (!apiUtils.getAuthToken()) return false;
-    
+  getRefreshToken: () => {
+    const authData = localStorage.getItem('auth');
+    if (!authData) return null;
     try {
-      const apiUrl = apiUtils.getApiBaseUrl();
-      const url = `${apiUrl}/auth/refresh-token`;
-      
-      const response = await axios.post(url, {}, {
-        headers: apiUtils.getHeaders(),
+      const parsed = JSON.parse(authData);
+      return parsed.refreshToken || null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  refreshToken: async () => {
+    const apiUrl = apiUtils.getApiBaseUrl();
+    const url = `${apiUrl}/auth/refresh-token`;
+    const accessToken = apiUtils.getAuthToken();
+    const refreshToken = apiUtils.getRefreshToken();
+
+    // Prefer refresh token in body when available (allows refresh when access token is expired)
+    const body = refreshToken ? { refreshToken } : {};
+    const headers = accessToken ? apiUtils.getHeaders() : { 'Content-Type': 'application/json' };
+
+    try {
+      const response = await axios.post(url, body, {
+        headers,
         timeout: 10000
       });
-      
-      // Update token in localStorage
-      const { token, expires, user } = response.data;
-      apiUtils.setAuthToken({ token, expires, user });
-      
+
+      const { token, expires, user, refreshToken: newRefresh, refreshExpires } = response.data;
+      apiUtils.setAuthToken({
+        token,
+        expires,
+        user,
+        ...(newRefresh && { refreshToken: newRefresh }),
+        ...(refreshExpires && { refreshExpires })
+      });
+
       console.log('Token refreshed successfully');
       return true;
     } catch (error) {
       console.error('Failed to refresh token:', error);
-      // If refresh fails due to auth issues, clear the token
       if (error.response && error.response.status === 401) {
         apiUtils.clearAuthToken();
       }

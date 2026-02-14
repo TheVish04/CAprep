@@ -847,18 +847,16 @@ CAPrep/
 ## 15. Limitations
 
 - Single backend process: in-memory cache and OTP/verified-email state are not shared across instances.
-- No refresh token rotation: only access token refresh is implemented; refresh token secret/env is optional and not used in code paths.
-- Question validator year: Joi allows only 2023–2025; extend when new years are needed.
-- Resource model: `resourceType` is set in code on create but is not defined on Resource schema; dashboard uses `resourceType || 'PDF'` (see Observations).
+- Refresh token rotation: when `JWT_REFRESH_SECRET` and `JWT_REFRESH_EXPIRES_IN` are set, login/register issue a refresh token and `/auth/refresh-token` accepts it in the request body to issue new access (and new refresh) tokens; otherwise only access-token refresh (with Bearer) is used.
+- Question validator year: Joi allows 2023 through current year + 1 (updated dynamically).
 - No automated tests or CI/CD in the repository.
-- PWA service worker does not cache API; offline support is limited to static assets.
+- PWA service worker caches selected GET APIs (questions, resources, dashboard, announcements) with network-first and cache fallback for offline; other API calls are not cached.
 
 ---
 
 ## 16. Future Roadmap
 
-- Add `resourceType` to Resource schema and ensure it is persisted and used consistently.
-- Extend question year validation (e.g. 2026+) and paper types/subjects as per ICAI.
+- Extend question year validation and paper types/subjects as per ICAI when new exams are announced.
 - Introduce Redis (or similar) for cache and OTP/verification state when scaling to multiple backend instances.
 - Add unit and integration tests; optional CI (e.g. GitHub Actions) for lint and test.
 - Optional refresh token rotation and stricter token revocation (e.g. blocklist or short-lived refresh tokens).
@@ -877,12 +875,12 @@ CAPrep/
 
 ## 18. Observations
 
-- **resourceType:** Backend sets `resourceType: 'pdf'` when creating a resource in `routes/resources.js`, but `ResourceModel.js` does not define a `resourceType` field. With Mongoose’s default strict mode, this field may not be persisted. The dashboard and dashboard route reference `resourceType` (with fallback `'PDF'`). Adding `resourceType` to the Resource schema is recommended for consistency.
+- **(Removed)** Resource schema now includes `resourceType`; no longer a limitation. With Mongoose’s default strict mode, this field may not be persisted. The dashboard and dashboard route reference `resourceType` (with fallback `'PDF'`). Adding `resourceType` to the Resource schema is recommended for consistency.
 - **Policy pages:** App comments mention “Policy page routes removed”; no policy routes or components are present.
 - **Logger:** `config/logger.js` is a thin wrapper around console; not all routes use it (some use `console.log`/`console.error` directly).
 - **Analytics “donations”:** Admin analytics uses `totalContribution` from users; there is no payment or donation flow in the codebase, so this may be a placeholder for future use.
 - **Audit log:** Written on admin announcement create/update/delete; other admin actions (e.g. question/resource CRUD) do not write to AuditLog.
-- **verified_emails.json:** Stored under `backend/database/`; directory is in `.gitignore`; ensure directory exists or create it in bootstrap if using file persistence for OTP verification.
+- **verified_emails.json:** Stored under `backend/database/`; directory is in `.gitignore`; the server creates the directory at startup if it does not exist.
 
 ---
 

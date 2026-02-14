@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const connectDB = require('./config/database');
 const User = require('./models/UserModel');
 const Question = require('./models/QuestionModel');
@@ -100,6 +102,13 @@ if (process.env.NODE_ENV === 'development') {
 // Initialize database and models before setting up routes
 const initializeDatabase = async () => {
   try {
+    // Ensure database directory exists (for verified_emails.json and other file persistence)
+    const databaseDir = path.join(__dirname, 'database');
+    if (!fs.existsSync(databaseDir)) {
+      fs.mkdirSync(databaseDir, { recursive: true });
+      console.log('Created database directory for file persistence');
+    }
+
     // Connect to MongoDB
     const conn = await connectDB();
     console.log('Database connection established successfully');
@@ -318,6 +327,3 @@ const startServer = async () => {
 
 // Start the server
 startServer();
-
-// Export the app for testing
-module.exports = app;

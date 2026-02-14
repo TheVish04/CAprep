@@ -272,8 +272,14 @@ const Register = () => {
       
       // Auto-login: use token from response and navigate to dashboard
       if (response.data?.token) {
-        const { token, expires, user } = response.data;
-        apiUtils.setAuthToken({ token, expires, user });
+        const { token, expires, user, refreshToken, refreshExpires } = response.data;
+        apiUtils.setAuthToken({
+          token,
+          expires,
+          user,
+          ...(refreshToken && { refreshToken }),
+          ...(refreshExpires && { refreshExpires })
+        });
         const role = user?.role ?? 'user';
         navigate(role === 'admin' ? '/admin' : '/dashboard', { replace: true });
       } else {

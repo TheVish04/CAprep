@@ -18,7 +18,10 @@ self.addEventListener('activate', (event) => {
 function isCacheableApiRequest(request, url) {
   const path = url.pathname;
   return request.method === 'GET' && (
-    path.includes('/api/questions') || path.includes('/api/resources')
+    path.includes('/api/questions') ||
+    path.includes('/api/resources') ||
+    path.includes('/api/dashboard') ||
+    path.includes('/api/announcements')
   );
 }
 
