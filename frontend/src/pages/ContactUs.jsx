@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import { Link } from 'react-router-dom';
+import apiUtils from '../utils/apiUtils';
 import './Content.css';
 
 const ContactUs = () => {
@@ -30,7 +31,7 @@ const ContactUs = () => {
     setFeatureData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleReportSubmit = (e) => {
+  const handleReportSubmit = async (e) => {
     e.preventDefault();
     
     if (!reportData.name || !reportData.email || !reportData.subject || !reportData.description) {
@@ -38,17 +39,27 @@ const ContactUs = () => {
       return;
     }
 
-    const mailtoLink = `mailto:caprep8@gmail.com?subject=${encodeURIComponent(`Issue Report: ${reportData.subject}`)}&body=${encodeURIComponent(
-      `Name: ${reportData.name}\nEmail: ${reportData.email}\n\nDescription:\n${reportData.description}`
-    )}`;
-
-    window.location.href = mailtoLink;
-    
-    setReportData({ name: '', email: '', subject: '', description: '' });
-    setSubmitStatus({ type: 'success', message: 'Thank you! Your email client should have opened to send your report.' });
+    setSubmitStatus({ type: '', message: '' });
+    try {
+      const baseUrl = apiUtils.getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/contact/issue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reportData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setReportData({ name: '', email: '', subject: '', description: '' });
+        setSubmitStatus({ type: 'success', message: 'Thank you! Your issue report has been submitted.' });
+      } else {
+        setSubmitStatus({ type: 'error', message: data.error || data.message || 'Failed to submit. Please try again.' });
+      }
+    } catch (err) {
+      setSubmitStatus({ type: 'error', message: 'Unable to submit. Please check your connection and try again.' });
+    }
   };
 
-  const handleFeatureSubmit = (e) => {
+  const handleFeatureSubmit = async (e) => {
     e.preventDefault();
 
     if (!featureData.name || !featureData.email || !featureData.featureTitle || !featureData.description) {
@@ -56,14 +67,24 @@ const ContactUs = () => {
       return;
     }
 
-    const categoryLine = featureData.category ? `Category: ${featureData.category}\n\n` : '';
-    const body = `Name: ${featureData.name}\nEmail: ${featureData.email}\n\n${categoryLine}Feature: ${featureData.featureTitle}\n\nDescription:\n${featureData.description}`;
-    const mailtoLink = `mailto:caprep8@gmail.com?subject=${encodeURIComponent(`Feature Request: ${featureData.featureTitle}`)}&body=${encodeURIComponent(body)}`;
-
-    window.location.href = mailtoLink;
-
-    setFeatureData({ name: '', email: '', featureTitle: '', category: '', description: '' });
-    setFeatureStatus({ type: 'success', message: 'Thank you! Your email client will open to send your feature request.' });
+    setFeatureStatus({ type: '', message: '' });
+    try {
+      const baseUrl = apiUtils.getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/contact/feature`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(featureData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setFeatureData({ name: '', email: '', featureTitle: '', category: '', description: '' });
+        setFeatureStatus({ type: 'success', message: 'Thank you! Your feature request has been submitted.' });
+      } else {
+        setFeatureStatus({ type: 'error', message: data.error || data.message || 'Failed to submit. Please try again.' });
+      }
+    } catch (err) {
+      setFeatureStatus({ type: 'error', message: 'Unable to submit. Please check your connection and try again.' });
+    }
   };
 
   return (

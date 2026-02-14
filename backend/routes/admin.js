@@ -8,6 +8,7 @@ const Discussion = require('../models/DiscussionModel');
 const Announcement = require('../models/AnnouncementModel');
 const AuditLog = require('../models/AuditLogModel');
 const Notification = require('../models/NotificationModel');
+const ContactSubmission = require('../models/ContactSubmissionModel');
 const { logAudit } = require('../utils/auditLog');
 
 // GET /api/admin/users - List users with pagination (admin only)
@@ -282,6 +283,36 @@ router.get('/audit', authMiddleware, adminMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error fetching audit log:', error);
     res.status(500).json({ error: 'Failed to fetch audit log' });
+  }
+});
+
+// GET /api/admin/contact/feature-requests - List feature requests from Contact Us (admin only)
+router.get('/contact/feature-requests', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const submissions = await ContactSubmission.find({ type: 'feature' })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    res.status(200).json({ success: true, data: submissions });
+  } catch (error) {
+    console.error('Error fetching feature requests:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch feature requests', error: error.message });
+  }
+});
+
+// GET /api/admin/contact/report-issues - List issue reports from Contact Us (admin only)
+router.get('/contact/report-issues', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const submissions = await ContactSubmission.find({ type: 'issue' })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    res.status(200).json({ success: true, data: submissions });
+  } catch (error) {
+    console.error('Error fetching report issues:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch issue reports', error: error.message });
   }
 });
 

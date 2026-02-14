@@ -14,6 +14,8 @@ const AdminAnnouncements = () => {
     if (location.pathname.includes('/resources')) return 'resources';
     if (location.pathname.includes('/analytics')) return 'analytics';
     if (location.pathname.includes('/announcements')) return 'announcements';
+    if (location.pathname.includes('/feature-requests')) return 'feature-requests';
+    if (location.pathname.includes('/report-issues')) return 'report-issues';
     return 'questions';
   };
   const [activeTab, setActiveTab] = useState(getActiveTab());
@@ -278,6 +280,18 @@ const AdminAnnouncements = () => {
             }}
           >
             Analytics
+          </button>
+          <button 
+            className={activeTab === 'feature-requests' ? 'active-tab' : ''} 
+            onClick={() => navigate('/admin/feature-requests')}
+          >
+            Request Feature
+          </button>
+          <button 
+            className={activeTab === 'report-issues' ? 'active-tab' : ''} 
+            onClick={() => navigate('/admin/report-issues')}
+          >
+            Report Issue
           </button>
         </div>
         

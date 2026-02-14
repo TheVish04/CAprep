@@ -4,6 +4,8 @@ import PreviewPanel from './PreviewPanel';
 import Navbar from './Navbar';
 import DOMPurify from 'dompurify';
 import AdminAnalytics from './AdminAnalytics';
+import AdminFeatureRequests from './AdminFeatureRequests';
+import AdminReportIssues from './AdminReportIssues';
 import ResourceUploader from './ResourceUploader';
 import authUtils from '../utils/authUtils';
 import apiUtils from '../utils/apiUtils';
@@ -17,6 +19,8 @@ const AdminPanel = () => {
     if (location.pathname.includes('/resources')) return 'resources';
     if (location.pathname.includes('/analytics')) return 'analytics';
     if (location.pathname.includes('/announcements')) return 'announcements';
+    if (location.pathname.includes('/feature-requests')) return 'feature-requests';
+    if (location.pathname.includes('/report-issues')) return 'report-issues';
     return 'questions';
   };
   const [activeTab, setActiveTab] = useState(getActiveTab());
@@ -696,6 +700,10 @@ const AdminPanel = () => {
         return <ResourceUploader />;
       case 'analytics':
         return <AdminAnalytics />;
+      case 'feature-requests':
+        return <AdminFeatureRequests />;
+      case 'report-issues':
+        return <AdminReportIssues />;
       case 'announcements':
         return null; // This tab is handled by a separate route
       case 'questions':
@@ -1353,6 +1361,24 @@ const AdminPanel = () => {
             }}
           >
             Analytics
+          </button>
+          <button 
+            className={activeTab === 'feature-requests' ? 'active-tab' : ''} 
+            onClick={() => {
+              setActiveTab('feature-requests');
+              navigate('/admin/feature-requests');
+            }}
+          >
+            Request Feature
+          </button>
+          <button 
+            className={activeTab === 'report-issues' ? 'active-tab' : ''} 
+            onClick={() => {
+              setActiveTab('report-issues');
+              navigate('/admin/report-issues');
+            }}
+          >
+            Report Issue
           </button>
         </div>
         {renderActiveTab()}

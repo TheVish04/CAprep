@@ -168,6 +168,14 @@ const App = () => {
               path="/admin/analytics"
               element={<ProtectedRoute element={<AdminPanel />} requireAdmin={true} />}
             />
+            <Route
+              path="/admin/feature-requests"
+              element={<ProtectedRoute element={<AdminPanel />} requireAdmin={true} />}
+            />
+            <Route
+              path="/admin/report-issues"
+              element={<ProtectedRoute element={<AdminPanel />} requireAdmin={true} />}
+            />
             
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" />} />
