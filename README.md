@@ -425,6 +425,89 @@ sequenceDiagram
     end
 ```
 
+### Request–response flow diagram (compact, half size)
+
+<div style="width:50%;">
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Page as Page/Component
+    participant Axios as Axios instance
+    participant ApiUtils as apiUtils
+    participant Backend as Express
+    participant AuthMW as authMiddleware
+    participant CacheMW as cacheMiddleware
+    participant Handler as Route handler
+    participant DB as MongoDB
+    participant Ext as Cloudinary/Gemini/SendGrid
+
+    User->>Page: Click or navigate
+    Page->>Axios: api.get/post with config
+    Axios->>ApiUtils: getAuthToken from localStorage
+    ApiUtils-->>Axios: token or null
+    Axios->>Axios: Request interceptor add Authorization Bearer
+    Axios->>Backend: HTTP request to /api/...
+
+    Backend->>Backend: Helmet, xss-clean, mongo-sanitize
+    Backend->>Backend: Rate limit check per IP
+    Backend->>Backend: CORS check origin
+    Backend->>Backend: express.json parse body
+
+    alt Route needs auth
+        Backend->>AuthMW: authMiddleware
+        AuthMW->>AuthMW: Extract Bearer token from header
+        AuthMW->>AuthMW: jwt.verify with JWT_SECRET
+        AuthMW->>DB: User.findById decoded.id
+        DB-->>AuthMW: user doc
+        AuthMW->>Backend: req.user set, next
+    end
+
+    alt GET and cache enabled
+        Backend->>CacheMW: cacheMiddleware
+        CacheMW->>CacheMW: key = userId + originalUrl
+        alt cache hit
+            CacheMW->>Axios: res.send cached body
+            Axios->>Page: response
+            Page->>User: Render UI
+        else cache miss
+            CacheMW->>Backend: next, patch res.send to cache on 2xx
+        end
+    end
+
+    Backend->>Handler: Route handler runs
+    alt Read path
+        Handler->>DB: Model.find, aggregate, etc.
+        DB-->>Handler: documents
+        Handler->>Axios: res.json data
+    else Write path or external
+        Handler->>DB: Model.create, update, delete
+        Handler->>Handler: clearCache for affected keys
+        alt Upload or AI or email
+            Handler->>Ext: Cloudinary upload, Gemini API, SendGrid send
+            Ext-->>Handler: result
+        end
+        Handler->>Axios: res.status 201/200 json
+    end
+
+    Axios->>Page: response
+    Page->>User: Update UI
+
+    alt Response 401 and not refresh endpoint
+        Axios->>Axios: Response interceptor
+        Axios->>ApiUtils: refreshToken POST /auth/refresh-token
+        alt Refresh success
+            ApiUtils->>ApiUtils: setAuthToken new token
+            Axios->>Backend: Retry request with new token
+        else Refresh fail
+            ApiUtils->>ApiUtils: clearAuthToken
+            Axios->>Page: Navigate to /login
+        end
+    end
+```
+
+</div>
+
 ### Component diagram (backend layers, detailed)
 
 ```mermaid
