@@ -107,8 +107,8 @@ const ContactUs = () => {
     <div className="page-wrapper">
       <Navbar />
       <div className="content-container">
-        <section className="hero">
-          <div className="hero-content">
+        <section className="content-page-hero">
+          <div className="content-page-hero-content">
             <h1>Contact Us</h1>
             <p>We're here to help! Reach out to us with any questions or feedback.</p>
           </div>
@@ -118,21 +118,22 @@ const ContactUs = () => {
           <div className="contact-info">
             <h2>Get in Touch</h2>
             <p>
-              Have questions about our platform or need assistance? 
-              We're always happy to hear from you.
+              Have questions about our platform or need assistance?
+              We're always happy to hear from you. Our team is dedicated to providing
+              the best support to help you succeed in your CA journey.
             </p>
-            
+
             <div className="contact-details">
               <div className="contact-item">
                 <h3>Email</h3>
                 <p><a href="mailto:caprep8@gmail.com">caprep8@gmail.com</a></p>
               </div>
-              
+
               <div className="contact-item">
                 <h3>Phone</h3>
                 <p>+91 8591061249</p>
               </div>
-              
+
               <div className="contact-item">
                 <h3>Address</h3>
                 <p>
@@ -144,14 +145,20 @@ const ContactUs = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="report-section">
             <h2>Report an Issue</h2>
             <p>
-              Found a bug, incorrect information, or have concerns about content? 
+              Found a bug, incorrect information, or have concerns about content?
               Use the form below to report it directly to our team.
             </p>
-            
+
+            {!isLoggedIn && (
+              <div className="login-warning">
+                Please Note: You must be logged in to submit this form.
+              </div>
+            )}
+
             {isLoggedIn && (
               <>
                 {submitStatus.message && (
@@ -162,30 +169,30 @@ const ContactUs = () => {
                 <form onSubmit={handleReportSubmit} className="report-form">
                   <div className="form-group">
                     <label htmlFor="subject">Subject</label>
-                <input 
-                  type="text" 
-                  id="subject" 
-                  name="subject" 
-                  value={reportData.subject}
-                  onChange={handleInputChange}
-                  placeholder="What is this regarding?"
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="description">Description</label>
-                <textarea 
-                  id="description" 
-                  name="description" 
-                  value={reportData.description}
-                  onChange={handleInputChange}
-                  placeholder="Please describe the issue in detail. Include any relevant links or information."
-                  rows="6"
-                  required
-                ></textarea>
-              </div>
-              
+                    <input
+                      type="text"
+                      id="subject"
+                      name="subject"
+                      value={reportData.subject}
+                      onChange={handleInputChange}
+                      placeholder="What is this regarding?"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="description">Description</label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={reportData.description}
+                      onChange={handleInputChange}
+                      placeholder="Please describe the issue in detail. Include any relevant links or information."
+                      rows="6"
+                      required
+                    ></textarea>
+                  </div>
+
                   <button type="submit" className="submit-button">
                     Submit Report
                   </button>
@@ -197,9 +204,15 @@ const ContactUs = () => {
           <div className="feature-request-section">
             <h2>Request a Feature</h2>
             <p>
-              Have an idea to make CAprep better? Tell us what you&apos;d like to see—new tools, 
+              Have an idea to make CAprep better? Tell us what you&apos;d like to see—new tools,
               improvements to quizzes, resources, or anything else. We read every suggestion.
             </p>
+
+            {!isLoggedIn && (
+              <div className="login-warning">
+                Please Note: You must be logged in to submit this form.
+              </div>
+            )}
 
             {isLoggedIn && (
               <>
