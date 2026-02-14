@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
-import apiUtils from '../utils/apiUtils';
+import apiUtils from '../../utils/apiUtils';
 import './DiscussionModal.css';
 
 const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Navbar from './Navbar';
-import apiUtils from '../utils/apiUtils';
+import Navbar from '../layout/Navbar';
+import apiUtils from '../../utils/apiUtils';
 import './ForgotPassword.css';
 
 const ForgotPassword = () => {

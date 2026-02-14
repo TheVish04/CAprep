@@ -1,5 +1,6 @@
 import axios from 'axios';
 import apiUtils from './apiUtils';
+import logger from './logger';
 
 // Use apiUtils to ensure base URL always includes /api (fixes 404 when VITE_API_URL lacks /api)
 const API_BASE_URL = apiUtils.getApiBaseUrl();
@@ -26,9 +27,7 @@ api.interceptors.request.use(
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
-    }
+    logger.info(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
   (error) => Promise.reject(error)

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import api from '../utils/axiosConfig';
-import apiUtils from '../utils/apiUtils';
-import ProfilePlaceholder from './ProfilePlaceholder';
+import api from '../../utils/axiosConfig';
+import apiUtils from '../../utils/apiUtils';
+import ProfilePlaceholder from '../shared/ProfilePlaceholder';
 import './EditProfile.css';
 
 const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';

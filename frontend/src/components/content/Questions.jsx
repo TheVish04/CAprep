@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import Navbar from './Navbar';
-import { generateQuestionsPDF, savePDF } from '../utils/pdfGenerator';
+import Navbar from '../layout/Navbar';
+import { generateQuestionsPDF, savePDF } from '../../utils/pdfGenerator';
 import './Questions.css';
-import api from '../utils/axiosConfig';
-import apiUtils from '../utils/apiUtils';
-import MoreMenu from './MoreMenu';
+import api from '../../utils/axiosConfig';
+import apiUtils from '../../utils/apiUtils';
+import MoreMenu from '../shared/MoreMenu';
 import DiscussionModal from './DiscussionModal';
-import BookmarkFolderSelector from './BookmarkFolderSelector';
-import { QuestionsListSkeleton } from './Skeleton';
+import BookmarkFolderSelector from '../shared/BookmarkFolderSelector';
+import { QuestionsListSkeleton } from '../shared/Skeleton';
 
 // Add a Bookmark icon component (simple example)
 const BookmarkIcon = ({ filled }) => (

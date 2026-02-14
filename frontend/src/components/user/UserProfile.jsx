@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../utils/axiosConfig';
-import apiUtils from '../utils/apiUtils';
-import Navbar from './Navbar';
+import api from '../../utils/axiosConfig';
+import apiUtils from '../../utils/apiUtils';
+import Navbar from '../layout/Navbar';
 import EditProfile from './EditProfile';
-import ProfilePlaceholder from './ProfilePlaceholder';
+import ProfilePlaceholder from '../shared/ProfilePlaceholder';
 import './UserProfile.css';
 
 const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';

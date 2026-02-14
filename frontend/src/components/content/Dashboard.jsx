@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../utils/axiosConfig';
-import Navbar from './Navbar';
-import apiUtils from '../utils/apiUtils';
-import { DashboardSkeleton } from './Skeleton';
+import api from '../../utils/axiosConfig';
+import Navbar from '../layout/Navbar';
+import apiUtils from '../../utils/apiUtils';
+import { DashboardSkeleton } from '../shared/Skeleton';
 import './Dashboard.css';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Line, Bar, Pie } from 'react-chartjs-2';

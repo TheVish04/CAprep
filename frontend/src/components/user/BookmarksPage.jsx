@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../utils/axiosConfig';
-import Navbar from './Navbar';
+import api from '../../utils/axiosConfig';
+import Navbar from '../layout/Navbar';
 import './UserProfile.css'; // Reuse existing styles
 import './BookmarksPage.css'; // Use dedicated styles
-import './BookmarkFolderSelector.css'; // Reuse existing styles
+import '../shared/BookmarkFolderSelector.css'; // Reuse existing styles
 
 const BookmarksPage = () => {
     const [bookmarkFolders, setBookmarkFolders] = useState([]);

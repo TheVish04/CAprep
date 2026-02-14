@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import Navbar from './Navbar';
-import apiUtils from '../utils/apiUtils';
+import Navbar from '../layout/Navbar';
+import apiUtils from '../../utils/apiUtils';
 import './ResourceUploader.css';
 
 const ResourceUploader = () => {

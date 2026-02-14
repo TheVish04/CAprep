@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import PreviewPanel from './PreviewPanel';
-import Navbar from './Navbar';
+import PreviewPanel from '../shared/PreviewPanel';
+import Navbar from '../layout/Navbar';
 import DOMPurify from 'dompurify';
 import AdminAnalytics from './AdminAnalytics';
 import AdminFeatureRequests from './AdminFeatureRequests';
 import AdminReportIssues from './AdminReportIssues';
 import ResourceUploader from './ResourceUploader';
-import authUtils from '../utils/authUtils';
-import apiUtils from '../utils/apiUtils';
+import authUtils from '../../utils/authUtils';
+import apiUtils from '../../utils/apiUtils';
 import './AdminPanel.css';
 
 const AdminPanel = () => {

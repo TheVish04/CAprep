@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import Navbar from './Navbar';
+import Navbar from '../layout/Navbar';
 import './Quiz.css';
-import api from '../utils/axiosConfig';
-import apiUtils from '../utils/apiUtils';
+import api from '../../utils/axiosConfig';
+import apiUtils from '../../utils/apiUtils';
 
 const Quiz = () => {
   const navigate = useNavigate();

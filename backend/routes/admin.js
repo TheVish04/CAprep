@@ -12,6 +12,7 @@ const ContactSubmission = require('../models/ContactSubmissionModel');
 const { logAudit } = require('../utils/auditLog');
 const logger = require('../config/logger');
 const { sendErrorResponse } = require('../utils/errorResponse');
+const { announcementCreateSchema, announcementUpdateSchema } = require('../validators/announcementValidator');
 
 // GET /api/admin/users - List users with pagination (admin only)
 router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
@@ -112,21 +113,25 @@ router.get('/analytics', authMiddleware, adminMiddleware, async (req, res) => {
 // Create announcement
 router.post('/announcements', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { title, content, type, priority, targetSubjects, validUntil } = req.body;
-    
-    // Validate required fields
-    if (!title || !content) {
-      return res.status(400).json({ success: false, message: 'Title and content are required' });
+    const { error, value } = announcementCreateSchema.validate(req.body || {}, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details.map(d => d.message).join(', ')
+      });
     }
-    
-    // Create announcement
+
+    const validUntilDate = value.validUntil != null
+      ? (typeof value.validUntil === 'number' ? new Date(value.validUntil) : new Date(value.validUntil))
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
     const announcement = new Announcement({
-      title,
-      content,
-      type: type || 'general',
-      priority: priority || 'medium',
-      targetSubjects: targetSubjects || [],
-      validUntil: validUntil ? new Date(validUntil) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      title: value.title,
+      content: value.content,
+      type: value.type,
+      priority: value.priority,
+      targetSubjects: value.targetSubjects || [],
+      validUntil: validUntilDate,
       createdBy: req.user.id
     });
     
@@ -201,22 +206,34 @@ router.get('/announcements', authMiddleware, adminMiddleware, async (req, res) =
 router.put('/announcements/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, type, priority, targetSubjects, validUntil } = req.body;
-    
-    // Find announcement
+    const payload = req.body || {};
+    if (Object.keys(payload).length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one field is required to update' });
+    }
+    const { error, value } = announcementUpdateSchema.validate(payload, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details.map(d => d.message).join(', ')
+      });
+    }
+
     const announcement = await Announcement.findById(id);
     if (!announcement) {
       return res.status(404).json({ success: false, message: 'Announcement not found' });
     }
-    
-    // Update fields
-    if (title) announcement.title = title;
-    if (content) announcement.content = content;
-    if (type) announcement.type = type;
-    if (priority) announcement.priority = priority;
-    if (targetSubjects) announcement.targetSubjects = targetSubjects;
-    if (validUntil) announcement.validUntil = new Date(validUntil);
-    
+
+    if (value.title !== undefined) announcement.title = value.title;
+    if (value.content !== undefined) announcement.content = value.content;
+    if (value.type !== undefined) announcement.type = value.type;
+    if (value.priority !== undefined) announcement.priority = value.priority;
+    if (value.targetSubjects !== undefined) announcement.targetSubjects = value.targetSubjects;
+    if (value.validUntil !== undefined) {
+      announcement.validUntil = typeof value.validUntil === 'number'
+        ? new Date(value.validUntil)
+        : new Date(value.validUntil);
+    }
+
     await announcement.save();
     await logAudit(req.user.id, 'update', 'announcement', announcement._id, { title: announcement.title });
 

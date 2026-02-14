@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import './LandingPage.css';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 import CountUp from 'react-countup';
 import apiUtils from '../utils/apiUtils';
 

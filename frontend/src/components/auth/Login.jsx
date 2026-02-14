@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import Navbar from './Navbar';
-import api from '../utils/axiosConfig';
-import apiUtils from '../utils/apiUtils';
+import Navbar from '../layout/Navbar';
+import api from '../../utils/axiosConfig';
+import apiUtils from '../../utils/apiUtils';
 import './Login.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

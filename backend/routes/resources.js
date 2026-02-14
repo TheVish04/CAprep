@@ -6,6 +6,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../config/logger');
 const { sendErrorResponse } = require('../utils/errorResponse');
+const { escapeRegex } = require('../utils/escapeRegex');
 const Resource = require('../models/ResourceModel');
 const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
 const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
@@ -48,9 +49,10 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     if (month) filters.month = month;
     
     if (search) {
+      const safeSearch = escapeRegex(search);
       filters.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { title: { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } }
       ];
     }
     

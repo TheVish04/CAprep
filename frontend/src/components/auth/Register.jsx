@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../utils/axiosConfig';
-import Navbar from './Navbar';
-import apiUtils from '../utils/apiUtils';
+import api from '../../utils/axiosConfig';
+import Navbar from '../layout/Navbar';
+import apiUtils from '../../utils/apiUtils';
 import './Register.css';
 
 const Register = () => {

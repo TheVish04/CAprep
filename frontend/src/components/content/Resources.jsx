@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Navbar from './Navbar';
+import Navbar from '../layout/Navbar';
 import './Resources.css';
 import axios from 'axios';
-import apiUtils from '../utils/apiUtils';
-import MoreMenu from './MoreMenu';
+import apiUtils from '../../utils/apiUtils';
+import MoreMenu from '../shared/MoreMenu';
 import DiscussionModal from './DiscussionModal';
-import BookmarkFolderSelector from './BookmarkFolderSelector';
+import BookmarkFolderSelector from '../shared/BookmarkFolderSelector';
 
 // Paper Title with View PDF button component
 const PaperViewHeader = ({ title, paperType, month, year, examStage, subject, onViewPDF, isLoading }) => {

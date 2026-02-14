@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../utils/axiosConfig';
-import apiUtils from '../utils/apiUtils';
+import api from '../../utils/axiosConfig';
+import apiUtils from '../../utils/apiUtils';
 import './NotificationsDropdown.css';
 
 const NotificationsDropdown = ({ embedded = false }) => {

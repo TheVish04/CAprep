@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/layout/Navbar';
 import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import './ChatBotPage.css';

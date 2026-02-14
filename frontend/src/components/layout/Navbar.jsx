@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import api from '../utils/axiosConfig';
-import apiUtils from '../utils/apiUtils';
-import NotificationsDropdown from './NotificationsDropdown';
-import ProfilePlaceholder from './ProfilePlaceholder';
+import api from '../../utils/axiosConfig';
+import apiUtils from '../../utils/apiUtils';
+import NotificationsDropdown from '../shared/NotificationsDropdown';
+import ProfilePlaceholder from '../shared/ProfilePlaceholder';
 import './Navbar.css';
 
 const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';

@@ -343,12 +343,12 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
     res.status(200).json(payload);
   } catch (error) {
-    // Extract email from request body first
-    const { email } = req.body;
-    logger.info('Entering login catch block');
-    logger.error('Login error: ' + (error && error.message));
-    
-    res.status(500).json({ 
+    if (process.env.NODE_ENV === 'development') {
+      logger.error('Login error: ' + (error && error.message));
+    } else {
+      logger.error('Login failed');
+    }
+    res.status(500).json({
       error: 'An error occurred during login',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

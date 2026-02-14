@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import api from '../utils/axiosConfig';
-import './UserProfile.css'; // Reuse existing styles
+import api from '../../utils/axiosConfig';
+import '../user/UserProfile.css'; // Reuse existing styles
 import './BookmarkFolderSelector.css'; // Add specific styles for this component
 
 const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {

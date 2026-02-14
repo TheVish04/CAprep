@@ -8,6 +8,7 @@ const { questionSchema } = require('../validators/questionValidator');
 const { logAudit } = require('../utils/auditLog');
 const logger = require('../config/logger');
 const { sendErrorResponse } = require('../utils/errorResponse');
+const { escapeRegex } = require('../utils/escapeRegex');
 
 router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
@@ -138,10 +139,10 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     if (month) filter.month = month;
     if (examStage) filter.examStage = examStage;
     
-    // Handle search keyword (case-insensitive)
+    // Handle search keyword (case-insensitive); escape to prevent regex injection
     if (search) {
       filter.questionText = {
-        $regex: search,
+        $regex: escapeRegex(search),
         $options: 'i'
       };
     }
