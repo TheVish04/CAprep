@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -13,17 +13,21 @@ const LandingPage = () => {
   const [resourceCount, setResourceCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Scroll to top before paint so the page never shows a restored scroll position
+  useLayoutEffect(() => {
+    const previousRestoration = history.scrollRestoration;
+    history.scrollRestoration = 'manual';
+    window.scrollTo(0, 0);
+    return () => {
+      history.scrollRestoration = previousRestoration;
+    };
+  }, []);
+
   useEffect(() => {
     AOS.init({
       duration: 1000,
       once: false,
       disable: 'mobile',
-    });
-    
-    // Scroll to top on component mount
-    window.scrollTo({
-      top: 0,
-      behavior: 'auto',
     });
     
     // Show elements after a small delay for better animation effect
@@ -81,6 +85,12 @@ const LandingPage = () => {
     fetchQuestionCount();
     fetchResourceCount();
     AOS.refresh();
+
+    // Re-apply scroll to top after first frame in case navbar/AOS cause layout shift
+    const rafId = requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo(0, 0));
+    });
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   return (
