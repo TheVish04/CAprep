@@ -58,9 +58,6 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     const handleFileChange = async (e) => {
         const selectedFile = e.target.files?.[0];
         if (!selectedFile) return;
-        const fileReader = new FileReader();
-        fileReader.onload = () => setPreviewUrl(fileReader.result);
-        fileReader.readAsDataURL(selectedFile);
         if (showChangePhotoModal) {
             setPhotoActionLoading(true);
             setError(null);
@@ -68,8 +65,9 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 const fd = new FormData();
                 fd.append('profileImage', selectedFile);
                 const res = await api.post('/users/me/profile-image', fd);
-                setPreviewUrl(res.data.profilePicture || defaultAvatar);
-                setFormData(prev => ({ ...prev, profilePicture: res.data.profilePicture || '' }));
+                const newUrl = res.data?.profilePicture || defaultAvatar;
+                setPreviewUrl(newUrl);
+                setFormData(prev => ({ ...prev, profilePicture: newUrl }));
                 setFile(null);
                 if (onUpdate) onUpdate(res.data);
                 setShowChangePhotoModal(false);
@@ -79,6 +77,9 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 setPhotoActionLoading(false);
             }
         } else {
+            const fileReader = new FileReader();
+            fileReader.onload = () => setPreviewUrl(fileReader.result);
+            fileReader.readAsDataURL(selectedFile);
             setFile(selectedFile);
         }
         e.target.value = '';
@@ -136,10 +137,13 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 await api.post('/users/me/profile-image', fd);
             }
 
-            const response = await api.put('/users/me', {
-                fullName: formData.fullName.trim(),
-                email: formData.email?.trim() || undefined
-            });
+            const payload = { fullName: formData.fullName.trim() };
+            const newEmail = formData.email?.trim() || '';
+            const currentEmail = (userData?.email || '').toLowerCase();
+            if (newEmail && newEmail.toLowerCase() !== currentEmail) {
+                payload.email = newEmail;
+            }
+            const response = await api.put('/users/me', payload);
 
             if (newPassword && currentPassword) {
                 await api.put('/users/me/password', {

@@ -355,7 +355,8 @@ router.put('/me', authMiddleware, async (req, res) => {
                 return res.status(400).json({ error: 'Please use a valid email address' });
             }
             const existing = await User.findOne({ email: trimmed });
-            if (existing && existing._id.toString() !== req.user.id) {
+            const currentUserId = String(req.user.id);
+            if (existing && existing._id.toString() !== currentUserId) {
                 return res.status(400).json({ error: 'This email is already in use' });
             }
             updateData.email = trimmed;
