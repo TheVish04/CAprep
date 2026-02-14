@@ -293,17 +293,23 @@ flowchart LR
         Bootstrap["bootstrap/routes.js · mountRoutes"]
         subgraph RouteGroups["API route groups"]
             direction TB
-            R1["/auth: send-otp, verify-otp, login, register, me, refresh, forgot, reset"]
-            R2["/questions: CRUD admin, list, count, quiz, subjects, batch"]
-            R3["/resources: list, get, rate, CRUD admin, download"]
-            R4["/users: me, bookmarks, quiz-history, profile, folders"]
-            R5["/admin: users, analytics, announcements, audit, contact, cache"]
-            R6["/ai-quiz: generate, ask"]
-            R7["/discussions: user/me, messages, like, edit, delete"]
-            R8["/dashboard: data, study-session, views, resource-engagement"]
-            R9["/announcements: GET active"]
-            R10["/notifications: list, read"]
-            R11["/contact: POST feature, issue"]
+            subgraph Row1[" "]
+                direction LR
+                R1["/auth: send-otp, verify-otp, login, register, me, refresh, forgot, reset"]
+                R2["/questions: CRUD admin, list, count, quiz, subjects, batch"]
+                R3["/resources: list, get, rate, CRUD admin, download"]
+                R4["/users: me, bookmarks, quiz-history, profile, folders"]
+                R5["/admin: users, analytics, announcements, audit, contact, cache"]
+                R6["/ai-quiz: generate, ask"]
+            end
+            subgraph Row2[" "]
+                direction LR
+                R7["/discussions: user/me, messages, like, edit, delete"]
+                R8["/dashboard: data, study-session, views, resource-engagement"]
+                R9["/announcements: GET active"]
+                R10["/notifications: list, read"]
+                R11["/contact: POST feature, issue"]
+            end
         end
         subgraph BackendMiddleware["Per-route middleware"]
             direction TB
