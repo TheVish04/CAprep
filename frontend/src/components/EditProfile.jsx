@@ -185,23 +185,26 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 />
 
                 <form onSubmit={handleSubmit} className="edit-profile-form">
-                    <div className="edit-profile-photo-row">
-                        <div className="edit-profile-avatar-wrap">
-                            <img
-                                src={previewUrl || defaultAvatar}
-                                alt=""
-                                className="edit-profile-avatar"
-                            />
+                    <div className="edit-profile-body">
+                        <div className="edit-profile-photo-col">
+                            <div className="edit-profile-photo-row">
+                                <div className="edit-profile-avatar-wrap">
+                                    <img
+                                        src={previewUrl || defaultAvatar}
+                                        alt=""
+                                        className="edit-profile-avatar"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    className="edit-profile-change-photo-btn"
+                                    onClick={() => setShowChangePhotoModal(true)}
+                                >
+                                    Change photo
+                                </button>
+                            </div>
                         </div>
-                        <button
-                            type="button"
-                            className="edit-profile-change-photo-btn"
-                            onClick={() => setShowChangePhotoModal(true)}
-                        >
-                            Change photo
-                        </button>
-                    </div>
-
+                        <div className="edit-profile-fields-col">
                     <section className="edit-profile-section" aria-labelledby="account-heading">
                         <h3 id="account-heading" className="edit-profile-section-title">Account</h3>
                         <div className="form-group">
@@ -272,6 +275,8 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                             />
                         </div>
                     </section>
+                        </div>
+                    </div>
 
                     <footer className="edit-profile-footer">
                         <button
