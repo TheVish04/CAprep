@@ -1,8 +1,10 @@
 /* UserProfile.css */
 
-/* .user-profile-page {
-    /* Uses .page-wrapper styles for overall background */
- */
+/* Prevent content from sitting under fixed navbar (70px) */
+.page-wrapper.user-profile-page {
+    padding-top: 70px;
+    box-sizing: border-box;
+}
 
 .profile-container {
     background-color: #1e1e1e;
@@ -11,7 +13,7 @@
     padding: 30px 40px;
     width: 90%;
     max-width: 820px;
-    margin: 120px auto 40px;
+    margin: 50px auto 40px;
     box-sizing: border-box;
     color: #e0e0e0;
 }

@@ -4,6 +4,12 @@
     /* Uses .page-wrapper styles from index.css for background etc. */
 }
 
+/* Prevent content from sitting under fixed navbar (70px) */
+.page-wrapper.quiz-history-page {
+    padding-top: 70px;
+    box-sizing: border-box;
+}
+
 .quiz-history-container {
     background-color: #1e1e1e;
     border-radius: 8px;
@@ -11,7 +17,7 @@
     padding: 40px;
     width: 90%;
     max-width: 900px; /* Adjust max-width as needed */
-    margin: 120px auto 40px; /* Top margin for Navbar, auto horizontal */
+    margin: 50px auto 40px;
     box-sizing: border-box;
     color: #e0e0e0;
 }

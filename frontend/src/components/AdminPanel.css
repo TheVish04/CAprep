@@ -8,7 +8,7 @@
   align-items: center;
   box-sizing: border-box;
   background: #121212;
-  padding-top: 60px; /* Add top padding for navbar */
+  padding-top: 70px; /* Match fixed navbar height */
 }
 
 .admin-container {
