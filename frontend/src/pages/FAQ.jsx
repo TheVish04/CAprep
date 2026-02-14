@@ -54,6 +54,38 @@ const FAQ = () => {
         <div className="faq-intro">
           <p>Welcome to our comprehensive FAQ section. We've compiled answers to the most common questions about using CAprep to help you get the most out of your CA exam preparation. If you can't find what you're looking for, please don't hesitate to reach out to our support team.</p>
         </div>
+
+        {/* Self-explanatory section: What is CAprep — for normal users, no technical details */}
+        <section id="about-site" className="faq-about-site">
+          <h2 className="faq-about-site-title">What is CAprep? — At a Glance</h2>
+          <p className="faq-about-site-lead">
+            CAprep is a one-stop preparation platform for Indian Chartered Accountancy (CA) students. It helps you study past papers, practice with quizzes, use study resources, and track your progress—all in one place.
+          </p>
+
+          <div className="faq-about-site-block">
+            <h3>Who is it for?</h3>
+            <p>CAprep is for anyone preparing for CA exams conducted by ICAI—whether you are at <strong>Foundation</strong>, <strong>Intermediate</strong>, or <strong>Final</strong> level. You can browse questions and resources, take quizzes, chat with the AI assistant, and organize your study with bookmarks and a personal dashboard.</p>
+          </div>
+
+          <div className="faq-about-site-block">
+            <h3>What you can do on CAprep</h3>
+            <ul>
+              <li><strong>Past paper questions</strong> — Browse and filter questions by subject, paper type (MTP, RTP, PYQS, Model TP), year, month, and exam stage. Save questions to your bookmarks and add notes.</li>
+              <li><strong>Study resources (PDFs)</strong> — View and download study materials by subject, paper type, and exam stage. Rate resources and bookmark them for quick access.</li>
+              <li><strong>Quizzes</strong> — Take quizzes from the question bank (by subject and exam stage) or generate new AI-powered quizzes. See your score, review answers with explanations, and track your quiz history.</li>
+              <li><strong>CA Prep Assistant</strong> — Chat with an AI tutor focused on CA syllabus. Ask doubts, get explanations, and revise concepts without leaving the platform.</li>
+              <li><strong>Discussions</strong> — Join discussions on any question or resource. Post replies, like others’ messages, and learn from the community.</li>
+              <li><strong>Bookmarks &amp; folders</strong> — Save questions and resources into folders, add notes, and move items between folders. Keep everything organized for revision.</li>
+              <li><strong>Dashboard &amp; progress</strong> — See quiz score trends, study hours, recently viewed content, bookmarks, subject strengths, and new resources. Log study sessions to keep track of your effort.</li>
+              <li><strong>Contact &amp; feedback</strong> — Send feature requests or report issues from the Contact Us page. Your feedback helps us improve the platform.</li>
+            </ul>
+          </div>
+
+          <div className="faq-about-site-block">
+            <h3>How to get started</h3>
+            <p>Create an account with your email, verify it using the one-time password (OTP) we send you, then log in. Once logged in, you can access Questions, Resources, Quiz, the CA Prep Assistant, Bookmarks, and your Dashboard from the navigation menu. No technical setup is required—just use the website in your browser.</p>
+          </div>
+        </section>
         
         <div className="faq-navigation">
           <button 
@@ -171,6 +203,24 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Who can use CAprep?</summary>
+                <div className="faq-answer">
+                  <p>CAprep is for anyone preparing for the Chartered Accountancy examinations conducted by ICAI (Institute of Chartered Accountants of India). You can use it whether you are at Foundation, Intermediate, or Final level. There are no age or location restrictions—all you need is an email address to register and a device with internet access.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Do I need to pay to get started?</summary>
+                <div className="faq-answer">
+                  <p>No. You can create a free account and start using CAprep right away. Free access includes browsing and filtering questions, viewing and downloading study resources, taking quizzes from the question bank, using the CA Prep Assistant (subject to any usage limits), joining discussions, saving bookmarks, and viewing your dashboard. If we offer premium features in the future, they will be clearly marked; the core preparation tools remain available for free.</p>
+                </div>
+              </details>
+            </div>
           </div>
 
           <div id="account" className="faq-category">
@@ -251,6 +301,24 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Why do I need to verify my email?</summary>
+                <div className="faq-answer">
+                  <p>We send a one-time password (OTP) to your email during registration to confirm that the email address belongs to you. This helps us prevent fake accounts, keep your account secure, and ensure we can reach you for password resets and important updates. You must enter the OTP we send before your account is fully activated.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Is my profile visible to other users?</summary>
+                <div className="faq-answer">
+                  <p>Your profile (name, profile picture, and any details you add) is only visible to you when you are logged in. Other users do not see your profile page or your personal data. In discussions, only your display name may appear next to your messages—we do not share your email or other private information with other users.</p>
+                </div>
+              </details>
+            </div>
           </div>
           
           <div id="practice" className="faq-category">
@@ -323,6 +391,24 @@ const FAQ = () => {
                     <li>Submit your report</li>
                   </ol>
                   <p>Our content team reviews all reports within 48-72 hours. If your report leads to a correction, you'll receive a notification and acknowledgment. We appreciate your contribution to maintaining the quality of our platform!</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>How do discussions work?</summary>
+                <div className="faq-answer">
+                  <p>Every question and every study resource has its own discussion thread. You can open the discussion from the question or resource page, read what others have posted, and add your own replies. You can also like messages. Your replies can be edited or deleted by you; moderators may remove content that violates our guidelines. Discussions are a great way to clarify doubts and learn from other aspirants.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Can I filter questions to show only my bookmarks?</summary>
+                <div className="faq-answer">
+                  <p>Yes. On the Questions page, use the filters to narrow results by subject, paper type, year, month, and exam stage. There is also an option to show only bookmarked questions. Combine this with other filters to practice only the questions you have saved for revision.</p>
                 </div>
               </details>
             </div>
@@ -450,6 +536,25 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>What is the difference between a bank quiz and an AI quiz?</summary>
+                <div className="faq-answer">
+                  <p><strong>Bank quiz:</strong> Questions are drawn from our existing question bank. You choose the exam stage and subject; the system picks a random set of questions. Results are saved to your quiz history and you can review each question with explanations.</p>
+                  <p><strong>AI quiz:</strong> New questions are generated on the spot based on the subject and exam stage you select. This gives you fresh practice material and helps cover more variations of topics. You still get instant scoring and explanations after submission. Both types are available from the Quiz page once you are logged in.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Can I review my past quiz attempts?</summary>
+                <div className="faq-answer">
+                  <p>Yes. Go to Quiz History from the navigation menu (or your dashboard). You will see a list of your past quizzes with date, subject, score, and total questions. Click on a quiz to open its review page, where you can see each question, your answer, the correct answer, and the explanation. This helps you identify weak areas and revise effectively.</p>
+                </div>
+              </details>
+            </div>
           </div>
           
           <div id="resources" className="faq-category">
@@ -547,6 +652,24 @@ const FAQ = () => {
                     <li>Quarterly revision updates to ensure all materials remain current</li>
                   </ul>
                   <p>If you notice any outdated information in our resources, please use the "Report Issue" feature to let us know.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Can I rate study resources?</summary>
+                <div className="faq-answer">
+                  <p>Yes. On each resource page you can give a rating (for example, 1 to 5 stars). Your rating helps other users see how useful the resource is and helps us improve our content. You can also bookmark resources and add them to folders for quick access later.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>How do I use the CA Prep Assistant?</summary>
+                <div className="faq-answer">
+                  <p>The CA Prep Assistant is an AI tutor focused on the CA syllabus. Open it from the navigation menu (Chat or CA Prep Assistant). Type your question or topic in the chat box and send; you will get an explanation or answer tailored to CA exam content. You can ask follow-up questions in the same conversation. It is meant for clarifying concepts, revising topics, and quick doubt-solving—not for general or non-CA topics. Use it whenever you need help understanding a concept while studying.</p>
                 </div>
               </details>
             </div>
@@ -655,6 +778,24 @@ const FAQ = () => {
                   </ul>
                   
                   <p>If you encounter any issues not covered here or if the suggested solutions don't resolve your problem, please <Link to="/contactus">contact our support team</Link> for assistance.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>What if I don't receive the OTP email?</summary>
+                <div className="faq-answer">
+                  <p>Check your spam or junk folder first—sometimes verification emails land there. Make sure you entered the correct email address. If you still don't see it, wait a few minutes and request a new OTP from the registration or forgot-password page. If the problem continues, use the <Link to="/contactus">Contact Us</Link> page to report the issue; we will help you complete verification.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Can I use CAprep on my phone?</summary>
+                <div className="faq-answer">
+                  <p>Yes. CAprep works on smartphones and tablets. Open the website in your mobile browser (Chrome, Safari, or another modern browser), log in, and you can browse questions, take quizzes, use the CA Prep Assistant, view resources, and check your dashboard. For reading long PDFs or taking long quizzes, a larger screen may be more comfortable, but all core features are available on mobile.</p>
                 </div>
               </details>
             </div>
