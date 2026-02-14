@@ -734,7 +734,7 @@ CAPrep/
 
 ### Base URL
 
-- Development: `http://localhost:5000/api` (or whatever `PORT` and `VITE_API_URL` are set to).
+- Development: `http://localhost:5000/api` (or whatever `PORT` and `VITE_API_URL` are set to). If port 5000 is in use (e.g. on macOS), set `PORT=5001` in the backend `.env` and use `http://localhost:5001/api` for `VITE_API_URL`.
 - Production: Set `VITE_API_URL` in frontend env to backend base URL including `/api` (e.g. `https://your-backend.onrender.com/api`).
 
 ### Route grouping and authentication
@@ -857,10 +857,11 @@ CAPrep/
    cd backend
    npm install
    cp .env.example .env
-   # Edit .env: set MONGODB_URI, JWT_SECRET, and optionally GEMINI_API_KEY, Cloudinary, SendGrid/EMAIL_*
+   # Edit .env: set MONGODB_URI, JWT_SECRET, and optionally GEMINI_API_KEY, Cloudinary, SendGrid (SENDGRID_API_KEY, SENDGRID_FROM_EMAIL)
    npm run dev   # or node server.js
    ```
-   Server runs at `http://localhost:5000`. Health: `GET /health`.
+   Server runs at `http://localhost:5000` (or the port in `PORT`). Health: `GET /health`.  
+   **Note:** On macOS, port 5000 is often used by Control Center. If the server fails to start with "port in use", set `PORT=5001` in `.env` and use `http://localhost:5001/api` for the frontend `VITE_API_URL`.
 
 3. **Frontend**
    ```bash

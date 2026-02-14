@@ -29,7 +29,6 @@
     "react-helmet": "^6.1.0",
     "react-pdf": "^9.2.1",
     "react-router-dom": "^7.3.0",
-    "react-spring": "^9.7.5",
     "tailwindcss": "^4.0.13",
     "vite": "^6.2.0"
   },
