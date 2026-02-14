@@ -322,3 +322,54 @@ h1, h2, h3, h4, h5, h6 {
   color: #f44336;
   border-left: 4px solid #f44336;
 }
+
+/* Feature request section */
+.feature-request-section {
+  margin: 40px 0;
+  padding: 30px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border: 1px solid #2d2d2d;
+  border-left: 5px solid #4caf50;
+}
+
+.feature-request-section h2 {
+  margin-top: 0;
+  color: #f5f5f5;
+}
+
+.feature-request-section p {
+  color: #b0b0b0;
+  margin-bottom: 20px;
+}
+
+.feature-request-form {
+  margin-top: 20px;
+}
+
+.form-group select.form-select {
+  width: 100%;
+  padding: 12px;
+  background-color: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ccc' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.form-group select.form-select:focus {
+  outline: none;
+  border-color: #03a9f4;
+  box-shadow: 0 0 0 2px rgba(3, 169, 244, 0.1);
+}

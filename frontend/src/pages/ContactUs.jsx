@@ -10,33 +10,60 @@ const ContactUs = () => {
     subject: '',
     description: '',
   });
+  const [featureData, setFeatureData] = useState({
+    name: '',
+    email: '',
+    featureTitle: '',
+    category: '',
+    description: '',
+  });
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
+  const [featureStatus, setFeatureStatus] = useState({ type: '', message: '' });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setReportData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleFeatureChange = (e) => {
+    const { name, value } = e.target;
+    setFeatureData(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleReportSubmit = (e) => {
     e.preventDefault();
     
-    // Validate form
     if (!reportData.name || !reportData.email || !reportData.subject || !reportData.description) {
       setSubmitStatus({ type: 'error', message: 'Please fill out all fields' });
       return;
     }
 
-    // Create mailto link with form data
     const mailtoLink = `mailto:caprep8@gmail.com?subject=${encodeURIComponent(`Issue Report: ${reportData.subject}`)}&body=${encodeURIComponent(
       `Name: ${reportData.name}\nEmail: ${reportData.email}\n\nDescription:\n${reportData.description}`
     )}`;
 
-    // Open email client
     window.location.href = mailtoLink;
     
-    // Reset form and show success message
     setReportData({ name: '', email: '', subject: '', description: '' });
     setSubmitStatus({ type: 'success', message: 'Thank you! Your email client should have opened to send your report.' });
+  };
+
+  const handleFeatureSubmit = (e) => {
+    e.preventDefault();
+
+    if (!featureData.name || !featureData.email || !featureData.featureTitle || !featureData.description) {
+      setFeatureStatus({ type: 'error', message: 'Please fill in name, email, feature title, and description.' });
+      return;
+    }
+
+    const categoryLine = featureData.category ? `Category: ${featureData.category}\n\n` : '';
+    const body = `Name: ${featureData.name}\nEmail: ${featureData.email}\n\n${categoryLine}Feature: ${featureData.featureTitle}\n\nDescription:\n${featureData.description}`;
+    const mailtoLink = `mailto:caprep8@gmail.com?subject=${encodeURIComponent(`Feature Request: ${featureData.featureTitle}`)}&body=${encodeURIComponent(body)}`;
+
+    window.location.href = mailtoLink;
+
+    setFeatureData({ name: '', email: '', featureTitle: '', category: '', description: '' });
+    setFeatureStatus({ type: 'success', message: 'Thank you! Your email client will open to send your feature request.' });
   };
 
   return (
@@ -152,16 +179,91 @@ const ContactUs = () => {
               </button>
             </form>
           </div>
-          
-          
-          
-          
-          <div className="support-section">
-            <h3>Support Our Mission</h3>
+
+          <div className="feature-request-section">
+            <h2>Request a Feature</h2>
             <p>
-              If you find our platform helpful, consider supporting us with a small donation.
-              Your contribution helps us continue providing quality resources to CA Aspirants.
+              Have an idea to make CAprep better? Tell us what you&apos;d like to see—new tools, 
+              improvements to quizzes, resources, or anything else. We read every suggestion.
             </p>
+
+            {featureStatus.message && (
+              <div className={`status-message ${featureStatus.type}`}>
+                {featureStatus.message}
+              </div>
+            )}
+
+            <form onSubmit={handleFeatureSubmit} className="report-form feature-request-form">
+              <div className="form-group">
+                <label htmlFor="feature-name">Your Name</label>
+                <input
+                  type="text"
+                  id="feature-name"
+                  name="name"
+                  value={featureData.name}
+                  onChange={handleFeatureChange}
+                  placeholder="Enter your name"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="feature-email">Your Email</label>
+                <input
+                  type="email"
+                  id="feature-email"
+                  name="email"
+                  value={featureData.email}
+                  onChange={handleFeatureChange}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="featureTitle">Feature / Idea (short title)</label>
+                <input
+                  type="text"
+                  id="featureTitle"
+                  name="featureTitle"
+                  value={featureData.featureTitle}
+                  onChange={handleFeatureChange}
+                  placeholder="e.g. Add topic-wise quiz filter"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="feature-category">Category (optional)</label>
+                <select
+                  id="feature-category"
+                  name="category"
+                  value={featureData.category}
+                  onChange={handleFeatureChange}
+                  className="form-select"
+                >
+                  <option value="">Select area</option>
+                  <option value="Quiz">Quiz</option>
+                  <option value="Resources">Resources</option>
+                  <option value="Questions">Questions</option>
+                  <option value="Dashboard">Dashboard</option>
+                  <option value="Chat">Chat</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="feature-description">Description</label>
+                <textarea
+                  id="feature-description"
+                  name="description"
+                  value={featureData.description}
+                  onChange={handleFeatureChange}
+                  placeholder="Describe your feature idea and how it would help you."
+                  rows="5"
+                  required
+                />
+              </div>
+              <button type="submit" className="submit-button">
+                Send feature request
+              </button>
+            </form>
           </div>
         </section>
       </div>
