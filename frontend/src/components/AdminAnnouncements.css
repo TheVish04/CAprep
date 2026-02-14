@@ -3,7 +3,7 @@
   min-height: 100vh;
   background-color: #121212;
   color: #ccc;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-family, 'Poppins', sans-serif);
 }
 
 .admin-announcements-wrapper {
