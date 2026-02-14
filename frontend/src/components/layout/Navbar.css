@@ -141,12 +141,17 @@
   background: none;
   border: none;
   cursor: pointer;
+  font-family: inherit;
   font-size: 1.125rem;
   font-weight: 500;
   color: #b0b0b0;
   padding: 0.5rem 0;
   position: relative;
   text-decoration: none;
+  -webkit-appearance: none;
+  appearance: none;
+  letter-spacing: normal;
+  line-height: inherit;
 }
 
 .nav-dropdown-trigger::after {
@@ -162,6 +167,7 @@
 
 .nav-dropdown-trigger:hover {
   color: #239ecf;
+  background-color: #121212;
 }
 
 .nav-dropdown-trigger:hover::after {
@@ -382,6 +388,14 @@
   .nav-link:hover {
     color: #239ecf;
     background-color: #121212;
+  }
+
+  .nav-dropdown-trigger {
+    text-align: center;
+    padding: 1rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
 
   .nav-dropdown-menu {
