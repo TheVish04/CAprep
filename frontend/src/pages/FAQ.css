@@ -132,6 +132,8 @@
   padding: 2rem;
   transition: all 0.4s ease;
   border: 1px solid #2d2d2d;
+  /* Leave space for fixed navbar (70px) + sticky FAQ nav so section header is visible when scrolled to */
+  scroll-margin-top: 140px;
 }
 
 .faq-category:hover {
