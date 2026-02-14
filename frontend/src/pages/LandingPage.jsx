@@ -331,9 +331,7 @@ const LandingPage = () => {
         <div className="cta-content">
           <h2>Ready to Excel in Your CA Exams?</h2>
           <p>Join thousands of successful CA Aspirants who have transformed their exam preparation.</p>
-          {!isLoggedIn && (
-            <Link to="/register" className="cta-btn primary-btn">Start Your Journey Today</Link>
-          )}
+          <Link to="/register" className="cta-btn primary-btn">Start Your Journey Today</Link>
         </div>
       </section>
 
