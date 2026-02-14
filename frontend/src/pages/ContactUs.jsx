@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import { Link } from 'react-router-dom';
 import apiUtils from '../utils/apiUtils';
 import './Content.css';
 
 const ContactUs = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [reportData, setReportData] = useState({
-    name: '',
-    email: '',
     subject: '',
     description: '',
   });
   const [featureData, setFeatureData] = useState({
-    name: '',
-    email: '',
     featureTitle: '',
     category: '',
     description: '',
   });
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
   const [featureStatus, setFeatureStatus] = useState({ type: '', message: '' });
+
+  useEffect(() => {
+    setIsLoggedIn(!!apiUtils.getAuthToken());
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,23 +33,29 @@ const ContactUs = () => {
 
   const handleReportSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!reportData.name || !reportData.email || !reportData.subject || !reportData.description) {
+    if (!reportData.subject || !reportData.description) {
       setSubmitStatus({ type: 'error', message: 'Please fill out all fields' });
       return;
     }
-
     setSubmitStatus({ type: '', message: '' });
+    const token = apiUtils.getAuthToken();
+    if (!token) {
+      setSubmitStatus({ type: 'error', message: 'Please log in to submit.' });
+      return;
+    }
     try {
       const baseUrl = apiUtils.getApiBaseUrl();
       const res = await fetch(`${baseUrl}/contact/issue`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reportData),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subject: reportData.subject, description: reportData.description }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        setReportData({ name: '', email: '', subject: '', description: '' });
+        setReportData({ subject: '', description: '' });
         setSubmitStatus({ type: 'success', message: 'Thank you! Your issue report has been submitted.' });
       } else {
         setSubmitStatus({ type: 'error', message: data.error || data.message || 'Failed to submit. Please try again.' });
@@ -61,23 +67,33 @@ const ContactUs = () => {
 
   const handleFeatureSubmit = async (e) => {
     e.preventDefault();
-
-    if (!featureData.name || !featureData.email || !featureData.featureTitle || !featureData.description) {
-      setFeatureStatus({ type: 'error', message: 'Please fill in name, email, feature title, and description.' });
+    if (!featureData.featureTitle || !featureData.description) {
+      setFeatureStatus({ type: 'error', message: 'Please fill in feature title and description.' });
       return;
     }
-
     setFeatureStatus({ type: '', message: '' });
+    const token = apiUtils.getAuthToken();
+    if (!token) {
+      setFeatureStatus({ type: 'error', message: 'Please log in to submit.' });
+      return;
+    }
     try {
       const baseUrl = apiUtils.getApiBaseUrl();
       const res = await fetch(`${baseUrl}/contact/feature`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(featureData),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          featureTitle: featureData.featureTitle,
+          category: featureData.category,
+          description: featureData.description,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        setFeatureData({ name: '', email: '', featureTitle: '', category: '', description: '' });
+        setFeatureData({ featureTitle: '', category: '', description: '' });
         setFeatureStatus({ type: 'success', message: 'Thank you! Your feature request has been submitted.' });
       } else {
         setFeatureStatus({ type: 'error', message: data.error || data.message || 'Failed to submit. Please try again.' });
@@ -136,41 +152,16 @@ const ContactUs = () => {
               Use the form below to report it directly to our team.
             </p>
             
-            {submitStatus.message && (
-              <div className={`status-message ${submitStatus.type}`}>
-                {submitStatus.message}
-              </div>
-            )}
-            
-            <form onSubmit={handleReportSubmit} className="report-form">
-              <div className="form-group">
-                <label htmlFor="name">Your Name</label>
-                <input 
-                  type="text" 
-                  id="name" 
-                  name="name" 
-                  value={reportData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter your name"
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="email">Your Email</label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  name="email" 
-                  value={reportData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="subject">Subject</label>
+            {isLoggedIn && (
+              <>
+                {submitStatus.message && (
+                  <div className={`status-message ${submitStatus.type}`}>
+                    {submitStatus.message}
+                  </div>
+                )}
+                <form onSubmit={handleReportSubmit} className="report-form">
+                  <div className="form-group">
+                    <label htmlFor="subject">Subject</label>
                 <input 
                   type="text" 
                   id="subject" 
@@ -195,10 +186,12 @@ const ContactUs = () => {
                 ></textarea>
               </div>
               
-              <button type="submit" className="submit-button">
-                Submit Report
-              </button>
-            </form>
+                  <button type="submit" className="submit-button">
+                    Submit Report
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
           <div className="feature-request-section">
@@ -208,83 +201,62 @@ const ContactUs = () => {
               improvements to quizzes, resources, or anything else. We read every suggestion.
             </p>
 
-            {featureStatus.message && (
-              <div className={`status-message ${featureStatus.type}`}>
-                {featureStatus.message}
-              </div>
+            {isLoggedIn && (
+              <>
+                {featureStatus.message && (
+                  <div className={`status-message ${featureStatus.type}`}>
+                    {featureStatus.message}
+                  </div>
+                )}
+                <form onSubmit={handleFeatureSubmit} className="report-form feature-request-form">
+                  <div className="form-group">
+                    <label htmlFor="featureTitle">Feature / Idea (short title)</label>
+                    <input
+                      type="text"
+                      id="featureTitle"
+                      name="featureTitle"
+                      value={featureData.featureTitle}
+                      onChange={handleFeatureChange}
+                      placeholder="e.g. Add topic-wise quiz filter"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="feature-category">Category (optional)</label>
+                    <select
+                      id="feature-category"
+                      name="category"
+                      value={featureData.category}
+                      onChange={handleFeatureChange}
+                      className="form-select"
+                    >
+                      <option value="">Select area</option>
+                      <option value="Quiz">Quiz</option>
+                      <option value="Resources">Resources</option>
+                      <option value="Questions">Questions</option>
+                      <option value="Dashboard">Dashboard</option>
+                      <option value="Chat">Chat</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="feature-description">Description</label>
+                    <textarea
+                      id="feature-description"
+                      name="description"
+                      value={featureData.description}
+                      onChange={handleFeatureChange}
+                      placeholder="Describe your feature idea and how it would help you."
+                      rows="5"
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="submit-button">
+                    Send feature request
+                  </button>
+                </form>
+              </>
             )}
-
-            <form onSubmit={handleFeatureSubmit} className="report-form feature-request-form">
-              <div className="form-group">
-                <label htmlFor="feature-name">Your Name</label>
-                <input
-                  type="text"
-                  id="feature-name"
-                  name="name"
-                  value={featureData.name}
-                  onChange={handleFeatureChange}
-                  placeholder="Enter your name"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="feature-email">Your Email</label>
-                <input
-                  type="email"
-                  id="feature-email"
-                  name="email"
-                  value={featureData.email}
-                  onChange={handleFeatureChange}
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="featureTitle">Feature / Idea (short title)</label>
-                <input
-                  type="text"
-                  id="featureTitle"
-                  name="featureTitle"
-                  value={featureData.featureTitle}
-                  onChange={handleFeatureChange}
-                  placeholder="e.g. Add topic-wise quiz filter"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="feature-category">Category (optional)</label>
-                <select
-                  id="feature-category"
-                  name="category"
-                  value={featureData.category}
-                  onChange={handleFeatureChange}
-                  className="form-select"
-                >
-                  <option value="">Select area</option>
-                  <option value="Quiz">Quiz</option>
-                  <option value="Resources">Resources</option>
-                  <option value="Questions">Questions</option>
-                  <option value="Dashboard">Dashboard</option>
-                  <option value="Chat">Chat</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="feature-description">Description</label>
-                <textarea
-                  id="feature-description"
-                  name="description"
-                  value={featureData.description}
-                  onChange={handleFeatureChange}
-                  placeholder="Describe your feature idea and how it would help you."
-                  rows="5"
-                  required
-                />
-              </div>
-              <button type="submit" className="submit-button">
-                Send feature request
-              </button>
-            </form>
           </div>
         </section>
       </div>
