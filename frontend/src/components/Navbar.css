@@ -220,6 +220,15 @@
   color: #239ecf;
 }
 
+.nav-dropdown-item-button--logout {
+  color: #f44336;
+}
+
+.nav-dropdown-item-button--logout:hover {
+  background: #f44336;
+  color: #fff;
+}
+
 /* Profile dropdown (avatar trigger) */
 .nav-profile-dropdown-wrapper {
   position: relative;

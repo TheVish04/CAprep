@@ -242,7 +242,7 @@ const Navbar = () => {
                         <NotificationsDropdown embedded />
                       </li>
                       <li role="none">
-                        <button type="button" className="nav-dropdown-item nav-dropdown-item-button" onClick={() => { setProfileDropdownOpen(false); handleLogout(); }} role="menuitem">
+                        <button type="button" className="nav-dropdown-item nav-dropdown-item-button nav-dropdown-item-button--logout" onClick={() => { setProfileDropdownOpen(false); handleLogout(); }} role="menuitem">
                           Logout
                         </button>
                       </li>
