@@ -17,6 +17,7 @@ const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const { clearAllCache } = require('./middleware/cacheMiddleware');
+const logger = require('./config/logger');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -42,7 +43,7 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Get allowed origins from environment variable
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://caprep.vercel.app', 'http://localhost:5173', 'http://localhost:3000'];
-console.log('Configured CORS allowed origins:', allowedOrigins);
+logger.info(`Configured CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
 // CORS middleware configuration
 app.use(cors({
@@ -53,7 +54,7 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.warn(`CORS blocked request from: ${origin}`);
+      logger.warn(`CORS blocked request from: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -77,7 +78,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+    logger.info(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
   }
   
   // Handle preflight requests
@@ -94,7 +95,7 @@ app.options('*', cors());
 // Request logging (development only - avoid logging body/headers in production)
 if (process.env.NODE_ENV === 'development') {
   app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
+    logger.info(`${req.method} ${req.path} - Origin: ${req.headers.origin || 'No origin'}`);
     next();
   });
 }
@@ -106,70 +107,61 @@ const initializeDatabase = async () => {
     const databaseDir = path.join(__dirname, 'database');
     if (!fs.existsSync(databaseDir)) {
       fs.mkdirSync(databaseDir, { recursive: true });
-      console.log('Created database directory for file persistence');
+      logger.info('Created database directory for file persistence');
     }
 
     // Connect to MongoDB
     const conn = await connectDB();
-    console.log('Database connection established successfully');
+    logger.info('Database connection established successfully');
 
     // Verify models (with more detailed logging)
     let modelsValid = true;
 
     // Verify User model
     if (!User) {
-      console.error('User model is undefined. Import path or file issue:', {
+      logger.error('User model is undefined. Import path or file issue: ' + JSON.stringify({
         filePath: './models/UserModel',
         cwd: process.cwd(),
-      });
+      }));
       modelsValid = false;
     } else if (typeof User.findOne !== 'function') {
-      console.error('User model lacks findOne method:', User);
+      logger.error('User model lacks findOne method');
       modelsValid = false;
     } else {
-      console.log('User model loaded successfully');
+      logger.info('User model loaded successfully');
     }
 
     // Verify Question model
     if (!Question) {
-      console.error('Question model is undefined. Import path or file issue:', {
-        filePath: './models/QuestionModel',
-        cwd: process.cwd(),
-      });
+      logger.error('Question model is undefined. Import path or file issue: ' + JSON.stringify({ filePath: './models/QuestionModel', cwd: process.cwd() }));
       modelsValid = false;
     } else if (typeof Question.findOne !== 'function') {
-      console.error('Question model lacks findOne method:', Question);
+      logger.error('Question model lacks findOne method');
       modelsValid = false;
     } else {
-      console.log('Question model loaded successfully');
+      logger.info('Question model loaded successfully');
     }
     
     // Verify Resource model
     if (!Resource) {
-      console.error('Resource model is undefined. Import path or file issue:', {
-        filePath: './models/ResourceModel',
-        cwd: process.cwd(),
-      });
+      logger.error('Resource model is undefined. Import path or file issue: ' + JSON.stringify({ filePath: './models/ResourceModel', cwd: process.cwd() }));
       modelsValid = false;
     } else if (typeof Resource.findOne !== 'function') {
-      console.error('Resource model lacks findOne method:', Resource);
+      logger.error('Resource model lacks findOne method');
       modelsValid = false;
     } else {
-      console.log('Resource model loaded successfully');
+      logger.info('Resource model loaded successfully');
     }
 
     // Verify Discussion model
     if (!Discussion) {
-      console.error('Discussion model is undefined. Import path or file issue:', {
-        filePath: './models/DiscussionModel',
-        cwd: process.cwd(),
-      });
+      logger.error('Discussion model is undefined. Import path or file issue: ' + JSON.stringify({ filePath: './models/DiscussionModel', cwd: process.cwd() }));
       modelsValid = false;
     } else if (typeof Discussion.findOne !== 'function') {
-      console.error('Discussion model lacks findOne method:', Discussion);
+      logger.error('Discussion model lacks findOne method');
       modelsValid = false;
     } else {
-      console.log('Discussion model loaded successfully');
+      logger.info('Discussion model loaded successfully');
     }
 
     if (!modelsValid) {
@@ -180,47 +172,44 @@ const initializeDatabase = async () => {
     try {
       await checkAndCreateAdmin();
     } catch (adminError) {
-      console.error('Admin creation failed but server initialization will continue:', adminError.message);
+      logger.error('Admin creation failed but server initialization will continue: ' + adminError.message);
       // Continue with server initialization despite admin creation failure
     }
 
     // Log total number of users for debugging
     try {
       const userCount = await User.countDocuments();
-      console.log(`Total users in database: ${userCount}`);
+      logger.info(`Total users in database: ${userCount}`);
     } catch (err) {
-      console.error('Error counting users:', err.message);
+      logger.error('Error counting users: ' + err.message);
     }
 
     // Log total number of questions for debugging
     try {
       const questionCount = await Question.countDocuments();
-      console.log(`Total questions in database: ${questionCount}`);
+      logger.info(`Total questions in database: ${questionCount}`);
     } catch (err) {
-      console.error('Error counting questions:', err.message);
+      logger.error('Error counting questions: ' + err.message);
     }
     
     // Log total number of resources for debugging
     try {
       const resourceCount = await Resource.countDocuments();
-      console.log(`Total resources in database: ${resourceCount}`);
+      logger.info(`Total resources in database: ${resourceCount}`);
     } catch (err) {
-      console.error('Error counting resources:', err.message);
+      logger.error('Error counting resources: ' + err.message);
     }
 
-    console.log('Setting up API routes...');
+    logger.info('Setting up API routes...');
     mountRoutes(app);
 
     return true; // Signal successful initialization
   } catch (err) {
-    console.error('Error initializing database or models:', {
-      message: err.message,
-      stack: err.stack,
-    });
+    logger.error('Error initializing database or models: ' + err.message);
     
     // Continue server initialization if possible
     if (mongoose.connection.readyState === 1) {
-      console.warn('Attempting to continue server initialization despite errors');
+      logger.warn('Attempting to continue server initialization despite errors');
       mountRoutes(app);
       return true;
     }
@@ -257,7 +246,7 @@ app.post('/api/admin/clear-cache', authMiddleware, adminMiddleware, (req, res) =
     clearAllCache();
     res.status(200).json({ success: true, message: 'All caches cleared successfully' });
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    logger.error('Error clearing cache: ' + error.message);
     res.status(500).json({ success: false, error: 'Failed to clear cache' });
   }
 });
@@ -271,10 +260,10 @@ const startServer = async () => {
     let dbInitialized = false;
     try {
       dbInitialized = await initializeDatabase();
-      console.log('Database initialization successful:', dbInitialized);
+      logger.info(`Database initialization successful: ${dbInitialized}`);
     } catch (dbError) {
-      console.error('Database initialization error:', dbError.message);
-      console.warn('Server will continue without full database functionality');
+      logger.error(`Database initialization error: ${dbError.message}`);
+      logger.warn('Server will continue without full database functionality');
     }
 
     // Define fallback routes if database initialization fails
@@ -289,7 +278,7 @@ const startServer = async () => {
 
     // Error handling middleware
     app.use((err, req, res, next) => {
-      console.error(err.stack);
+      logger.error(err.stack);
       res.status(500).json({ 
         error: 'Server error', 
         message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong' 
@@ -304,23 +293,23 @@ const startServer = async () => {
     // Start the server
     await new Promise(resolve => {
       const server = app.listen(PORT, () => {
-        console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+        logger.info(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
         resolve();
       });
       
       // Handle server errors
       server.on('error', (error) => {
         if (error.code === 'EADDRINUSE') {
-          console.error(`Port ${PORT} is already in use`);
+          logger.error(`Port ${PORT} is already in use`);
         } else {
-          console.error('Server error:', error);
+          logger.error(`Server error: ${error.message}`);
         }
         process.exit(1);
       });
     });
     
   } catch (error) {
-    console.error('UNHANDLED REJECTION! 💥 Shutting down...', error);
+    logger.error(`UNHANDLED REJECTION! Shutting down... ${error.message}`);
     process.exit(1);
   }
 };

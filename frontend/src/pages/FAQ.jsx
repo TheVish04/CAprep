@@ -583,7 +583,7 @@ const FAQ = () => {
                     <li><strong>Data Privacy:</strong> We adhere to strict privacy practices and never share your personal information with third parties without your consent</li>
                     <li><strong>Secure Payments:</strong> All payment processing is handled by trusted providers with PCI DSS compliance</li>
                   </ul>
-                  <p>For more detailed information about how we handle your data, please review our <Link to="/privacy">Privacy Policy</Link>.</p>
+                  <p>For more detailed information about how we handle your data, please <Link to="/contactus">contact us</Link>.</p>
                 </div>
               </details>
             </div>

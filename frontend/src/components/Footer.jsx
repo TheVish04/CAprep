@@ -20,14 +20,6 @@ const Footer = () => {
             </ul>
           </div>
           <div className="footer-column">
-            <h4>Policies</h4>
-            <ul>
-              <li><Link to="/terms">Terms & Conditions</Link></li>
-              <li><Link to="/privacy">Privacy Policy</Link></li>
-              <li><Link to="/refund">Refund Policy</Link></li>
-            </ul>
-          </div>
-          <div className="footer-column">
             <h4>Contact Us</h4>
             <ul className="contact-info">
               <li>Email: <a href="mailto:caprep8@gmail.com">caprep8@gmail.com</a></li>

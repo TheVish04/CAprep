@@ -10,6 +10,7 @@ const dashboardRoutes = require('../routes/dashboard');
 const announcementRoutes = require('../routes/announcements');
 const notificationRoutes = require('../routes/notifications');
 const contactRoutes = require('../routes/contact');
+const logger = require('../config/logger');
 
 /**
  * Mount all API routes on the Express app.
@@ -27,7 +28,7 @@ const mountRoutes = (app) => {
   app.use('/api/announcements', authMiddleware, announcementRoutes);
   app.use('/api/notifications', authMiddleware, notificationRoutes);
   app.use('/api/contact', contactRoutes);
-  console.log('API routes initialized successfully');
+  logger.info('API routes initialized successfully');
 };
 
 module.exports = { mountRoutes };

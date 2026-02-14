@@ -26,7 +26,6 @@ import QuizReview from './pages/QuizReview';
 import Dashboard from './components/Dashboard';
 import AdminAnnouncements from './components/AdminAnnouncements';
 import ChatBotPage from './pages/ChatBotPage';
-// Policy pages removed
 import FAQ from './pages/FAQ';
 
 const ProtectedRoute = ({ element, requireAdmin = false }) => {
@@ -114,7 +113,6 @@ const App = () => {
             <Route path="/about" element={<About />} />
             <Route path="/contactus" element={<ContactUs />} />
             <Route path="/chat" element={<ProtectedRoute element={<ChatBotPage />} />} />
-            {/* Policy page routes removed */}
             <Route path="/faq" element={<FAQ />} />
             
             {/* Protected Routes */}
