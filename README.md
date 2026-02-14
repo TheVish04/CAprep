@@ -922,20 +922,36 @@ CAPrep/
 
 ## 14. Scalability, Performance & Future Roadmap
 
-**Scalability & performance**
+### Scalability & performance
 
-- **Caching:** In-memory cache (node-cache) for GET routes (e.g. questions list, count, quiz, resources); cache key includes user id and URL; admin can clear cache via POST `/api/admin/clear-cache`. Reduces repeated DB and external calls.
-- **Rate limiting:** Global limit (e.g. 200 requests per 15 min per IP) and stricter limits on auth endpoints (login, send-otp, forgot-password) reduce abuse and burst load.
-- **Database:** Mongoose indexes on frequently filtered fields (subject, examStage, type, validUntil, etc.) and text indexes where search is used; array length caps on user documents (e.g. quizHistory, studyHours) to keep documents bounded.
-- **Search:** User search input is escaped before `$regex` to avoid expensive or malicious regex patterns.
-- **Static assets:** PWA service worker caches same-origin static assets; API responses are not cached by the service worker. Frontend build output can be served via CDN.
+- **Caching**
+  - In-memory cache (node-cache) for GET routes: questions (list 300s, count/available-subjects/all-subjects 3600s, quiz 900s), resources (list 300s, count 300s, by-id 3600s). Cache key: `userId:originalUrl`; clients can bypass with `x-skip-cache: true`. Mutations clear affected cache; admin can clear all via `POST /api/admin/clear-cache`.
+  - Reduces repeated DB hits and keeps response times low for list/count/quiz and resource reads.
 
-**Future roadmap**
+- **Rate limiting**
+  - Global: 200 requests per 15 min per IP on `/api/` (express-rate-limit).
+  - Auth: login 10/15 min, send-otp 5/15 min, forgot-password 5/15 min per IP. Lowers abuse and brute-force risk.
 
-- Code-splitting and lazy loading for admin and heavy pages to reduce initial bundle size.
-- Optional Docker and CI configuration for reproducible builds and deployments.
-- Unit and integration tests for critical paths (auth, quiz, contact, admin).
-- Optional Redis or external cache for multi-instance deployments.
+- **Database**
+  - Mongoose indexes on hot paths: User (email, role, quizHistory.date, studyHours.date, compound role+createdAt), Question/Resource (subject, examStage, type, compound filters, text search), Discussion, Notification, Announcement, AuditLog, ContactSubmission.
+  - User document caps: quizHistory ≤100, studyHours ≤365, recentlyViewed ≤50 each, resourceEngagement ≤100. Keeps user documents bounded and queries predictable.
+
+- **Search**
+  - User search is escaped with `escapeRegex()` before use in MongoDB `$regex` (questions and resources). Avoids regex injection and runaway patterns.
+
+- **Queries**
+  - `.lean()` used where appropriate (dashboard, admin, notifications, discussions) to return plain objects and reduce memory.
+  - Pagination and `.limit()` on list endpoints (questions, resources, admin, notifications, announcements).
+
+- **Static & frontend**
+  - PWA service worker caches same-origin static assets; API responses are not cached by the SW. Production build can be served via CDN (e.g. Vercel).
+
+### Future roadmap
+
+- **Frontend:** Code-splitting and lazy loading for admin and heavy routes (e.g. Quiz, Chat, AdminPanel) to reduce initial bundle size.
+- **DevOps:** Optional Docker and CI (e.g. GitHub Actions) for reproducible builds and automated tests/deploys.
+- **Testing:** Unit and integration tests for critical paths (auth, quiz, contact, admin, cache invalidation).
+- **Scale-out:** Optional Redis or external cache for multi-instance deployments so cache is shared across nodes.
 
 ---
 
