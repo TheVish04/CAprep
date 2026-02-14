@@ -5,6 +5,7 @@ const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@googl
 const { authMiddleware } = require('../middleware/authMiddleware');
 const Question = require('../models/QuestionModel');
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 require('dotenv').config(); // Ensure environment variables are loaded
 
 // Initialize Gemini Client
@@ -282,13 +283,8 @@ Use these examples to refine the quality and relevance of the questions you gene
           logger.info("Successfully parsed " + generatedQuestions.length + " questions.");
 
         } catch (parseError) {
-          logger.error("Failed to parse AI response JSON: " + (parseError && parseError.message));
-          // logger.error("First 200 chars of raw content:", rawContent.substring(0, 200));
-          return res.status(500).json({ 
-            error: 'Failed to parse AI response.', 
-            details: parseError.message,
-            rawContentPreview: rawContent.substring(0, 100) + "..." 
-          });
+          sendErrorResponse(res, 500, { message: 'Failed to parse AI response.', error: parseError });
+          return;
         }
 
       } else {
@@ -310,24 +306,12 @@ Use these examples to refine the quality and relevance of the questions you gene
       res.status(200).json(generatedQuestions);
 
     } catch (apiError) {
-      logger.error('Error calling Gemini API: ' + (apiError && apiError.message));
-      logger.error('API error details: ' + (apiError && JSON.stringify(apiError)));
-      return res.status(500).json({ 
-        error: 'Error calling AI service API', 
-        details: apiError.message,
-        apiErrorDetails: JSON.stringify(apiError)
-      });
+      sendErrorResponse(res, 500, { message: 'Error calling AI service API', error: apiError });
+      return;
     }
 
   } catch (error) {
-    // General error handling for API calls or other issues
-    logger.error('Error generating AI quiz: ' + (error && error.message));
-    logger.error('Stack trace: ' + (error && error.stack));
-    res.status(500).json({ 
-      error: 'Failed to generate AI quiz.', 
-      details: error.message,
-      stack: error.stack
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to generate AI quiz.', error });
   }
 });
 
@@ -428,12 +412,10 @@ router.post('/ask', authMiddleware, async (req, res) => {
         throw new Error("Empty or invalid response from AI service");
       }
     } catch (aiError) {
-      logger.error("Error calling Gemini AI chat: " + (aiError && aiError.message));
-      res.status(500).json({ error: 'Failed to generate answer', details: aiError.message });
+      sendErrorResponse(res, 500, { message: 'Failed to generate answer', error: aiError });
     }
   } catch (error) {
-    logger.error('Error handling CA question: ' + (error && error.message));
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    sendErrorResponse(res, 500, { message: 'Internal server error', error });
   }
 });
 

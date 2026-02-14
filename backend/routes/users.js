@@ -9,6 +9,7 @@ const User = require('../models/UserModel');
 const Question = require('../models/QuestionModel');
 const Resource = require('../models/ResourceModel'); // Import Resource model
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 
 // Multer setup for memory storage
 const storage = multer.memoryStorage();
@@ -305,11 +306,7 @@ router.post('/me/quiz-history', authMiddleware, async (req, res) => {
         res.status(201).json(user.quizHistory[0]);
 
     } catch (error) {
-        logger.error('Error saving quiz history: ' + (error && error.message));
-        res.status(500).json({ 
-            error: 'Failed to save quiz history',
-            details: error.message 
-        });
+        sendErrorResponse(res, 500, { message: 'Failed to save quiz history', error });
     }
 });
 

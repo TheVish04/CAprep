@@ -7,6 +7,7 @@ const User = require('../models/UserModel');
 const { questionSchema } = require('../validators/questionValidator');
 const { logAudit } = require('../utils/auditLog');
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 
 router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
@@ -62,8 +63,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
     logger.info('Question created with ID: ' + question.id);
     res.status(201).json({ id: question.id, ...questionData });
   } catch (error) {
-    logger.error('Error creating question: ' + (error && error.message));
-    res.status(500).json({ error: `Failed to create question: ${error.message}` });
+    sendErrorResponse(res, 500, { message: 'Failed to create question', error });
   }
 });
 
@@ -123,8 +123,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
     logger.info('Question updated successfully for ID: ' + id);
     res.json({ message: 'Question updated successfully', id, ...updatedData });
   } catch (error) {
-    logger.error('Error updating question: ' + (error && error.message));
-    res.status(500).json({ error: `Failed to update question: ${error.message}` });
+    sendErrorResponse(res, 500, { message: 'Failed to update question', error });
   }
 });
 
@@ -175,8 +174,7 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Error fetching questions: ' + (error && error.message));
-    res.status(500).json({ error: 'Failed to fetch questions' });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch questions', error });
   }
 });
 
@@ -205,11 +203,7 @@ router.delete('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
     logger.info('Successfully deleted question with ID: ' + id);
     res.json({ message: 'Question deleted successfully', id });
   } catch (error) {
-    logger.error('Error deleting question: ' + (error && error.message));
-    res.status(500).json({ 
-      error: 'Failed to delete question',
-      details: error.message
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to delete question', error });
   }
 });
 
@@ -219,8 +213,7 @@ router.get('/count', [cacheMiddleware(3600)], async (req, res) => {
     const count = await Question.countDocuments();
     res.json({ count });
   } catch (error) {
-    logger.error('Error fetching question count: ' + (error && error.message));
-    res.status(500).json({ error: `Failed to fetch question count: ${error.message}` });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch question count', error });
   }
 });
 
@@ -262,8 +255,7 @@ router.get('/quiz', [authMiddleware, cacheMiddleware(900)], async (req, res) => 
     
     res.json(mcqQuestions);
   } catch (error) {
-    logger.error('Error fetching MCQ questions for quiz: ' + (error && error.message));
-    res.status(500).json({ error: `Failed to fetch quiz questions: ${error.message}` });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch quiz questions', error });
   }
 });
 
@@ -302,8 +294,7 @@ router.get('/available-subjects', [authMiddleware, cacheMiddleware(3600)], async
     
     res.json(availableSubjects);
   } catch (error) {
-    logger.error('Error fetching available subjects: ' + (error && error.message));
-    res.status(500).json({ error: `Failed to fetch available subjects: ${error.message}` });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch available subjects', error });
   }
 });
 
@@ -389,8 +380,7 @@ router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req,
     
     res.json(mergedSubjects);
   } catch (error) {
-    logger.error('Error fetching all subjects: ' + (error && error.message));
-    res.status(500).json({ error: `Failed to fetch subjects: ${error.message}` });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch subjects', error });
   }
 });
 
@@ -416,8 +406,7 @@ router.post('/batch', [authMiddleware], async (req, res) => {
     
     res.json(questions);
   } catch (error) {
-    logger.error('Error fetching batch questions: ' + (error && error.message));
-    res.status(500).json({ error: 'Failed to fetch batch questions' });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch batch questions', error });
   }
 });
 

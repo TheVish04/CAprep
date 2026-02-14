@@ -11,6 +11,7 @@ const Notification = require('../models/NotificationModel');
 const ContactSubmission = require('../models/ContactSubmissionModel');
 const { logAudit } = require('../utils/auditLog');
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 
 // GET /api/admin/users - List users with pagination (admin only)
 router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
@@ -34,8 +35,7 @@ router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Error fetching admin users: ' + (error && error.message));
-    res.status(500).json({ error: 'Failed to fetch users' });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch users', error });
   }
 });
 
@@ -105,8 +105,7 @@ router.get('/analytics', authMiddleware, adminMiddleware, async (req, res) => {
         res.json(analytics);
 
     } catch (error) {
-        logger.error('Error fetching admin analytics: ' + (error && error.message));
-        res.status(500).json({ error: 'Failed to fetch analytics data' });
+        sendErrorResponse(res, 500, { message: 'Failed to fetch analytics data', error });
     }
 });
 
@@ -154,8 +153,7 @@ router.post('/announcements', authMiddleware, adminMiddleware, async (req, res) 
       data: announcement
     });
   } catch (error) {
-    logger.error('Create announcement error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error creating announcement', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error creating announcement', error });
   }
 });
 
@@ -195,8 +193,7 @@ router.get('/announcements', authMiddleware, adminMiddleware, async (req, res) =
       }
     });
   } catch (error) {
-    logger.error('Get announcements error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error retrieving announcements', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error retrieving announcements', error });
   }
 });
 
@@ -229,8 +226,7 @@ router.put('/announcements/:id', authMiddleware, adminMiddleware, async (req, re
       data: announcement
     });
   } catch (error) {
-    logger.error('Update announcement error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error updating announcement', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error updating announcement', error });
   }
 });
 
@@ -251,8 +247,7 @@ router.delete('/announcements/:id', authMiddleware, adminMiddleware, async (req,
       message: 'Announcement deleted successfully'
     });
   } catch (error) {
-    logger.error('Delete announcement error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error deleting announcement', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error deleting announcement', error });
   }
 });
 
@@ -282,8 +277,7 @@ router.get('/audit', authMiddleware, adminMiddleware, async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Error fetching audit log: ' + (error && error.message));
-    res.status(500).json({ error: 'Failed to fetch audit log' });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch audit log', error });
   }
 });
 
@@ -297,8 +291,7 @@ router.get('/contact/feature-requests', authMiddleware, adminMiddleware, async (
       .lean();
     res.status(200).json({ success: true, data: submissions });
   } catch (error) {
-    logger.error('Error fetching feature requests: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Failed to fetch feature requests', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch feature requests', error });
   }
 });
 
@@ -312,8 +305,7 @@ router.get('/contact/report-issues', authMiddleware, adminMiddleware, async (req
       .lean();
     res.status(200).json({ success: true, data: submissions });
   } catch (error) {
-    logger.error('Error fetching report issues: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Failed to fetch issue reports', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch issue reports', error });
   }
 });
 

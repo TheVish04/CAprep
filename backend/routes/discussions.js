@@ -7,6 +7,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const mongoose = require('mongoose');
 const { sendReplyNotificationEmail } = require('../services/otpService');
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 
 // Get all discussions for a user (MUST be before /:itemType/:itemId to avoid route shadowing)
 router.get('/user/me', authMiddleware, async (req, res) => {
@@ -20,8 +21,7 @@ router.get('/user/me', authMiddleware, async (req, res) => {
     
     res.json(discussions);
   } catch (error) {
-    logger.error('Error fetching user discussions: ' + (error && error.message));
-    res.status(500).json({ error: 'Failed to fetch discussions' });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch discussions', error });
   }
 });
 
@@ -70,11 +70,7 @@ router.get('/:itemType/:itemId', authMiddleware, async (req, res) => {
     
     res.json(discussion);
   } catch (error) {
-    logger.error('Error fetching discussion: ' + (error && error.message));
-    res.status(500).json({ 
-      error: 'Failed to fetch discussion',
-      message: error.message 
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to fetch discussion', error });
   }
 });
 
@@ -175,12 +171,7 @@ router.post('/:itemType/:itemId/message', authMiddleware, async (req, res) => {
     logger.info('Successfully added message, returning updated discussion');
     res.json(updatedDiscussion);
   } catch (error) {
-    logger.error('Error adding message: ' + (error && error.message));
-    res.status(500).json({ 
-      error: 'Failed to add message',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to add message', error });
   }
 });
 
@@ -229,8 +220,7 @@ router.post('/:discussionId/message/:messageId/like', authMiddleware, async (req
     
     res.json(updatedDiscussion);
   } catch (error) {
-    logger.error('Error toggling like: ' + (error && error.message));
-    res.status(500).json({ error: 'Failed to toggle like' });
+    sendErrorResponse(res, 500, { message: 'Failed to toggle like', error });
   }
 });
 
@@ -286,11 +276,7 @@ router.put('/:discussionId/message/:messageId', authMiddleware, async (req, res)
     
     res.json(updatedDiscussion);
   } catch (error) {
-    logger.error('Error editing message: ' + (error && error.message));
-    res.status(500).json({ 
-      error: 'Failed to edit message',
-      message: error.message
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to edit message', error });
   }
 });
 
@@ -366,11 +352,7 @@ router.delete('/:discussionId/message/:messageId', authMiddleware, async (req, r
     
     res.json(updatedDiscussion);
   } catch (error) {
-    logger.error('Error deleting message: ' + (error && error.message));
-    res.status(500).json({ 
-      error: 'Failed to delete message',
-      message: error.message
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to delete message', error });
   }
 });
 

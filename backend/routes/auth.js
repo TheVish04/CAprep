@@ -9,6 +9,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const { generateOTP, verifyOTP, sendOTPEmail, isEmailVerified, removeVerifiedEmail, markEmailAsVerified, sendPasswordResetEmail } = require('../services/otpService');
 const otpGenerator = require('otp-generator');
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 require('dotenv').config();
 
 // Route-specific rate limiters (stricter than global API limit)
@@ -524,8 +525,7 @@ return res.status(404).json({ error: 'User not found' });
 
 res.json(user);
 } catch (error) {
-logger.error('Error in /me route: ' + (error && error.message));
-res.status(500).json({ error: 'Failed to fetch user info', details: error.message });
+  sendErrorResponse(res, 500, { message: 'Failed to fetch user info', error });
 }
 });
 
@@ -696,7 +696,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
       } else {
         return res.status(500).json({
           error: 'Failed to send password reset email. Please try again later.',
-          details: emailResult.error
+          ...(process.env.NODE_ENV === 'development' && emailResult.error ? { details: emailResult.error } : {})
         });
       }
     }

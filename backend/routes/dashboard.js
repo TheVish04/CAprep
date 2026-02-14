@@ -8,6 +8,7 @@ const Resource = require('../models/ResourceModel');
 const Discussion = require('../models/DiscussionModel');
 const Announcement = require('../models/AnnouncementModel');
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 
 // Get all dashboard data in a single request
 router.get('/', authMiddleware, async (req, res) => {
@@ -211,8 +212,7 @@ router.get('/', authMiddleware, async (req, res) => {
     
     res.status(200).json({ success: true, data: dashboardData });
   } catch (error) {
-    logger.error('Dashboard data error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error retrieving dashboard data', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error retrieving dashboard data', error });
   }
 });
 
@@ -251,8 +251,7 @@ router.post('/study-session', authMiddleware, async (req, res) => {
       data: studyEntry
     });
   } catch (error) {
-    logger.error('Study session tracking error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error tracking study session', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error tracking study session', error });
   }
 });
 
@@ -324,8 +323,7 @@ router.post('/resource-engagement', authMiddleware, async (req, res) => {
       message: 'Resource engagement tracked successfully'
     });
   } catch (error) {
-    logger.error('Resource engagement tracking error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error tracking resource engagement', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error tracking resource engagement', error });
   }
 });
 
@@ -382,8 +380,7 @@ router.post('/question-view', authMiddleware, async (req, res) => {
       message: 'Question view tracked successfully'
     });
   } catch (error) {
-    logger.error('Question view tracking error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error tracking question view', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error tracking question view', error });
   }
 });
 
@@ -464,8 +461,7 @@ router.post('/resource-view', authMiddleware, async (req, res) => {
       message: 'Resource view tracked successfully'
     });
   } catch (error) {
-    logger.error('Resource view tracking error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error tracking resource view', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error tracking resource view', error });
   }
 });
 
@@ -484,8 +480,7 @@ router.get('/announcements', authMiddleware, async (req, res) => {
       data: announcements
     });
   } catch (error) {
-    logger.error('Announcements retrieval error: ' + (error && error.message));
-    res.status(500).json({ success: false, message: 'Error retrieving announcements', error: error.message });
+    sendErrorResponse(res, 500, { message: 'Error retrieving announcements', error });
   }
 });
 

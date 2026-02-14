@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../config/logger');
+const { sendErrorResponse } = require('../utils/errorResponse');
 const Resource = require('../models/ResourceModel');
 const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
 const { cacheMiddleware, clearCache } = require('../middleware/cacheMiddleware');
@@ -81,12 +82,7 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
       }
     });
   } catch (error) {
-    if (typeof logger !== 'undefined' && logger.error) {
-      logger.error(`Error retrieving resources: ${error.message}`);
-    } else {
-      logger.error(`Error retrieving resources: ${error.message}`);
-    }
-    res.status(500).json({ error: 'Failed to retrieve resources' });
+    sendErrorResponse(res, 500, { message: 'Failed to retrieve resources', error });
   }
 });
 
@@ -96,8 +92,7 @@ router.get('/count', cacheMiddleware(300), async (req, res) => {
     const count = await Resource.countDocuments({});
     res.status(200).json({ count });
   } catch (error) {
-    logger.error(`Error counting resources: ${error.message}`);
-    res.status(500).json({ error: 'Failed to count resources' });
+    sendErrorResponse(res, 500, { message: 'Failed to count resources', error });
   }
 });
 
@@ -112,8 +107,7 @@ router.get('/:id', [authMiddleware, cacheMiddleware(3600)], async (req, res) => 
     
     res.status(200).json(resource);
   } catch (error) {
-    logger.error(`Error retrieving resource: ${error.message}`);
-    res.status(500).json({ error: 'Failed to retrieve resource' });
+    sendErrorResponse(res, 500, { message: 'Failed to retrieve resource', error });
   }
 });
 
@@ -146,8 +140,7 @@ router.post('/:id/rate', authMiddleware, async (req, res) => {
     if (error.message?.includes('Rating must be between 1 and 5')) {
       return res.status(400).json({ error: error.message });
     }
-    logger.error(`Error rating resource: ${error.message}`);
-    res.status(500).json({ error: 'Failed to rate resource' });
+    sendErrorResponse(res, 500, { message: 'Failed to rate resource', error });
   }
 });
 
@@ -233,12 +226,7 @@ router.post('/', authMiddleware, adminMiddleware, upload.single('file'), async (
     
     res.status(201).json(savedResource);
   } catch (error) {
-    logger.error(`Error creating resource: ${error.message}`);
-    logger.error(`Error stack: ${error.stack}`);
-    res.status(500).json({ 
-      error: 'Failed to create resource',
-      details: error.message
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to create resource', error });
   }
 });
 
@@ -271,8 +259,7 @@ router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     await logAudit(req.user.id, 'update', 'resource', req.params.id, { title: resource.title });
     res.status(200).json(resource);
   } catch (error) {
-    logger.error(`Error updating resource: ${error.message}`);
-    res.status(500).json({ error: 'Failed to update resource' });
+    sendErrorResponse(res, 500, { message: 'Failed to update resource', error });
   }
 });
 
@@ -310,8 +297,7 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     await logAudit(req.user.id, 'delete', 'resource', req.params.id, { title });
     res.status(200).json({ message: 'Resource deleted successfully' });
   } catch (error) {
-    logger.error(`Error deleting resource: ${error.message}`);
-    res.status(500).json({ error: 'Failed to delete resource' });
+    sendErrorResponse(res, 500, { message: 'Failed to delete resource', error });
   }
 });
 
@@ -349,12 +335,7 @@ router.post('/:id/download', async (req, res) => {
     logger.log(`Download count incremented for resource ID: ${req.params.id}, new count: ${resource.downloadCount}`);
     res.status(200).json({ downloadCount: resource.downloadCount });
   } catch (error) {
-    logger.error(`Error incrementing download count: ${error.message}`);
-    logger.error(`Error stack: ${error.stack}`);
-    res.status(500).json({ 
-      error: 'Failed to increment download count',
-      details: error.message
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to increment download count', error });
   }
 });
 
@@ -456,11 +437,7 @@ router.get('/:id/download', async (req, res) => {
             details: 'No response received from storage provider'
           });
         } else {
-          logger.error('Error setting up request to Cloudinary');
-          return res.status(500).json({ 
-            error: 'Failed to download file from storage',
-            details: error.message
-          });
+          return sendErrorResponse(res, 500, { message: 'Failed to download file from storage', error });
         }
       }
     } else {
@@ -469,12 +446,7 @@ router.get('/:id/download', async (req, res) => {
       return res.redirect(fileUrl);
     }
   } catch (error) {
-    logger.error(`Error in download proxy: ${error.message}`);
-    logger.error(`Error stack: ${error.stack}`);
-    res.status(500).json({ 
-      error: 'Failed to download resource',
-      details: error.message
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to download resource', error });
   }
 });
 
@@ -566,12 +538,7 @@ router.get('/:id/download-url', authMiddleware, async (req, res) => {
       filename: `${resource.title.replace(/[^\w\s.-]/g, '')}.pdf`
     });
   } catch (error) {
-    logger.error(`Error generating download URL: ${error.message}`);
-    logger.error(`Error stack: ${error.stack}`);
-    res.status(500).json({ 
-      error: 'Failed to generate download URL',
-      details: error.message
-    });
+    sendErrorResponse(res, 500, { message: 'Failed to generate download URL', error });
   }
 });
 
