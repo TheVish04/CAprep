@@ -31,20 +31,13 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     const [otpSending, setOtpSending] = useState(false);
     const [otpVerifying, setOtpVerifying] = useState(false);
     const fileInputRef = React.useRef(null);
-    const bannerTimeoutRef = React.useRef(null);
 
     const showBanner = useCallback((type, message) => {
-        if (bannerTimeoutRef.current) {
-            clearTimeout(bannerTimeoutRef.current);
-            bannerTimeoutRef.current = null;
-        }
-        setError(null);
         setBanner({ type, message });
+        setError(null);
         if (type === 'success') {
-            bannerTimeoutRef.current = setTimeout(() => {
-                setBanner(null);
-                bannerTimeoutRef.current = null;
-            }, 5000);
+            const t = setTimeout(() => setBanner(null), 4000);
+            return () => clearTimeout(t);
         }
     }, []);
 
@@ -101,7 +94,6 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             showBanner('success', 'OTP sent to your new email. Check your inbox.');
         } catch (err) {
             const msg = err.response?.data?.error || 'Failed to send OTP. Try again later.';
-            setError(null);
             setBanner({ type: 'error', message: msg });
         } finally {
             setOtpSending(false);
@@ -123,7 +115,6 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             showBanner('success', 'Email verified. Click "Save changes" to update your email.');
         } catch (err) {
             const msg = err.response?.data?.error || 'Invalid or expired OTP. Request a new one.';
-            setError(null);
             setBanner({ type: 'error', message: msg });
         } finally {
             setOtpVerifying(false);
@@ -150,7 +141,6 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                 showBanner('success', 'Profile photo updated successfully.');
             } catch (err) {
                 const msg = err.response?.data?.error || 'Failed to upload photo.';
-                setError(null);
                 setBanner({ type: 'error', message: msg });
             } finally {
                 setPhotoActionLoading(false);
@@ -183,7 +173,6 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             showBanner('success', 'Profile photo removed.');
         } catch (err) {
             const msg = err.response?.data?.error || 'Failed to remove photo.';
-            setError(null);
             setBanner({ type: 'error', message: msg });
         } finally {
             setPhotoActionLoading(false);
@@ -255,8 +244,8 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
             }, 1500);
         } catch (err) {
             const msg = err.response?.data?.error || 'Failed to update profile.';
-            setError(null);
             setBanner({ type: 'error', message: msg });
+            setError(msg);
         } finally {
             setLoading(false);
         }
