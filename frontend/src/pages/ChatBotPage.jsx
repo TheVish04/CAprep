@@ -187,14 +187,17 @@ const ChatBotPage = () => {
 
     const convoToUpdate = selectedConversation || createdConversationRef.current;
     if (convoToUpdate) {
-      // Update existing conversation (created on first user message or from ref in error path)
-      const updatedConvo = {
-        ...convoToUpdate,
-        messages: conversation,
-        timestamp: new Date()
-      };
       createdConversationRef.current = null;
       setChatHistory(prev => {
+        // Preserve current title (may be AI-generated) - don't overwrite with stale convoToUpdate.title
+        const existingConvo = prev.find(c => c.id === convoToUpdate.id);
+        const titleToKeep = existingConvo?.title ?? convoToUpdate.title;
+        const updatedConvo = {
+          ...convoToUpdate,
+          messages: conversation,
+          timestamp: new Date(),
+          title: titleToKeep
+        };
         const newHistory = [
           updatedConvo,
           ...prev.filter(c => c.id !== convoToUpdate.id).slice(0, 9)
@@ -202,7 +205,10 @@ const ChatBotPage = () => {
         localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(newHistory));
         return newHistory;
       });
-      setSelectedConversation(updatedConvo);
+      setSelectedConversation(prev => {
+        const titleToKeep = (prev?.id === convoToUpdate.id && prev?.title) ? prev.title : convoToUpdate.title;
+        return { ...convoToUpdate, messages: conversation, timestamp: new Date(), title: titleToKeep };
+      });
     } else {
       // Fallback: create new (e.g. if user navigated away before first message)
       const timestamp = new Date();
