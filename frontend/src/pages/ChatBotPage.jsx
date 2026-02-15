@@ -12,6 +12,9 @@ const getChatHistoryStorageKey = () => {
 // Typing speed: chars per tick; tick interval in ms (~150-200 chars/sec)
 const STREAM_CHARS_PER_TICK = 5;
 const STREAM_TICK_MS = 25;
+// Title animation (faster, titles are short)
+const TITLE_STREAM_CHARS_PER_TICK = 2;
+const TITLE_STREAM_TICK_MS = 35;
 
 const ChatBotPage = () => {
   const [messages, setMessages] = useState([
@@ -24,6 +27,7 @@ const ChatBotPage = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState(null); // { content, displayedLength }
+  const [streamingTitle, setStreamingTitle] = useState(null); // { convoId, fullTitle, displayedLength }
   const [chatHistory, setChatHistory] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const messageEndRef = useRef(null);
@@ -83,6 +87,25 @@ const ChatBotPage = () => {
     return () => clearInterval(timer);
   }, [streamingMessage]);
 
+  // Token-by-token animation for AI-generated title in sidebar
+  useEffect(() => {
+    if (!streamingTitle) return;
+    const { convoId, fullTitle, displayedLength } = streamingTitle;
+    if (displayedLength >= fullTitle.length) {
+      updateConversationTitle(convoId, fullTitle);
+      setStreamingTitle(null);
+      return;
+    }
+    const timer = setInterval(() => {
+      setStreamingTitle(prev => {
+        if (!prev) return null;
+        const next = Math.min(prev.displayedLength + TITLE_STREAM_CHARS_PER_TICK, prev.fullTitle.length);
+        return { ...prev, displayedLength: next };
+      });
+    }, TITLE_STREAM_TICK_MS);
+    return () => clearInterval(timer);
+  }, [streamingTitle]);
+
   // Function to remove markdown formatting from AI responses
   const sanitizeResponse = (text) => {
     if (!text) return '';
@@ -113,6 +136,7 @@ const ChatBotPage = () => {
   const createNewChat = () => {
     createdConversationRef.current = null;
     setStreamingMessage(null);
+    setStreamingTitle(null);
     setIsLoading(false);
     setMessages([{ 
       type: 'bot', 
@@ -174,7 +198,7 @@ const ChatBotPage = () => {
         .then(res => {
           const aiTitle = res.data?.title?.trim();
           if (aiTitle && aiTitle.length > 0) {
-            updateConversationTitle(newConvo.id, aiTitle);
+            setStreamingTitle({ convoId: newConvo.id, fullTitle: aiTitle, displayedLength: 0 });
           }
         })
         .catch(() => {});
@@ -299,6 +323,7 @@ const ChatBotPage = () => {
   const loadConversation = (convo) => {
     createdConversationRef.current = null;
     setStreamingMessage(null);
+    setStreamingTitle(null);
     setIsLoading(false);
     setMessages(convo.messages);
     setSelectedConversation(convo);
@@ -395,7 +420,16 @@ const ChatBotPage = () => {
                   className={`history-item ${selectedConversation?.id === convo.id ? 'active' : ''}`}
                   onClick={() => loadConversation(convo)}
                 >
-                  <div className="history-item-title">{convo.title}</div>
+                  <div className="history-item-title">
+                    {streamingTitle?.convoId === convo.id ? (
+                      <>
+                        {streamingTitle.fullTitle.slice(0, streamingTitle.displayedLength)}
+                        <span className="streaming-cursor" aria-hidden="true">|</span>
+                      </>
+                    ) : (
+                      convo.title
+                    )}
+                  </div>
                   <button 
                     className="history-delete-btn"
                     onClick={(e) => deleteConversation(e, convo.id)}
