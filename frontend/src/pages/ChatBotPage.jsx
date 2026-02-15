@@ -27,6 +27,7 @@ const ChatBotPage = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const messageEndRef = useRef(null);
+  const createdConversationRef = useRef(null); // Track newly created convo for error-path update
   const [selectedExamStage, setSelectedExamStage] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
 
@@ -110,6 +111,7 @@ const ChatBotPage = () => {
   };
   
   const createNewChat = () => {
+    createdConversationRef.current = null;
     setStreamingMessage(null);
     setIsLoading(false);
     setMessages([{ 
@@ -129,29 +131,71 @@ const ChatBotPage = () => {
     setSelectedSubject(e.target.value);
   };
   
-  const saveToHistory = (conversation) => {
-    // Only save conversations with more than the initial greeting
-    if (conversation.length <= 1) return;
-    
-    const timestamp = new Date();
-    const firstUserMessage = conversation.find(msg => msg.type === 'user');
-    const title = firstUserMessage ? 
-      (firstUserMessage.content.length > 25 ? 
-        firstUserMessage.content.substring(0, 25) + '...' : 
-        firstUserMessage.content) : 
-      'Conversation ' + timestamp.toLocaleString();
-    
-    const newConvo = { id: Date.now(), title, timestamp, messages: conversation };
-    const newHistory = [
-      newConvo,
-      ...chatHistory.filter(c => c.id !== selectedConversation?.id).slice(0, 9) // Keep only the 10 most recent conversations
-    ];
-    
-    setChatHistory(newHistory);
+  // Create conversation in history as soon as user sends first message (ChatGPT-style: instant + auto-title)
+  const createConversationOnFirstMessage = (messagesWithUser) => {
+    const firstUserMessage = messagesWithUser.find(m => m.type === 'user');
+    const title = firstUserMessage
+      ? (firstUserMessage.content.length > 40
+          ? firstUserMessage.content.substring(0, 40) + '...'
+          : firstUserMessage.content)
+      : 'New chat';
+    const newConvo = {
+      id: Date.now(),
+      title,
+      timestamp: new Date(),
+      messages: messagesWithUser
+    };
+    createdConversationRef.current = newConvo;
+    setChatHistory(prev => {
+      const newHistory = [newConvo, ...prev.filter(c => c.id !== newConvo.id).slice(0, 9)];
+      localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(newHistory));
+      return newHistory;
+    });
     setSelectedConversation(newConvo);
-    localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(newHistory));
   };
-  
+
+  // Update or create conversation in history (called when bot responds)
+  const saveToHistory = (conversation) => {
+    if (conversation.length <= 1) return;
+
+    const convoToUpdate = selectedConversation || createdConversationRef.current;
+    if (convoToUpdate) {
+      // Update existing conversation (created on first user message or from ref in error path)
+      const updatedConvo = {
+        ...convoToUpdate,
+        messages: conversation,
+        timestamp: new Date()
+      };
+      createdConversationRef.current = null;
+      setChatHistory(prev => {
+        const newHistory = [
+          updatedConvo,
+          ...prev.filter(c => c.id !== convoToUpdate.id).slice(0, 9)
+        ];
+        localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(newHistory));
+        return newHistory;
+      });
+      setSelectedConversation(updatedConvo);
+    } else {
+      // Fallback: create new (e.g. if user navigated away before first message)
+      const timestamp = new Date();
+      const firstUserMessage = conversation.find(msg => msg.type === 'user');
+      const title = firstUserMessage
+        ? (firstUserMessage.content.length > 40
+            ? firstUserMessage.content.substring(0, 40) + '...'
+            : firstUserMessage.content)
+        : 'New chat';
+      const newConvo = { id: Date.now(), title, timestamp, messages: conversation };
+      setChatHistory(prev => {
+        const newHistory = [newConvo, ...prev.filter(c => c.id !== newConvo.id).slice(0, 9)];
+        localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(newHistory));
+        return newHistory;
+      });
+      setSelectedConversation(newConvo);
+      createdConversationRef.current = null;
+    }
+  };
+
   const handleSendMessage = async () => {
     if (input.trim() === '' || isLoading) return;
     
@@ -161,9 +205,15 @@ const ChatBotPage = () => {
       timestamp: new Date()
     };
     
+    const messagesWithUser = [...messages, userMessage];
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+
+    // Create chat in history immediately on first message (ChatGPT-style: instant + auto-title)
+    if (selectedConversation === null) {
+      createConversationOnFirstMessage(messagesWithUser);
+    }
     
     try {
       const config = {
@@ -201,16 +251,20 @@ const ChatBotPage = () => {
       
     } catch (error) {
       console.error('Error fetching bot response:', error);
-      setIsLoading(false);
-      setMessages(prev => [...prev, {
+      const errorMsg = {
         type: 'bot',
         content: 'Sorry, I encountered an error. Please try again later.',
         timestamp: new Date()
-      }]);
+      };
+      const messagesWithError = [...messagesWithUser, errorMsg];
+      setMessages(prev => [...prev, errorMsg]);
+      saveToHistory(messagesWithError);
+      setIsLoading(false);
     }
   };
   
   const loadConversation = (convo) => {
+    createdConversationRef.current = null;
     setStreamingMessage(null);
     setIsLoading(false);
     setMessages(convo.messages);
