@@ -584,11 +584,6 @@
   border-color: var(--primary-color);
 }
 
-/* Highlight Effect - Simplified */
-.highlight-question {
-  border: 2px solid var(--primary-color);
-}
-
 /* Mobile Responsive Adjustments */
 @media (max-width: 768px) {
   .questions-actions {

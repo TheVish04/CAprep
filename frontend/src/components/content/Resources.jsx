@@ -151,20 +151,6 @@ const Resources = () => {
     } else {
       fetchBookmarkIds(token);
       
-      // Check if we have state from the dashboard or other navigation
-      if (location.state?.preSelectedResource) {
-        // Will be processed separately to show the specific resource
-        console.log('Pre-selected resource ID:', location.state.preSelectedResource);
-      }
-      
-      // Set search query from navigation state if available
-      if (location.state?.searchQuery) {
-        setFilters(prev => ({
-          ...prev,
-          search: location.state.searchQuery
-        }));
-      }
-      
       // Apply URL params to initial filters before fetching
       const params = new URLSearchParams(location.search);
       const initialFilters = { ...filters }; // Start with default filters
@@ -175,60 +161,6 @@ const Resources = () => {
       setFilters(initialFilters);
     }
   }, [navigate, location.search, location.state, fetchBookmarkIds]); // Rerun if location search or state changes
-  
-  // --- Load specific resource when preSelectedResource is present ---
-  useEffect(() => {
-    const token = apiUtils.getAuthToken();
-    if (token && location.state?.preSelectedResource) {
-      const resourceId = location.state.preSelectedResource;
-      
-      // Find the resource in the current list
-      const resource = resources.find(r => r._id === resourceId);
-      
-      if (resource) {
-        // Resource is already loaded, so we can handle it directly
-        handleDownload(resource);
-        
-        // Clear the preSelectedResource from location state to prevent 
-        // the PDF from opening again when filters change
-        navigate(location.pathname, { 
-          replace: true, 
-          state: { 
-            ...location.state,
-            preSelectedResource: null
-          } 
-        });
-      } else if (!loading) {
-        // Resource not in current list, fetch it specifically
-        const fetchSpecificResource = async () => {
-          try {
-            const response = await axios.get(`${apiUtils.getApiBaseUrl()}/resources/${resourceId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (response.data) {
-              // We have the resource data, now open it
-              handleDownload(response.data);
-              
-              // Clear the preSelectedResource from location state
-              navigate(location.pathname, { 
-                replace: true, 
-                state: { 
-                  ...location.state,
-                  preSelectedResource: null
-                } 
-              });
-            }
-          } catch (err) {
-            console.error('Error fetching specific resource:', err);
-            setError('Could not load the requested resource.');
-          }
-        };
-        
-        fetchSpecificResource();
-      }
-    }
-  }, [location.state?.preSelectedResource, navigate, handleDownload, apiUtils.getApiBaseUrl()]); // Only depend on preSelectedResource, not resources or loading
 
   // --- Fetch on Filter or Page Change --- 
   useEffect(() => {

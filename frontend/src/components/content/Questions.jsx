@@ -108,64 +108,6 @@ const Questions = () => {
     fetchQuestions(filters, currentPage);
   }, [currentPage]);
 
-  // --- Handle preSelectedQuestion from location.state ---
-  useEffect(() => {
-    const token = apiUtils.getAuthToken();
-    if (token && location.state?.preSelectedQuestion) {
-      const questionId = location.state.preSelectedQuestion;
-      
-      // Track the question view in the backend
-      const trackQuestionView = async () => {
-        try {
-          // Call the API endpoint to track question view
-          await api.post('/dashboard/question-view', { questionId });
-          
-          console.log('Question view tracked successfully');
-          
-          // Scroll to the question once loaded or open it in the UI
-          const findAndScrollToQuestion = () => {
-            if (!loading) {
-              const questionIndex = questions.findIndex(q => q._id === questionId);
-              if (questionIndex !== -1) {
-                // Calculate which page contains this question
-                const targetPage = Math.floor(questionIndex / questionsPerPage) + 1;
-                setCurrentPage(targetPage);
-                
-                // Add a small delay to ensure the DOM has updated
-                setTimeout(() => {
-                  const questionElement = document.getElementById(`question-${questionId}`);
-                  if (questionElement) {
-                    questionElement.scrollIntoView({ behavior: 'smooth' });
-                    // Highlight the question briefly
-                    questionElement.classList.add('highlight-question');
-                    setTimeout(() => {
-                      questionElement.classList.remove('highlight-question');
-                    }, 2000);
-                  }
-                }, 100);
-              }
-              
-              // Clear the state to prevent repeated tracking
-              navigate(location.pathname, { 
-                replace: true, 
-                state: { ...location.state, preSelectedQuestion: null } 
-              });
-            } else {
-              // Try again after a short delay if questions are still loading
-              setTimeout(findAndScrollToQuestion, 500);
-            }
-          };
-          
-          findAndScrollToQuestion();
-        } catch (err) {
-          console.error('Error tracking question view:', err);
-        }
-      };
-      
-      trackQuestionView();
-    }
-  }, [location.state?.preSelectedQuestion, questions, loading, navigate]);
-
   // --- Handle Filter Changes: refetch page 1 when filters change --- 
   useEffect(() => {
     const token = apiUtils.getAuthToken();

@@ -168,10 +168,10 @@ const Dashboard = () => {
   const navigateToItem = (type, id, title = null) => {
     switch (type) {
       case 'question':
-        navigate('/questions', { state: { preSelectedQuestion: id } });
+        navigate('/questions');
         break;
       case 'resource':
-        navigate('/resources', { state: { preSelectedResource: id, searchQuery: title } });
+        navigate('/resources');
         break;
       case 'quiz':
         navigate('/quiz-review', { state: { quizId: id } });
