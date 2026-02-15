@@ -119,7 +119,7 @@ CAprep addresses these by providing a single platform for questions, resources, 
   - Admin panel: user list (paginated), analytics (top downloaded resources, quizzes per subject, total quiz attempts, new users, resources/questions by subject), audit log (paginated), announcements CRUD, feature requests and issue reports (from Contact Us), clear cache.
 
 - **PWA**
-  - manifest.json and service worker (cache-first for same-origin static assets; API requests not cached).
+  - manifest.json and service worker (network-first for static assets; GET /api/questions, /api/resources, /api/dashboard, /api/announcements cached with fallback for offline).
 
 ---
 
@@ -290,8 +290,8 @@ flowchart LR
             BodyParser["json 20MB, urlencoded"]
             CORS["CORS allowlist"]
         end
-        Bootstrap["bootstrap/routes.js · mountRoutes"]
-        subgraph RouteGroups["API route groups"]
+        RoutesMount["routes/index.js · mountRoutes"]
+        subgraph RouteGroups["API route groups (controllers)"]
             direction TB
             subgraph Row1[" "]
                 direction LR
@@ -318,8 +318,8 @@ flowchart LR
             CacheMW["cacheMiddleware"]
         end
         Server --> Security
-        Security --> Bootstrap
-        Bootstrap --> RouteGroups
+        Security --> RoutesMount
+        RoutesMount --> RouteGroups
         RouteGroups --> AuthMW
         RouteGroups --> AdminMW
         RouteGroups --> CacheMW
@@ -475,7 +475,7 @@ flowchart TB
         G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7
     end
 
-    subgraph Routes["Route modules and usage"]
+        subgraph Routes["Controller modules and usage"]
         direction TB
         subgraph AuthRoutes["auth.js"]
             A1["send-otp, verify-otp<br/>login, register"]
@@ -566,7 +566,7 @@ flowchart TB
     end
 
     subgraph Support["Support layer"]
-        otpService["otpService<br/>generateOTP, verifyOTP<br/>sendOTPEmail, sendPasswordReset"]
+        otpService["otpService<br/>generateOTP, verifyOTP, sendOTPEmail<br/>sendPasswordReset, sendReplyNotificationEmail"]
         questionValidator["questionValidator<br/>Joi questionSchema"]
         contactValidator["contactValidator<br/>Joi featureRequestSchema, issueReportSchema"]
         announcementValidator["announcementValidator<br/>Joi create/update schemas"]
@@ -610,8 +610,8 @@ flowchart TB
   - Auth state: JWT and optional expiry in `localStorage` (`auth` object; fallback `token` key).
 
 - **Backend:**  
-  - **Entry:** `server.js` — connect DB, run admin bootstrap, mount routes from `bootstrap/routes.js`, then start listen.  
-  - **Routes:** Mounted under `/api/*`: auth, questions, resources, users, admin, ai-quiz, discussions, dashboard, announcements (with auth), notifications (with auth), contact (POST /feature, /issue with auth).  
+  - **Entry:** `server.js` — connect DB, run admin bootstrap, mount routes from `routes/index.js`, then start listen.  
+  - **Routes:** Mounted under `/api/*` via `routes/index.js`, which imports controller modules (auth, questions, resources, users, admin, ai-quiz, discussions, dashboard, announcements, notifications, contact).  
   - **Layers:** Route handlers use models and services directly (no separate service/repository folders); validators (Joi for questions, contact, announcements) and middleware (auth, admin, cache) are used per route.  
   - **Error responses:** A shared `sendErrorResponse(res, statusCode, { message, error })` logs server-side and returns generic message in production; in development optional `details` (error.message) may be included.  
   - **Search:** User search input is escaped via `escapeRegex()` before use in MongoDB `$regex` to avoid injection and unstable behavior.
@@ -652,10 +652,10 @@ CAPrep/
 │   ├── package.json            # React, Vite, Tailwind, axios, chart, etc.
 │   ├── vite.config.js           # Vite + React + Tailwind plugins; publicDir: public
 │   ├── .env.example             # VITE_API_URL (backend API base URL including /api)
-│   ├── vercel.json              # SPA rewrite, buildCommand, outputDirectory, headers
+│   ├── vercel.json              # SPA rewrite, buildCommand, installCommand (--legacy-peer-deps), outputDirectory, headers
 │   ├── public/
 │   │   ├── manifest.json        # PWA name, theme, icons, start_url
-│   │   └── sw.js                # Service worker: cache static assets; no API cache
+│   │   └── sw.js                # Service worker: network-first for static; GET /api/questions, /api/resources, /api/dashboard, /api/announcements cached with fallback for offline
 │   ├── src/
 │   │   ├── main.jsx             # React root; service worker registration (prod)
 │   │   ├── App.jsx               # Router, routes, protected/auth redirect, ErrorBoundary
@@ -682,14 +682,12 @@ CAPrep/
 └── backend/
     ├── server.js               # Express app, security middleware, rate limit, CORS, connectDB, admin bootstrap, mountRoutes, health, error/404 handlers
     ├── package.json             # express, mongoose, bcrypt, jwt, multer, cloudinary, etc.
-    ├── .env.example             # All env vars documented below
-    ├── .env                     # Local secrets (gitignored)
+    ├── .env                     # Local secrets; create from env vars table below (gitignored; no .env.example in repo)
     ├── config/
     │   ├── database.js          # connectDB (MongoDB with retry and connection options)
     │   ├── cloudinary.js         # Cloudinary v2 config from env
     │   └── logger.js            # Logger (info, error, warn, debug); used throughout backend instead of console
     ├── bootstrap/
-    │   ├── routes.js            # mountRoutes: mount all route modules under /api/*
     │   └── adminBootstrap.js    # checkAndCreateAdmin from env if no admin exists
     ├── middleware/
     │   ├── authMiddleware.js    # authMiddleware (JWT verify, set req.user), adminMiddleware (role check)
@@ -703,20 +701,22 @@ CAPrep/
     │   ├── AnnouncementModel.js  # Announcement: title, content, type, priority, targetSubjects, validUntil, createdBy
     │   ├── AuditLogModel.js     # AuditLog: actor, action, resource, resourceId, details
     │   └── ContactSubmissionModel.js # ContactSubmission: type (feature|issue), name, email, subject/featureTitle, category, description, status
-    ├── routes/
+    ├── controllers/             # Express Router modules; mounted via routes/index.js
     │   ├── auth.js              # send-otp, verify-otp, login, register, me, refresh-token, forgot-password, verify-reset-otp, reset-password
     │   ├── questions.js         # CRUD (admin), list (filter, pagination), count, quiz (MCQ sample), available-subjects, all-subjects, batch
-    │   ├── resources.js        # List, count, get by id, rate, create (admin upload), update/delete (admin), download (proxy/URL), download count increment
+    │   ├── resources.js         # List, count, get by id, rate, create (admin upload), update/delete (admin), download (proxy/URL), download count increment
     │   ├── users.js             # me (profile, bookmarks), bookmarks CRUD, quiz-history CRUD, profile update, profile image upload, delete account, bookmark folders CRUD
     │   ├── admin.js             # users list, analytics, announcements CRUD, audit log, contact/feature-requests, contact/report-issues
-    │   ├── dashboard.js        # GET dashboard data, study-session, resource-engagement, question-view, resource-view, announcements
+    │   ├── dashboard.js         # GET dashboard data, study-session, resource-engagement, question-view, resource-view, announcements
     │   ├── aiQuiz.js            # POST generate (AI MCQs), POST ask (chat with Gemini)
     │   ├── discussions.js       # user/me, get by itemType+itemId, post message, like, edit, delete message
     │   ├── announcements.js     # GET active announcements (mounted with authMiddleware)
     │   ├── notifications.js     # GET list, PATCH read-all, PATCH :id/read
     │   └── contact.js           # POST /feature (auth), POST /issue (auth) — feature requests and issue reports
+    ├── routes/
+    │   └── index.js             # mountRoutes: import controllers and mount under /api/*
     ├── services/
-    │   └── otpService.js        # generateOTP, verifyOTP, sendOTPEmail, isEmailVerified, markEmailAsVerified, removeVerifiedEmail, sendPasswordResetEmail; in-memory + file (database/verified_emails.json)
+    │   └── otpService.js        # generateOTP, verifyOTP, sendOTPEmail, isEmailVerified, markEmailAsVerified, removeVerifiedEmail, sendPasswordResetEmail, sendReplyNotificationEmail, setEmailChangeVerified, getEmailChangeVerified, clearEmailChangeVerified; in-memory + file (database/verified_emails.json)
     ├── validators/
     │   ├── questionValidator.js   # Joi questionSchema for question create/update
     │   ├── contactValidator.js    # Joi featureRequestSchema, issueReportSchema (length, trim)
@@ -816,7 +816,7 @@ CAPrep/
 
 ## 10. Environment Variables
 
-### Backend (`.env`; see `.env.example`)
+### Backend (`.env`; create manually from table; no `.env.example` in repo)
 
 | Variable | Purpose |
 |----------|---------|
@@ -840,7 +840,7 @@ CAPrep/
 
 | Variable | Purpose |
 |----------|---------|
-| `VITE_API_URL` | Backend API base URL including `/api` (e.g. http://localhost:5000/api or https://your-api.com/api) |
+| `VITE_API_URL` | Backend API base URL including `/api` (e.g. http://localhost:5000/api or https://your-api.com/api). If unset, apiUtils falls back to `https://caprep.onrender.com/api`. |
 
 ---
 
@@ -856,8 +856,7 @@ CAPrep/
    ```bash
    cd backend
    npm install
-   cp .env.example .env
-   # Edit .env: set MONGODB_URI, JWT_SECRET, and optionally GEMINI_API_KEY, Cloudinary, SendGrid (SENDGRID_API_KEY, SENDGRID_FROM_EMAIL)
+   # Create .env with MONGODB_URI, JWT_SECRET, and optionally GEMINI_API_KEY, Cloudinary, SendGrid (SENDGRID_API_KEY, SENDGRID_FROM_EMAIL); see env vars table
    npm run dev   # or node server.js
    ```
    Server runs at `http://localhost:5000` (or the port in `PORT`). Health: `GET /health`.  
@@ -978,4 +977,4 @@ Ideas to monetize CAprep using a **freemium** model—free core access with paid
 
 ---
 
-*This README reflects the current codebase. For the latest API and env details, refer to the source and `.env.example` files.*
+*This README reflects the current codebase. For the latest API and env details, refer to the source and env vars tables above.*
