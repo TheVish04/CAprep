@@ -58,6 +58,10 @@
   flex-direction: column;
 }
 
+.dashboard-card.subject-strengths {
+  min-height: 320px;
+}
+
 .dashboard-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -126,13 +130,29 @@
   border: 1px solid #333;
 }
 
+/* Subject Performance - use full card space */
+.dashboard-card.subject-strengths .chart-container-full {
+  flex: 1;
+  min-height: 280px;
+  height: 100%;
+}
+
 /* Lists Styling */
-.recent-list, .bookmark-list, .discussion-list, .announcement-list, .new-resources-list {
+.recent-list, .bookmark-list, .discussion-list, .new-resources-list {
   list-style: none;
   padding: 0;
   margin: 0;
   max-height: 250px;
   overflow-y: auto;
+}
+
+.announcement-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-bottom: 12px;
 }
 
 .recent-list li, .bookmark-list li, .new-resources-list li {
@@ -221,6 +241,10 @@
 }
 
 /* Announcement List */
+.dashboard-card.announcements {
+  overflow: visible;
+}
+
 .announcement-list li {
   padding: 15px;
   margin-bottom: 12px;
@@ -293,7 +317,7 @@
 .announcement-list p {
   margin: 0;
   font-size: 0.9rem;
-  color: #34495e;
+  color: #b0b0b0;
   line-height: 1.5;
 }
 
@@ -355,6 +379,7 @@
 
 .difficulty-tag {
   background-color: #f39c12;
+  color: #000;
 }
 
 .resource-date {
@@ -630,11 +655,13 @@
 
 .resource-chart {
   margin-bottom: 20px;
+  min-height: 220px;
+  width: 100%;
 }
 
 .most-used-resources h3 {
   font-size: 1.1rem;
-  color: #2c3e50;
+  color: #03a9f4;
   margin-bottom: 10px;
 }
 
@@ -648,22 +675,22 @@
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid #333;
 }
 
 .most-used-resources li:last-child {
   border-bottom: none;
 }
 
-.resource-title {
+.resource-usage .resource-title {
   font-size: 0.9rem;
-  color: #2c3e50;
+  color: #ccc;
   font-weight: 500;
 }
 
-.access-count {
+.resource-usage .access-count {
   font-size: 0.85rem;
-  color: #7f8c8d;
+  color: #9B9C9D;
   font-weight: 500;
 }
 

@@ -413,7 +413,7 @@ const Dashboard = () => {
     });
   }
 
-  // Resource usage data
+  // Resource usage data - by specific resource (which PDF), not just type
   const resourceUsageData = {
     labels: [],
     datasets: [
@@ -427,11 +427,11 @@ const Dashboard = () => {
     ]
   };
 
-  if (dashboardData && dashboardData.resourceStats && dashboardData.resourceStats.timeSpentByType) {
-    Object.entries(dashboardData.resourceStats.timeSpentByType).forEach(([type, time], index) => {
-      resourceUsageData.labels.push(type);
-      // Convert seconds to minutes
-      resourceUsageData.datasets[0].data.push(Math.round(time / 60));
+  if (dashboardData && dashboardData.resourceStats && dashboardData.resourceStats.timeSpentByResource && dashboardData.resourceStats.timeSpentByResource.length > 0) {
+    dashboardData.resourceStats.timeSpentByResource.forEach((item, index) => {
+      const shortTitle = item.title && item.title.length > 35 ? item.title.substring(0, 35) + '…' : (item.title || 'Unknown');
+      resourceUsageData.labels.push(shortTitle);
+      resourceUsageData.datasets[0].data.push(Math.round((item.timeSpent || 0) / 60));
       resourceUsageData.datasets[0].backgroundColor.push(getColorByIndex(index, 0.6));
       resourceUsageData.datasets[0].borderColor.push(getColorByIndex(index));
     });
@@ -655,11 +655,12 @@ const Dashboard = () => {
             <div className="dashboard-card subject-strengths">
               <h2>Subject Performance Analysis</h2>
               {dashboardData && dashboardData.subjectStrengths && dashboardData.subjectStrengths.length > 0 ? (
-                <div className="chart-container">
+                <div className="chart-container chart-container-full">
                   <Pie 
                     data={subjectStrengthsData}
                     options={{
                       responsive: true,
+                      maintainAspectRatio: false,
                       plugins: {
                         legend: { position: 'right' },
                         title: {
@@ -809,28 +810,30 @@ const Dashboard = () => {
             {/* Resource Usage Statistics */}
             <div className="dashboard-card resource-usage">
               <h2>Resource Usage Statistics</h2>
-              {dashboardData && dashboardData.resourceStats && dashboardData.resourceStats.mostUsed && dashboardData.resourceStats.mostUsed.length > 0 ? (
+              {dashboardData && dashboardData.resourceStats && (dashboardData.resourceStats.timeSpentByResource?.length > 0 || dashboardData.resourceStats.mostUsed?.length > 0) ? (
                 <div className="resource-stats-container">
                   <div className="resource-chart">
-                    <Bar 
-                      data={resourceUsageData}
-                      options={{
-                        responsive: true,
-                        plugins: {
-                          legend: { position: 'top' },
-                          title: {
-                            display: true,
-                            text: 'Time Spent by Resource Type (minutes)'
-                          }
-                        },
-                        indexAxis: 'y'
-                      }}
-                    />
+                    {resourceUsageData.labels.length > 0 ? (
+                      <Bar 
+                        data={resourceUsageData}
+                        options={{
+                          responsive: true,
+                          plugins: {
+                            legend: { position: 'top' },
+                            title: {
+                              display: true,
+                              text: 'Time Spent by Resource (minutes)'
+                            }
+                          },
+                          indexAxis: 'y'
+                        }}
+                      />
+                    ) : null}
                   </div>
                   <div className="most-used-resources">
                     <h3>Most Used Resources</h3>
                     <ul>
-                      {dashboardData.resourceStats.mostUsed.map((resource) => (
+                      {(dashboardData.resourceStats.mostUsed || []).map((resource) => (
                         <li key={resource.resourceId}>
                           <span className="resource-title">{resource.title}</span>
                           <span className="access-count">{resource.accessCount} views</span>

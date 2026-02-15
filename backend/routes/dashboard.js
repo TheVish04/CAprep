@@ -157,6 +157,7 @@ router.get('/', authMiddleware, async (req, res) => {
     const resourceStats = {
       mostUsed: [],
       timeSpentByType: {},
+      timeSpentByResource: [], // per-resource (which PDF) for chart
       totalTimeSpent: 0
     };
     
@@ -180,6 +181,21 @@ router.get('/', authMiddleware, async (req, res) => {
           resourceStats.timeSpentByType[r.resourceType] = (resourceStats.timeSpentByType[r.resourceType] || 0) + (usage.timeSpent || 0);
         }
       });
+      // Build time spent per resource (which PDF) for the chart
+      const timeByResource = new Map();
+      user.resourceEngagement.forEach(usage => {
+        const rid = (usage.resourceId && usage.resourceId.toString) ? usage.resourceId.toString() : String(usage.resourceId);
+        const r = resourceMap.get(rid);
+        if (r) {
+          const key = rid;
+          const existing = timeByResource.get(key) || { resourceId: rid, title: r.title, timeSpent: 0 };
+          existing.timeSpent += usage.timeSpent || 0;
+          timeByResource.set(key, existing);
+        }
+      });
+      resourceStats.timeSpentByResource = Array.from(timeByResource.values())
+        .sort((a, b) => b.timeSpent - a.timeSpent)
+        .slice(0, 10);
       sortedByUsage.forEach(usage => {
         const rid = (usage.resourceId && usage.resourceId.toString) ? usage.resourceId.toString() : String(usage.resourceId);
         const r = resourceMap.get(rid);
