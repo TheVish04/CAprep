@@ -13,8 +13,8 @@ const getChatHistoryStorageKey = () => {
 const STREAM_CHARS_PER_TICK = 5;
 const STREAM_TICK_MS = 25;
 // Title animation (faster, titles are short)
-const TITLE_STREAM_CHARS_PER_TICK = 2;
-const TITLE_STREAM_TICK_MS = 35;
+const TITLE_STREAM_CHARS_PER_TICK = 1;
+const TITLE_STREAM_TICK_MS = 25;
 
 const ChatBotPage = () => {
   const [messages, setMessages] = useState([
