@@ -131,17 +131,31 @@ const ChatBotPage = () => {
     setSelectedSubject(e.target.value);
   };
   
-  // Create conversation in history as soon as user sends first message (ChatGPT-style: instant + auto-title)
+  // Update conversation title (e.g. when AI-generated title arrives)
+  const updateConversationTitle = (convoId, newTitle) => {
+    setChatHistory(prev => {
+      const updated = prev.map(c =>
+        c.id === convoId ? { ...c, title: newTitle } : c
+      );
+      localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(updated));
+      return updated;
+    });
+    if (selectedConversation?.id === convoId) {
+      setSelectedConversation(prev => prev ? { ...prev, title: newTitle } : null);
+    }
+  };
+
+  // Create conversation in history as soon as user sends first message (instant appearance)
   const createConversationOnFirstMessage = (messagesWithUser) => {
     const firstUserMessage = messagesWithUser.find(m => m.type === 'user');
-    const title = firstUserMessage
+    const placeholderTitle = firstUserMessage
       ? (firstUserMessage.content.length > 40
           ? firstUserMessage.content.substring(0, 40) + '...'
           : firstUserMessage.content)
       : 'New chat';
     const newConvo = {
       id: Date.now(),
-      title,
+      title: placeholderTitle,
       timestamp: new Date(),
       messages: messagesWithUser
     };
@@ -152,6 +166,19 @@ const ChatBotPage = () => {
       return newHistory;
     });
     setSelectedConversation(newConvo);
+
+    // Fetch AI-generated title (e.g. "CGST and SGST" from "please explain about cgst and sgst")
+    if (firstUserMessage?.content) {
+      api
+        .post('/ai-quiz/suggest-title', { question: firstUserMessage.content })
+        .then(res => {
+          const aiTitle = res.data?.title?.trim();
+          if (aiTitle && aiTitle.length > 0) {
+            updateConversationTitle(newConvo.id, aiTitle);
+          }
+        })
+        .catch(() => {});
+    }
   };
 
   // Update or create conversation in history (called when bot responds)

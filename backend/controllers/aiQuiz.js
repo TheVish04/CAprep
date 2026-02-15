@@ -315,6 +315,37 @@ Use these examples to refine the quality and relevance of the questions you gene
   }
 });
 
+// POST /api/ai-quiz/suggest-title - Generate a short title for chat from user's first message (auth required)
+router.post('/suggest-title', authMiddleware, async (req, res) => {
+  try {
+    const { question } = req.body;
+    if (!question || typeof question !== 'string') {
+      return res.status(400).json({ error: 'Question is required.' });
+    }
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'AI service not configured.' });
+    }
+
+    const prompt = `Based on this CA exam study question, generate a very short title (3-6 words) for a chat. Extract the main topic or concept. Use proper casing (e.g. CGST and SGST, not cgst and sgst). Return ONLY the title, no quotes, punctuation, or explanation.
+
+Question: ${question.substring(0, 500)}
+
+Title:`;
+
+    const model = genAI.getGenerativeModel({
+      model: GEMINI_MODEL,
+      safetySettings
+    });
+    const result = await model.generateContent(prompt);
+    const raw = result?.response?.text();
+    const title = (raw || '').trim().replace(/^["']|["']$/g, '') || question.substring(0, 40);
+    res.json({ title });
+  } catch (error) {
+    logger.error('suggest-title error: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to generate title' });
+  }
+});
+
 // POST /api/ai-quiz/ask - Answer CA-related questions using AI (auth required)
 router.post('/ask', authMiddleware, async (req, res) => {
   try {
