@@ -55,6 +55,6 @@ const ContactSubmissionSchema = new Schema({
 });
 
 ContactSubmissionSchema.index({ type: 1, createdAt: -1 });
-ContactSubmissionSchema.index({ status: 1 });
+// status index is already defined via index: true on the field
 
 module.exports = mongoose.model('ContactSubmission', ContactSubmissionSchema);

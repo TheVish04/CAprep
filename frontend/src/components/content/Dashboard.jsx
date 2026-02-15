@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import api from '../../utils/axiosConfig';
 import Navbar from '../layout/Navbar';
 import apiUtils from '../../utils/apiUtils';
@@ -33,64 +33,72 @@ const Dashboard = () => {
   const [activeBookmarkTab, setActiveBookmarkTab] = useState('questions'); // Add state for active bookmark tab
   const timerRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const token = apiUtils.getAuthToken();
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await api.get('/dashboard', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        timeout: 10000
+      });
+
+      if (response.data.success) {
+        const data = response.data.data;
+        if (!data.announcements) data.announcements = [];
+        if (!data.recentlyViewedQuestions) data.recentlyViewedQuestions = [];
+        if (!data.recentlyViewedResources) data.recentlyViewedResources = [];
+        if (!data.bookmarkedContent) data.bookmarkedContent = { questions: [], resources: [] };
+        setDashboardData(data);
+        setError(null);
+      } else {
+        setError('Failed to fetch dashboard data');
+      }
+    } catch (err) {
+      console.error('Dashboard data error:', err);
+      let errorMessage = 'An error occurred while fetching dashboard data';
+      if (err.response) {
+        errorMessage = `Server error: ${err.response.status} - ${err.response.data?.message || err.message}`;
+      } else if (err.request) {
+        errorMessage = 'Network error: Unable to connect to server. Please check your internet connection.';
+      } else {
+        errorMessage = `Request error: ${err.message}`;
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  // Fetch when we're on dashboard (mount or navigate back) and refetch on window focus
+  useEffect(() => {
+    if (location.pathname !== '/dashboard') return;
+    setLoading(true);
+    fetchDashboardData();
+  }, [location.pathname, fetchDashboardData]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const token = apiUtils.getAuthToken();
-        if (!token) {
-          navigate('/login');
-          return;
-        }
-
-        const response = await api.get('/dashboard', {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          timeout: 10000
-        });
-
-        if (response.data.success) {
-          const data = response.data.data;
-          // Ensure announcements exists even if it's missing in the response
-          if (!data.announcements) {
-            data.announcements = [];
-          }
-          setDashboardData(data);
-        } else {
-          setError('Failed to fetch dashboard data');
-        }
-      } catch (err) {
-        console.error('Dashboard data error:', err);
-        // More detailed error message
-        let errorMessage = 'An error occurred while fetching dashboard data';
-        if (err.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          errorMessage = `Server error: ${err.response.status} - ${err.response.data?.message || err.message}`;
-        } else if (err.request) {
-          // The request was made but no response was received
-          errorMessage = 'Network error: Unable to connect to server. Please check your internet connection.';
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          errorMessage = `Request error: ${err.message}`;
-        }
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
+    if (location.pathname !== '/dashboard') return;
+    const onFocus = () => {
+      fetchDashboardData();
     };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [location.pathname, fetchDashboardData]);
 
-    fetchDashboardData();
-    
-    // Cleanup function
+  useEffect(() => {
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [navigate]);
+  }, []);
 
   // Format time for Pomodoro timer
   const formatTime = (seconds) => {
@@ -453,15 +461,16 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="dashboard-grid">
-            {/* Recent Quiz Scores with Trend */}
-            <div className="dashboard-card quiz-trends">
+            {/* Quiz Performance Trends - full width */}
+            <div className="dashboard-card quiz-trends dashboard-card-full-width">
               <h2>Quiz Performance Trends</h2>
               {dashboardData && dashboardData.quizScoreTrends && Object.keys(dashboardData.quizScoreTrends).length > 0 ? (
-                <div className="chart-container">
+                <div className="chart-container chart-container-quiz-trends">
                   <Line 
                     data={quizTrendsData} 
                     options={{
                       responsive: true,
+                      maintainAspectRatio: false,
                       plugins: {
                         legend: { position: 'top' },
                         title: {
@@ -490,42 +499,6 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Weekly Study Hours */}
-            <div className="dashboard-card study-hours">
-              <h2>Weekly Study Hours</h2>
-              {dashboardData && dashboardData.studyHoursSummary && dashboardData.studyHoursSummary.daily.length > 0 ? (
-                <div className="chart-container">
-                  <Bar 
-                    data={studyHoursData} 
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: { position: 'top' },
-                        title: {
-                          display: true,
-                          text: 'Study Hours (Last 7 Days)'
-                        }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          title: {
-                            display: true,
-                            text: 'Hours'
-                          }
-                        }
-                      }
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="no-data">
-                  <p>No study hours tracked yet. Use the Pomodoro timer below to start logging your study sessions.</p>
-                  <Link to="/quiz" className="dashboard-cta">Take a quiz</Link>
-                </div>
-              )}
-            </div>
-
             {/* Recently Viewed Questions */}
             <div className="dashboard-card recent-questions">
               <h2>Recently Viewed Questions</h2>
@@ -535,8 +508,8 @@ const Dashboard = () => {
                     <li key={item.questionId._id} onClick={() => trackQuestionView(item.questionId._id)}>
                       <div className="recent-item-content">
                         <p className="item-title">
-                          {item.questionId && item.questionId.text 
-                            ? item.questionId.text.substring(0, 80) + '...' 
+                          {item.questionId && (item.questionId.questionText || item.questionId.text)
+                            ? (() => { const t = item.questionId.questionText || item.questionId.text; return t.substring(0, 80) + (t.length > 80 ? '...' : ''); })()
                             : 'No question text available'}
                         </p>
                         <p className="item-meta">
@@ -608,7 +581,7 @@ const Dashboard = () => {
                         <li key={question._id} onClick={() => trackQuestionView(question._id)}>
                           <div className="bookmark-item-content">
                             <p className="item-title">
-                              {question.text ? question.text.substring(0, 80) + '...' : 'No question text available'}
+                              {(question.questionText || question.text) ? (question.questionText || question.text).substring(0, 80) + ((question.questionText || question.text).length > 80 ? '...' : '') : 'No question text available'}
                             </p>
                             <p className="item-meta">
                               <span className="subject-tag">{question.subject}</span>
@@ -754,97 +727,6 @@ const Dashboard = () => {
               ) : (
                 <div className="no-data">
                   <p>No new resources added recently.</p>
-                  <Link to="/resources" className="dashboard-cta">Browse resources</Link>
-                </div>
-              )}
-            </div>
-
-            {/* Pomodoro Timer */}
-            <div className="dashboard-card pomodoro">
-              <h2>Pomodoro Study Timer</h2>
-              <div className="pomodoro-container">
-                <div className="pomodoro-description">
-                  <p>The Pomodoro Technique is a time management method that breaks study sessions into focused 25-minute intervals, separated by short 5-minute breaks. This method enhances concentration, reduces mental fatigue, and improves productivity.</p>
-                </div>
-                <div className="pomodoro-timer">{formatTime(pomodoroTime)}</div>
-                <div className="pomodoro-controls">
-                  {!pomodoroActive ? (
-                    <button className="pomodoro-start" onClick={startPomodoro}>Start</button>
-                  ) : (
-                    <button className="pomodoro-stop" onClick={stopPomodoro}>Pause</button>
-                  )}
-                  <button className="pomodoro-reset" onClick={resetPomodoro}>Reset</button>
-                </div>
-                <div className="pomodoro-subject">
-                  <select 
-                    value={pomodoroExamStage} 
-                    onChange={handleExamStageChange}
-                    disabled={pomodoroActive}
-                    className="pomodoro-select"
-                  >
-                    <option value="">Select Exam Stage</option>
-                    <option value="Foundation">Foundation</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Final">Final</option>
-                  </select>
-                </div>
-                <div className="pomodoro-subject">
-                  <select 
-                    value={pomodoroSubject} 
-                    onChange={(e) => setPomodoroSubject(e.target.value)}
-                    disabled={pomodoroActive || !pomodoroExamStage}
-                    className="pomodoro-select"
-                  >
-                    <option value="">Select Subject</option>
-                    {getSubjectsForExamStage(pomodoroExamStage).map(subject => (
-                      <option key={subject} value={subject}>{subject}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="pomodoro-info">
-                  <p>Complete a session to automatically log 25 minutes of study time.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Resource Usage Statistics */}
-            <div className="dashboard-card resource-usage">
-              <h2>Resource Usage Statistics</h2>
-              {dashboardData && dashboardData.resourceStats && (dashboardData.resourceStats.timeSpentByResource?.length > 0 || dashboardData.resourceStats.mostUsed?.length > 0) ? (
-                <div className="resource-stats-container">
-                  <div className="resource-chart">
-                    {resourceUsageData.labels.length > 0 ? (
-                      <Bar 
-                        data={resourceUsageData}
-                        options={{
-                          responsive: true,
-                          plugins: {
-                            legend: { position: 'top' },
-                            title: {
-                              display: true,
-                              text: 'Time Spent by Resource (minutes)'
-                            }
-                          },
-                          indexAxis: 'y'
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                  <div className="most-used-resources">
-                    <h3>Most Used Resources</h3>
-                    <ul>
-                      {(dashboardData.resourceStats.mostUsed || []).map((resource) => (
-                        <li key={resource.resourceId}>
-                          <span className="resource-title">{resource.title}</span>
-                          <span className="access-count">{resource.accessCount} views</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ) : (
-                <div className="no-data">
-                  <p>No resource usage data available yet. Start using resources to see your usage statistics.</p>
                   <Link to="/resources" className="dashboard-cta">Browse resources</Link>
                 </div>
               )}

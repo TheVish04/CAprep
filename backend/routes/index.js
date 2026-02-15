@@ -1,15 +1,15 @@
 const { authMiddleware } = require('../middleware/authMiddleware');
-const authRoutes = require('../routes/auth');
-const questionRoutes = require('../routes/questions');
-const resourceRoutes = require('../routes/resources');
-const userRoutes = require('../routes/users');
-const adminRoutes = require('../routes/admin');
-const discussionRoutes = require('../routes/discussions');
-const aiQuizRoutes = require('../routes/aiQuiz');
-const dashboardRoutes = require('../routes/dashboard');
-const announcementRoutes = require('../routes/announcements');
-const notificationRoutes = require('../routes/notifications');
-const contactRoutes = require('../routes/contact');
+const authRoutes = require('../controllers/auth');
+const questionRoutes = require('../controllers/questions');
+const resourceRoutes = require('../controllers/resources');
+const userRoutes = require('../controllers/users');
+const adminRoutes = require('../controllers/admin');
+const discussionRoutes = require('../controllers/discussions');
+const aiQuizRoutes = require('../controllers/aiQuiz');
+const dashboardRoutes = require('../controllers/dashboard');
+const announcementRoutes = require('../controllers/announcements');
+const notificationRoutes = require('../controllers/notifications');
+const contactRoutes = require('../controllers/contact');
 const logger = require('../config/logger');
 
 /**

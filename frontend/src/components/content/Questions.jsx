@@ -8,7 +8,6 @@ import api from '../../utils/axiosConfig';
 import apiUtils from '../../utils/apiUtils';
 import MoreMenu from '../shared/MoreMenu';
 import DiscussionModal from './DiscussionModal';
-import BookmarkFolderSelector from '../shared/BookmarkFolderSelector';
 import { QuestionsListSkeleton } from '../shared/Skeleton';
 
 // Add a Bookmark icon component (simple example)
@@ -45,8 +44,6 @@ const Questions = () => {
   const questionsPerPage = 10;
   const [currentDiscussionQuestion, setCurrentDiscussionQuestion] = useState(null);
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
-  const [showBookmarkFolderSelector, setShowBookmarkFolderSelector] = useState(false);
-  const [questionToBookmark, setQuestionToBookmark] = useState(null);
 
   // --- Fetch Bookmarked Question IDs --- 
   const fetchBookmarkIds = useCallback(async () => {
@@ -230,7 +227,7 @@ const Questions = () => {
     });
   };
 
-  // --- Handle Bookmark Toggle --- 
+  // --- Handle Bookmark Toggle (direct add/remove, no folder) --- 
   const handleBookmarkToggle = async (questionId) => {
     const token = apiUtils.getAuthToken();
     if (!token) return navigate('/login');
@@ -240,51 +237,24 @@ const Questions = () => {
     if (isCurrentlyBookmarked) {
       try {
         const response = await api.delete(`/users/me/bookmarks/${questionId}`);
-
-        if (response.data && response.data.bookmarkedQuestionIds) {
-          // Update the bookmarked IDs in state
-          const newBookmarkedIds = new Set(response.data.bookmarkedQuestionIds);
-          setBookmarkedQuestionIds(newBookmarkedIds);
-          
-          // If the bookmarked filter is active, remove this question from the current list immediately
+        if (response.data?.bookmarkedQuestionIds) {
+          setBookmarkedQuestionIds(new Set(response.data.bookmarkedQuestionIds));
           if (filters.bookmarked) {
-            setQuestions(prevQuestions => 
-              prevQuestions.filter(question => question._id !== questionId)
-            );
+            setQuestions(prev => prev.filter(q => q._id !== questionId));
           }
         }
       } catch (err) {
         console.error('Error removing bookmark:', err);
-        if (err.response) {
-            console.error('Error response data:', err.response.data);
-            console.error('Error response status:', err.response.status);
-            console.error('Error response headers:', err.response.headers);
-        }
       }
     } else {
-      // If not bookmarked, show the folder selector
-      const question = questions.find(q => q._id === questionId);
-      setQuestionToBookmark(question);
-      setShowBookmarkFolderSelector(true);
-    }
-  };
-  
-  // Handle successful bookmark to folder
-  const handleBookmarkSuccess = async () => {
-    try {
-      const response = await api.get('/users/me/bookmarks/ids');
-      if (response.data?.bookmarkedQuestionIds) {
+      try {
+        const response = await api.post(`/users/me/bookmarks/${questionId}`, {});
+        if (response.data?.bookmarkedQuestionIds) {
           setBookmarkedQuestionIds(new Set(response.data.bookmarkedQuestionIds));
-          
-          // If we have a question that was just bookmarked, make sure it's in the set
-        if (questionToBookmark) {
-          const updatedSet = new Set(response.data.bookmarkedQuestionIds);
-          updatedSet.add(questionToBookmark._id);
-          setBookmarkedQuestionIds(updatedSet);
         }
+      } catch (err) {
+        console.error('Error adding bookmark:', err);
       }
-    } catch (err) {
-      console.error('Error refreshing bookmark IDs:', err);
     }
   };
 
@@ -294,12 +264,22 @@ const Questions = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Handle individual question answer visibility toggle
+  // Track question view on backend for "Recently Viewed Questions" on dashboard
+  const trackQuestionViewForDashboard = useCallback(async (questionId) => {
+    try {
+      await api.post('/dashboard/question-view', { questionId });
+    } catch (err) {
+      console.error('Error tracking question view:', err);
+    }
+  }, []);
+
+  // Handle individual question answer visibility toggle (also tracks view for dashboard)
   const toggleIndividualAnswer = (questionId) => {
-    setIndividualShowAnswers(prev => ({
-      ...prev,
-      [questionId]: !prev[questionId]
-    }));
+    setIndividualShowAnswers(prev => {
+      const next = !prev[questionId];
+      if (next) trackQuestionViewForDashboard(questionId);
+      return { ...prev, [questionId]: next };
+    });
   };
   
   // Handle PDF export
@@ -600,19 +580,6 @@ const Questions = () => {
           itemType="question"
           itemId={currentDiscussionQuestion._id}
           itemTitle={`Question ${currentDiscussionQuestion.questionNumber} - ${currentDiscussionQuestion.subject}`}
-        />
-      )}
-      
-      {/* Bookmark Folder Selector Modal */}
-      {showBookmarkFolderSelector && questionToBookmark && (
-        <BookmarkFolderSelector
-          itemId={questionToBookmark._id}
-          itemType="question"
-          onClose={() => {
-            setShowBookmarkFolderSelector(false);
-            setQuestionToBookmark(null);
-          }}
-          onSuccess={handleBookmarkSuccess}
         />
       )}
     </div>

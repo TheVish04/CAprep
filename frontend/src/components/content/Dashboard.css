@@ -43,6 +43,11 @@
   margin-top: 30px;
 }
 
+/* Full-width card (e.g. Quiz Performance Trends) */
+.dashboard-card-full-width {
+  grid-column: 1 / -1;
+}
+
 /* Dashboard Cards */
 .dashboard-card {
   background-color: #1e1e1e;
@@ -128,6 +133,11 @@
   border-radius: 8px;
   padding: 10px;
   border: 1px solid #333;
+}
+
+/* Quiz Performance Trends - 3x Y-axis height for more space between data lines */
+.chart-container-quiz-trends {
+  height: 700px;
 }
 
 /* Subject Performance - use full card space */

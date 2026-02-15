@@ -8,7 +8,7 @@ const Resource = require('./models/ResourceModel');
 const Discussion = require('./models/DiscussionModel');
 const { authMiddleware, adminMiddleware } = require('./middleware/authMiddleware');
 const { checkAndCreateAdmin } = require('./bootstrap/adminBootstrap');
-const { mountRoutes } = require('./bootstrap/routes');
+const { mountRoutes } = require('./routes');
 const cors = require('cors');
 require('dotenv').config();
 const mongoose = require('mongoose');

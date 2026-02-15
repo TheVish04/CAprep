@@ -210,15 +210,23 @@ router.get('/', authMiddleware, async (req, res) => {
       });
     }
     
+    // Filter out orphaned refs (deleted questions/resources) so frontend doesn't break
+    const recentlyViewedQuestions = (user.recentlyViewedQuestions || []).filter(
+      (item) => item && item.questionId
+    );
+    const recentlyViewedResources = (user.recentlyViewedResources || []).filter(
+      (item) => item && item.resourceId
+    );
+
     // Prepare the dashboard response
     const dashboardData = {
       quizScoreTrends: user.quizHistory ? formatQuizScoreTrends(user.quizHistory) : {},
       studyHoursSummary: user.studyHours ? formatStudyHours(user.studyHours) : { daily: [], weekly: {}, monthly: {}, bySubject: {} },
-      recentlyViewedQuestions: user.recentlyViewedQuestions || [],
-      recentlyViewedResources: user.recentlyViewedResources || [],
+      recentlyViewedQuestions,
+      recentlyViewedResources,
       bookmarkedContent: {
-        questions: user.bookmarkedQuestions || [],
-        resources: user.bookmarkedResources || []
+        questions: (user.bookmarkedQuestions || []).filter(Boolean),
+        resources: (user.bookmarkedResources || []).filter(Boolean)
       },
       subjectStrengths: user.subjectStrengths || [],
       announcements: announcements || [],

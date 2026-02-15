@@ -4,10 +4,10 @@ import Navbar from '../layout/Navbar';
 import { ResourcesListSkeleton } from '../shared/Skeleton';
 import './Resources.css';
 import axios from 'axios';
+import api from '../../utils/axiosConfig';
 import apiUtils from '../../utils/apiUtils';
 import MoreMenu from '../shared/MoreMenu';
 import DiscussionModal from './DiscussionModal';
-import BookmarkFolderSelector from '../shared/BookmarkFolderSelector';
 
 // Paper Title with View PDF button component
 const PaperViewHeader = ({ title, paperType, month, year, examStage, subject, onViewPDF, isLoading }) => {
@@ -62,8 +62,6 @@ const Resources = () => {
   const resourcesPerPage = 10;
   const [currentDiscussionResource, setCurrentDiscussionResource] = useState(null);
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
-  const [showBookmarkFolderSelector, setShowBookmarkFolderSelector] = useState(false);
-  const [resourceToBookmark, setResourceToBookmark] = useState(null);
 
   // Download a resource and increment download count
   const handleDownload = useCallback(async (resource) => {
@@ -74,26 +72,17 @@ const Resources = () => {
       console.log('Starting download process for resource:', resource.title);
       setDownloadingResource(resource._id);
       
-      // First track the resource view
+      // Track resource view for "Recently Viewed Resources" on dashboard
       try {
-        await axios.post(`${apiUtils.getApiBaseUrl()}/dashboard/resource-view`, {
-          resourceId: resource._id
-        }, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await api.post('/dashboard/resource-view', { resourceId: resource._id });
       } catch (viewError) {
         console.error('Failed to track resource view:', viewError);
-        // Continue even if view tracking fails
       }
-      
-      // Then increment the download count
+      // Increment download count
       try {
-        await axios.post(`${apiUtils.getApiBaseUrl()}/resources/${resource._id}/download`, {}, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        await api.post(`/resources/${resource._id}/download`, {});
       } catch (countError) {
         console.error('Failed to increment download count:', countError);
-        // Continue even if count increment fails
       }
       
       // Simplest and most reliable method: just open the PDF in a new tab
@@ -107,7 +96,7 @@ const Resources = () => {
     } finally {
       setDownloadingResource(null);
     }
-  }, [apiUtils.getApiBaseUrl(), navigate]);
+  }, [navigate]);
 
   // --- Fetch Bookmarked Resource IDs --- 
   const fetchBookmarkIds = useCallback(async (token) => {
@@ -271,7 +260,7 @@ const Resources = () => {
     });
   };
 
-  // --- Handle Bookmark Toggle --- 
+  // --- Handle Bookmark Toggle (direct add/remove, no folder) --- 
   const handleBookmarkToggle = async (resourceId) => {
     const token = apiUtils.getAuthToken();
     if (!token) return navigate('/login');
@@ -279,59 +268,25 @@ const Resources = () => {
     const isCurrentlyBookmarked = bookmarkedResourceIds.has(resourceId);
     
     if (isCurrentlyBookmarked) {
-      // If already bookmarked, remove the bookmark
-      const url = `${apiUtils.getApiBaseUrl()}/users/me/bookmarks/resource/${resourceId}`;
-      
       try {
-        const response = await axios.delete(url, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (response.data && response.data.bookmarkedResourceIds) {
-          // Update the bookmarked IDs in state
-          const newBookmarkedIds = new Set(response.data.bookmarkedResourceIds);
-          setBookmarkedResourceIds(newBookmarkedIds);
-          
-          // If the bookmarked filter is active, remove this resource from the current list immediately
+        const response = await api.delete(`/users/me/bookmarks/resource/${resourceId}`);
+        if (response.data?.bookmarkedResourceIds) {
+          setBookmarkedResourceIds(new Set(response.data.bookmarkedResourceIds));
           if (filters.bookmarked) {
-            setResources(prevResources => 
-              prevResources.filter(resource => resource._id !== resourceId)
-            );
+            setResources(prev => prev.filter(r => r._id !== resourceId));
           }
         }
       } catch (err) {
         console.error('Error removing resource bookmark:', err);
-        alert(err.response?.data?.error || 'Failed to remove bookmark');
       }
     } else {
-      // If not bookmarked, show the folder selector
-      const resource = resources.find(r => r._id === resourceId);
-      setResourceToBookmark(resource);
-      setShowBookmarkFolderSelector(true);
-    }
-  };
-  
-  // Handle successful bookmark to folder
-  const handleBookmarkSuccess = async () => {
-    // Refresh bookmark IDs
-    const token = apiUtils.getAuthToken();
-    if (token) {
       try {
-        const response = await axios.get(`${apiUtils.getApiBaseUrl()}/users/me/bookmarks/resources/ids`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.data && response.data.bookmarkedResourceIds) {
+        const response = await api.post(`/users/me/bookmarks/resource/${resourceId}`, {});
+        if (response.data?.bookmarkedResourceIds) {
           setBookmarkedResourceIds(new Set(response.data.bookmarkedResourceIds));
-          
-          // If we have a resource that was just bookmarked, make sure it's in the set
-          if (resourceToBookmark) {
-            const updatedSet = new Set(response.data.bookmarkedResourceIds);
-            updatedSet.add(resourceToBookmark._id);
-            setBookmarkedResourceIds(updatedSet);
-          }
         }
       } catch (err) {
-        console.error('Error refreshing resource bookmark IDs:', err);
+        console.error('Error adding resource bookmark:', err);
       }
     }
   };
@@ -552,19 +507,6 @@ const Resources = () => {
           itemType="resource"
           itemId={currentDiscussionResource._id}
           itemTitle={currentDiscussionResource.title}
-        />
-      )}
-      
-      {/* Bookmark Folder Selector Modal */}
-      {showBookmarkFolderSelector && resourceToBookmark && (
-        <BookmarkFolderSelector
-          itemId={resourceToBookmark._id}
-          itemType="resource"
-          onClose={() => {
-            setShowBookmarkFolderSelector(false);
-            setResourceToBookmark(null);
-          }}
-          onSuccess={handleBookmarkSuccess}
         />
       )}
     </div>
