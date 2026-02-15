@@ -47,14 +47,18 @@ const Resources = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingResource, setDownloadingResource] = useState(null);
-  const [filters, setFilters] = useState({
-    subject: '',
-    paperType: '',
-    year: '',
-    month: '',
-    examStage: '',
-    search: '',
-    bookmarked: false,
+  // Initialize filters from URL so first fetch uses search/params (avoids race with URL effect)
+  const [filters, setFilters] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      subject: params.get('subject') || '',
+      paperType: '',
+      year: '',
+      month: '',
+      examStage: params.get('examStage') || '',
+      search: params.get('search') || '',
+      bookmarked: params.get('bookmarked') === 'true',
+    };
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [serverPagination, setServerPagination] = useState({ total: 0, page: 1, pages: 1, limit: 10 });
@@ -143,24 +147,29 @@ const Resources = () => {
     }
   }, [apiUtils.getApiBaseUrl(), resourcesPerPage]);
 
-  // --- Initial Load --- 
+  // --- Initial Load: auth check, bookmarks, and sync URL to filters when URL changes --- 
   useEffect(() => {
     const token = apiUtils.getAuthToken();
     if (!token) {
-      navigate('/login'); // Redirect to login if no token
+      navigate('/login');
     } else {
       fetchBookmarkIds(token);
-      
-      // Apply URL params to initial filters before fetching
       const params = new URLSearchParams(location.search);
-      const initialFilters = { ...filters }; // Start with default filters
-      if (params.get('examStage')) initialFilters.examStage = params.get('examStage');
-      if (params.get('subject')) initialFilters.subject = params.get('subject');
-      if (params.get('bookmarked') === 'true') initialFilters.bookmarked = true;
-      // Update state once, triggering the fetch effect
-      setFilters(initialFilters);
+      const fromUrl = {
+        examStage: params.get('examStage') || '',
+        subject: params.get('subject') || '',
+        bookmarked: params.get('bookmarked') === 'true',
+        search: params.get('search') || '',
+      };
+      setFilters(prev => {
+        if (prev.examStage === fromUrl.examStage && prev.subject === fromUrl.subject &&
+            prev.bookmarked === fromUrl.bookmarked && prev.search === fromUrl.search) {
+          return prev;
+        }
+        return { ...prev, ...fromUrl };
+      });
     }
-  }, [navigate, location.search, location.state, fetchBookmarkIds]); // Rerun if location search or state changes
+  }, [navigate, location.search, location.state, fetchBookmarkIds]);
 
   // --- Fetch on Filter or Page Change --- 
   useEffect(() => {

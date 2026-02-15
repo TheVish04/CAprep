@@ -164,14 +164,17 @@ const Dashboard = () => {
     }
   };
 
-  // Navigate to a specific item
+  // Navigate to a specific item; optional title pre-fills search on target page
   const navigateToItem = (type, id, title = null) => {
+    const searchSegment = title && title.trim()
+      ? `?search=${encodeURIComponent(String(title).trim().substring(0, 200))}`
+      : '';
     switch (type) {
       case 'question':
-        navigate('/questions');
+        navigate(`/questions${searchSegment}`);
         break;
       case 'resource':
-        navigate('/resources');
+        navigate(`/resources${searchSegment}`);
         break;
       case 'quiz':
         navigate('/quiz-review', { state: { quizId: id } });
@@ -235,17 +238,18 @@ const Dashboard = () => {
     }
   };
 
-  // Track question view
-  const trackQuestionView = async (questionId) => {
+  // Track question view and navigate to Questions with optional search prefill
+  const trackQuestionView = async (questionId, questionTitle = null) => {
     try {
       const token = apiUtils.getAuthToken();
       if (!token) return;
       
       await api.post('/dashboard/question-view', { questionId });
       
-      navigateToItem('question', questionId);
+      navigateToItem('question', questionId, questionTitle);
     } catch (err) {
       console.error('Error tracking question view:', err);
+      navigateToItem('question', questionId, questionTitle);
     }
   };
 
@@ -505,7 +509,7 @@ const Dashboard = () => {
               {dashboardData && dashboardData.recentlyViewedQuestions && dashboardData.recentlyViewedQuestions.length > 0 ? (
                 <ul className="recent-list">
                   {dashboardData.recentlyViewedQuestions.map((item) => (
-                    <li key={item.questionId._id} onClick={() => trackQuestionView(item.questionId._id)}>
+                    <li key={item.questionId._id} onClick={() => trackQuestionView(item.questionId._id, item.questionId?.questionText || item.questionId?.text)}>
                       <div className="recent-item-content">
                         <p className="item-title">
                           {item.questionId && (item.questionId.questionText || item.questionId.text)
@@ -578,7 +582,7 @@ const Dashboard = () => {
                   dashboardData && dashboardData.bookmarkedContent && dashboardData.bookmarkedContent.questions.length > 0 ? (
                     <ul className="bookmark-list">
                       {dashboardData.bookmarkedContent.questions.slice(0, 5).map((question) => (
-                        <li key={question._id} onClick={() => trackQuestionView(question._id)}>
+                        <li key={question._id} onClick={() => trackQuestionView(question._id, question.questionText || question.text)}>
                           <div className="bookmark-item-content">
                             <p className="item-title">
                               {(question.questionText || question.text) ? (question.questionText || question.text).substring(0, 80) + ((question.questionText || question.text).length > 80 ? '...' : '') : 'No question text available'}

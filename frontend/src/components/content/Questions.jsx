@@ -23,16 +23,20 @@ const Questions = () => {
   const [questions, setQuestions] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    subject: '',
-    paperType: '',
-    year: '',
-    questionNumber: '',
-    month: '',
-    examStage: '',
-    paperNo: '',
-    search: '',
-    bookmarked: false,
+  // Initialize filters from URL so first fetch uses search/params (avoids race with URL effect)
+  const [filters, setFilters] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      subject: params.get('subject') || '',
+      paperType: '',
+      year: '',
+      questionNumber: '',
+      month: '',
+      examStage: params.get('examStage') || '',
+      paperNo: '',
+      search: params.get('search') || '',
+      bookmarked: params.get('bookmarked') === 'true',
+    };
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [serverPagination, setServerPagination] = useState({ total: 0, page: 1, pages: 1, limit: 10 });
@@ -117,21 +121,25 @@ const Questions = () => {
     }
   }, [filters, fetchQuestions]);
 
-  // --- Apply query parameters from URL to filters on initial load --- 
+  // --- Apply query parameters from URL when URL changes (e.g. back/forward) --- 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const examStageParam = params.get('examStage');
-    const subjectParam = params.get('subject');
+    const examStageParam = params.get('examStage') || '';
+    const subjectParam = params.get('subject') || '';
     const bookmarkedParam = params.get('bookmarked') === 'true';
+    const searchParam = params.get('search') || '';
     
     setFilters(prevFilters => {
-        const newFilters = { ...prevFilters };
-        if (examStageParam) newFilters.examStage = examStageParam;
-        if (subjectParam) newFilters.subject = subjectParam;
-        if (bookmarkedParam) newFilters.bookmarked = bookmarkedParam;
-        return newFilters;
+        const examStage = examStageParam || prevFilters.examStage;
+        const subject = subjectParam || prevFilters.subject;
+        const bookmarked = bookmarkedParam;
+        const search = searchParam || prevFilters.search;
+        if (examStage === prevFilters.examStage && subject === prevFilters.subject &&
+            bookmarked === prevFilters.bookmarked && search === prevFilters.search) {
+          return prevFilters;
+        }
+        return { ...prevFilters, examStage, subject, bookmarked, search };
     });
-    
   }, [location.search]);
 
   // --- Get unique years for filtering --- 
@@ -256,14 +264,6 @@ const Questions = () => {
       <div className="questions-section">
         <div className="questions-container">
           <h1>Questions</h1>
-          
-          {loading && <QuestionsListSkeleton />}
-          
-          {error && (
-            <div className="error">
-              <p>Error: {error}</p>
-            </div>
-          )}
 
           <div className="questions-actions">
             <button className="export-btn" onClick={handleExportPDF} disabled={loading || questions.length === 0}>
@@ -400,6 +400,14 @@ const Questions = () => {
                </label>
             </div>
           </div>
+
+          {loading && <QuestionsListSkeleton />}
+
+          {error && (
+            <div className="error">
+              <p>Error: {error}</p>
+            </div>
+          )}
 
           {!loading && questions.length === 0 && !error && (
             <p className="no-questions">No questions found matching your criteria.</p>
