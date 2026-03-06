@@ -271,7 +271,6 @@ const Resources = () => {
                 placeholder="Search resources by title/description..."
                 value={filters.search}
                 onChange={handleFilterChange}
-                disabled={loading}
               />
             </div>
           </div>

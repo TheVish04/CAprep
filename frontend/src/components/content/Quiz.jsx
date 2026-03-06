@@ -512,6 +512,12 @@ const Quiz = () => {
         >
           {loading ? 'Loading...' : `Start ${quizMode === 'ai' ? 'AI' : 'Standard'} Quiz`}
         </button>
+        <button
+          className="history-quiz-btn"
+          onClick={() => navigate('/quiz-history')}
+        >
+          View Quiz History
+        </button>
       </div>
     </div>
   );

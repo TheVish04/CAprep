@@ -1,37 +1,22 @@
 const express = require('express');
 const router = express.Router();
-// const axios = require('axios'); // No longer needed for the API call
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai'); // Import Gemini SDK
+const { Groq } = require('groq-sdk');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const Question = require('../models/QuestionModel');
 const logger = require('../config/logger');
 const { sendErrorResponse } = require('../utils/errorResponse');
 require('dotenv').config(); // Ensure environment variables are loaded
 
-// Initialize Gemini Client
-if (!process.env.GEMINI_API_KEY) {
-  logger.error('FATAL ERROR: GEMINI_API_KEY is not defined in .env');
-  // Optional: Exit process if key is critical for startup
-  // process.exit(1);
-}
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Free tier: gemini-2.5-flash-lite (best free limits). See https://ai.google.dev/gemini-api/docs/rate-limits
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
-
-// Configure safety settings (adjust as needed)
-const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-];
+// Initialize Groq Client
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Fast and versatile model for standard queries
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 // POST /api/ai-quiz/generate - Generate questions using AI
 router.post('/generate', authMiddleware, async (req, res) => {
   try {
     const { subject, examStage, count = 5 } = req.body; // Default to 5 questions
-    
+
     logger.info('AI Quiz Request: subject=' + subject + ', examStage=' + examStage + ', count=' + count);
 
     // 1. Input Validation (Basic)
@@ -39,36 +24,19 @@ router.post('/generate', authMiddleware, async (req, res) => {
       logger.info('Missing required fields: subject or examStage');
       return res.status(400).json({ error: 'Subject and Exam Stage are required.' });
     }
-    if (!process.env.GEMINI_API_KEY) {
-        logger.error('GEMINI API Key not configured in .env');
-        return res.status(500).json({ error: 'AI service configuration error.' });
-    }
-    
-    logger.info('Gemini API Key available: ' + !!process.env.GEMINI_API_KEY);
 
     // 2. Retrieve Example Questions
     logger.info('Fetching example questions for subject: ' + subject + ', examStage: ' + examStage);
-    // Get the total count of available questions first
     const totalQuestions = await Question.countDocuments({ subject, examStage });
-    
-    // Random sampling logic for example questions
+
     let exampleQuestions = [];
     if (totalQuestions > 0) {
-      // Determine how many examples to use (up to 30)
       const sampleSize = Math.min(totalQuestions, 30);
       logger.info(`Found ${totalQuestions} total questions, will sample ${sampleSize} random questions for AI context.`);
-      
-      // Use MongoDB's aggregate with $sample for truly random selection
       exampleQuestions = await Question.aggregate([
         { $match: { subject, examStage } },
         { $sample: { size: sampleSize } }
       ]);
-    }
-    
-    if (!exampleQuestions || exampleQuestions.length === 0) {
-      logger.warn(`No example questions found for Subject: ${subject}, Stage: ${examStage}. Will generate questions using AI's general knowledge.`);
-    } else {
-      logger.info(`Using ${exampleQuestions.length} random example questions for AI prompt context.`);
     }
 
     // 3. Construct Enhanced Prompt
@@ -85,26 +53,14 @@ Generate ${count} new, unique MCQs suitable for the CA ${examStage} level, focus
 6.  **Uniqueness:** Ensure the generated questions are distinct from the provided examples and general knowledge, offering fresh practice material.
 7.  **Formatting:** Adhere strictly to the JSON output format specified later.
 
-**Contextual Learning from Examples:**
-When example questions are provided below, analyze them carefully. Pay attention to:
-* The style, tone, and complexity of the questions.
-* The structure, especially how main questions and potential sub-questions are handled.
-* The nature of explanations and how distractors are designed.
-Use these examples to refine the quality and relevance of the questions you generate.
-
 `;
 
     if (exampleQuestions.length > 0) {
       prompt += "Here are some examples of existing questions to understand the style and format:\n\n";
       exampleQuestions.forEach((q, index) => {
-        // Check if this is an empty question with subquestions
         const isEmptyMainQuestion = q.questionText.trim().length < 20 && q.subQuestions && q.subQuestions.length > 0;
-        
-        // Only add the main question if it's not empty
         if (!isEmptyMainQuestion) {
           prompt += "Example " + (index + 1) + ":\nQuestion: " + q.questionText + "\n";
-          
-          // Process main question options if available
           if (q.options && q.options.length > 0) {
             prompt += "Options: ";
             q.options.forEach((opt, i) => {
@@ -114,18 +70,10 @@ Use these examples to refine the quality and relevance of the questions you gene
             prompt += "\n";
           }
         }
-        
-        // Process subQuestions if available
         if (q.subQuestions && q.subQuestions.length > 0) {
-          // First, check if there's only one subquestion with no main question content
-          // This is a common pattern where the main question is empty and all content is in the subquestion
           if (q.questionText.trim().length < 20 && q.subQuestions.length === 1 && q.subQuestions[0].subQuestionText) {
-            // Create a new question entry with the subquestion content instead of replacing
-            // This avoids modifying the prompt string that's already been built
             const subQuestionText = q.subQuestions[0].subQuestionText;
             prompt += "Example " + (index + 1) + " (Sub):\nQuestion: " + subQuestionText + "\n";
-            
-            // Process subQuestion options
             if (q.subQuestions[0].subOptions && q.subQuestions[0].subOptions.length > 0) {
               prompt += "Options: ";
               q.subQuestions[0].subOptions.forEach((opt, i) => {
@@ -134,15 +82,12 @@ Use these examples to refine the quality and relevance of the questions you gene
               });
               prompt += "\n";
             }
-            prompt += "\n"; // Add a blank line after this example
+            prompt += "\n";
           } else {
-            // Process all subquestions normally
             q.subQuestions.forEach((subQ, subIndex) => {
               if (subQ.subQuestionText) {
                 prompt += "Sub Question " + (subIndex + 1) + ": " + subQ.subQuestionText + "\n";
               }
-              
-              // Process subQuestion options
               if (subQ.subOptions && subQ.subOptions.length > 0) {
                 prompt += "Options: ";
                 subQ.subOptions.forEach((opt, i) => {
@@ -154,155 +99,70 @@ Use these examples to refine the quality and relevance of the questions you gene
             });
           }
         }
-        
-        prompt += "\n"; // Add a blank line between examples
+        prompt += "\n";
       });
     } else {
-      // Additional instructions when no examples are available
-      prompt += "You don't have any specific examples for this subject, but please use your knowledge of " + 
-                "CA curriculum to create realistic and challenging questions for " + examStage + " level " + 
-                "students studying " + subject + ".\n\n" +
-                "For this subject, focus on the key concepts, calculations, and applications that would be " +
-                "appropriate for the " + examStage + " level of CA exams in India. Be specific to the subject " +
-                "matter and avoid generic questions.\n\n";
+      prompt += "You don't have any specific examples for this subject, but please use your knowledge of " +
+        "CA curriculum to create realistic and challenging questions for " + examStage + " level " +
+        "students studying " + subject + ".\n\n" +
+        "For this subject, focus on the key concepts, calculations, and applications that would be " +
+        "appropriate for the " + examStage + " level of CA exams in India. Be specific to the subject " +
+        "matter and avoid generic questions.\n\n";
     }
 
-    // Reinforce JSON output format instructions
     prompt += "Important: Format your response strictly as a JSON array of objects. " +
-              "Each object must have these exact keys: \"questionText\" (string), " +
-              "\"options\" (array of 4 strings), \"correctAnswerIndex\" (integer from 0 to 3 " +
-              "indicating the index of the correct option in the 'options' array), and " +
-              "\"explanation\" (string containing a detailed explanation of why the correct answer is right and why the others are wrong). " +
-              "Do not include any introductory text, explanations, or markdown formatting like ```json outside " +
-              "the JSON array itself. Only output the valid JSON array.";
+      "Each object must have these exact keys: \"questionText\" (string), " +
+      "\"options\" (array of 4 strings), \"correctAnswerIndex\" (integer from 0 to 3 " +
+      "indicating the index of the correct option in the 'options' array), and " +
+      "\"explanation\" (string containing a detailed explanation of why the correct answer is right and why the others are wrong). " +
+      "Do not include any introductory text, explanations, or markdown formatting like ```json outside " +
+      "the JSON array itself. Only output the valid JSON array.";
 
-    // 4. Call Google Gemini API
-    logger.info("Sending prompt to Google Gemini API...");
-    logger.info("Prompt length: " + prompt.length + " characters");
-    // logger.info("Prompt:", prompt); // Uncomment for debugging
-
+    // 4. Call Groq API
+    logger.info("Sending prompt to Groq API...");
     try {
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        safetySettings
-      });
-
-      logger.info("Using model: " + GEMINI_MODEL);
-
-      const generationConfig = {
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: GROQ_MODEL,
         temperature: 0.7,
-        maxOutputTokens: 8192,
-      };
-      
-      logger.info("Generation config: " + JSON.stringify(generationConfig));
-
-      logger.info("Calling Gemini API...");
-      const result = await model.generateContent(prompt);
-      logger.info("Received response from Google Gemini API.");
+        max_tokens: 8192,
+        response_format: { type: "json_object" }
+      });
 
       // 5. Parse Response
       let generatedQuestions = [];
-      if (result && result.response) {
-        const rawContent = result.response.text();
-        logger.info("Raw Content length: " + rawContent.length + " characters");
-        // logger.info("Raw Content from AI:", rawContent);
+      const rawContent = chatCompletion.choices[0]?.message?.content || "";
+      logger.info("Raw Content from Groq received.");
 
-        // Attempt to parse the content as JSON
-        try {
-          // Sometimes the AI might wrap the JSON in backticks or add intro text
-          logger.info("Attempting to parse JSON response...");
-          const jsonMatch = rawContent.match(/```json\n?([\s\S]*?)```|(\[[\s\S]*\])/);
-          let jsonString = rawContent.trim();
-          if (jsonMatch) {
-            logger.info("Found JSON match with regex");
-            jsonString = jsonMatch[1] || jsonMatch[2];
-          }
-
-          logger.info("Parsing JSON string...");
-          generatedQuestions = JSON.parse(jsonString);
-          logger.info("JSON parsed successfully");
-
-          // Basic validation of the parsed structure
-          if (!Array.isArray(generatedQuestions)) {
-            logger.error("Parsed response is not an array: " + typeof generatedQuestions);
-            throw new Error("Parsed response is not an array.");
-          }
-          
-          logger.info("Validating question objects...");
-          let validationErrors = [];
-          
-          generatedQuestions.forEach((q, i) => {
-            if (typeof q.questionText !== 'string') {
-              validationErrors.push(`Question ${i}: questionText is not a string`);
-            }
-            if (!Array.isArray(q.options)) {
-              validationErrors.push(`Question ${i}: options is not an array`);
-            } else if (q.options.length < 2) {
-              validationErrors.push(`Question ${i}: options has less than 2 items`);
-            }
-            if (typeof q.correctAnswerIndex !== 'number') {
-              validationErrors.push(`Question ${i}: correctAnswerIndex is not a number`);
-            } else if (q.correctAnswerIndex < 0 || q.correctAnswerIndex >= q.options.length) {
-              validationErrors.push(`Question ${i}: correctAnswerIndex is out of bounds`);
-            }
-            if (typeof q.explanation !== 'string' || !q.explanation) {
-              validationErrors.push(`Question ${i}: missing or invalid explanation`);
-            }
-          });
-          
-          // Additional quality validation
-          let qualityErrors = [];
-          generatedQuestions.forEach((q, i) => {
-            // Check for minimum question length (at least 20 characters)
-            if (q.questionText.length < 20) {
-              qualityErrors.push(`Question ${i}: questionText is too short`);
-            }
-            
-            // Check for minimum explanation length (at least 50 characters)
-            if (q.explanation && q.explanation.length < 50) {
-              qualityErrors.push(`Question ${i}: explanation is too brief`);
-            }
-            
-            // Check that all options are unique
-            const uniqueOptions = new Set(q.options);
-            if (uniqueOptions.size !== q.options.length) {
-              qualityErrors.push(`Question ${i}: contains duplicate options`);
-            }
-          });
-          
-          if (validationErrors.length > 0) {
-            logger.error("Validation errors: " + (validationErrors && JSON.stringify(validationErrors)));
-            throw new Error("Question objects have invalid structure: " + validationErrors.join("; "));
-          }
-          
-          if (qualityErrors.length > 0) {
-            logger.warn("Quality issues with generated questions: " + (qualityErrors && JSON.stringify(qualityErrors)));
-            // We don't throw an error for quality issues, just log warnings
-          }
-
-          logger.info("Successfully parsed " + generatedQuestions.length + " questions.");
-
-        } catch (parseError) {
-          sendErrorResponse(res, 500, { message: 'Failed to parse AI response.', error: parseError });
-          return;
+      try {
+        let jsonString = rawContent.trim();
+        const jsonMatch = rawContent.match(/```json\n?([\s\S]*?)```|(\[[\s\S]*\])/);
+        if (jsonMatch) {
+          jsonString = jsonMatch[1] || jsonMatch[2];
         }
 
-      } else {
-        // Handle cases where the response might be blocked
-        logger.error('No valid text content received from AI API: ' + (result ? JSON.stringify(result) : 'No result object'));
-        
-        const blockReason = result?.promptFeedback?.blockReason;
-        const safetyRatings = result?.candidates?.[0]?.safetyRatings;
-        
-        return res.status(500).json({
-          error: 'Received no valid text content from AI service.',
-          blockReason: blockReason || 'Unknown',
-          safetyRatings: safetyRatings || []
-        });
+        const parsed = JSON.parse(jsonString);
+
+        // Handle if groq returns the array wrapped in a top level object key e.g {"questions": [...]}
+        if (Array.isArray(parsed)) {
+          generatedQuestions = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          const possibleArray = Object.values(parsed).find(val => Array.isArray(val));
+          if (possibleArray) generatedQuestions = possibleArray;
+        }
+
+        if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
+          throw new Error("Parsed response is not a valid array.");
+        }
+
+        logger.info("Successfully parsed " + generatedQuestions.length + " questions.");
+
+      } catch (parseError) {
+        sendErrorResponse(res, 500, { message: 'Failed to parse AI response.', error: parseError });
+        return;
       }
 
       // 6. Send to Frontend
-      logger.info("Sending " + generatedQuestions.length + " questions to frontend");
       res.status(200).json(generatedQuestions);
 
     } catch (apiError) {
@@ -322,9 +182,6 @@ router.post('/suggest-title', authMiddleware, async (req, res) => {
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'Question is required.' });
     }
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'AI service not configured.' });
-    }
 
     const prompt = `Based on this CA exam study question, generate a very short title (3-6 words) for a chat. Extract the main topic or concept. Use proper casing (e.g. CGST and SGST, not cgst and sgst). Return ONLY the title, no quotes, punctuation, or explanation.
 
@@ -332,13 +189,15 @@ Question: ${question.substring(0, 500)}
 
 Title:`;
 
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      safetySettings
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: GROQ_MODEL,
+      temperature: 0.3,
+      max_tokens: 50,
     });
-    const result = await model.generateContent(prompt);
-    const raw = result?.response?.text();
-    const title = (raw || '').trim().replace(/^["']|["']$/g, '') || question.substring(0, 40);
+
+    const raw = chatCompletion.choices[0]?.message?.content || "";
+    const title = raw.trim().replace(/^["']|["']$/g, '') || question.substring(0, 40);
     res.json({ title });
   } catch (error) {
     logger.error('suggest-title error: ' + (error && error.message));
@@ -350,16 +209,12 @@ Title:`;
 router.post('/ask', authMiddleware, async (req, res) => {
   try {
     const { question, examStage, subject, conversationHistory = [] } = req.body;
-    
-    logger.info('AI Bot Question Request: historyLength=' + (conversationHistory && conversationHistory.length));
+
+    logger.info('AI Bot Question Request: historyLength=' + conversationHistory.length);
 
     // Input Validation
     if (!question) {
       return res.status(400).json({ error: 'Question is required.' });
-    }
-    if (!process.env.GEMINI_API_KEY) {
-      logger.error('GEMINI API Key not configured in .env');
-      return res.status(500).json({ error: 'AI service configuration error.' });
     }
 
     // Build context based on provided parameters
@@ -372,7 +227,6 @@ router.post('/ask', authMiddleware, async (req, res) => {
       contextDetails = `about the subject ${subject}`;
     }
 
-    // --- SYSTEM INSTRUCTIONS WITH STRICT GUARDRAILS & IDENTITY LOCK ---
     const systemPrompt = `You are "CA Prep Assistant", a specialized AI tutor created exclusively for the CAprep platform to help Indian Chartered Accountancy (CA) students.
 
     **YOUR STRICT IDENTITY PROTOCOL:**
@@ -403,47 +257,114 @@ router.post('/ask', authMiddleware, async (req, res) => {
     3.  **Formatting:** Use plain text only. Do NOT use markdown formatting (like *, _, \`, #).`;
 
     try {
-      // Initialize the model with SYSTEM INSTRUCTIONS
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        safetySettings,
-        systemInstruction: systemPrompt
-      });
-      
-      const generationConfig = {
-        temperature: 0.3, // Lower temperature for more factual, strict responses
-        maxOutputTokens: 1000,
-      };
-      
-      logger.info("Setting up chat with Gemini...");
-      
-      // Convert conversation history to Gemini's chat format
-      // NOTE: We no longer need to manually inject the system prompt here
-      const chatHistory = conversationHistory.map(msg => ({
-        role: msg.type === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-      }));
-      
-      // Create a chat session with history
-      const chat = model.startChat({
-        history: chatHistory,
-        generationConfig
-      });
-      
-      logger.info("Sending message to Gemini chat...");
-      const result = await chat.sendMessage(question);
-      logger.info("Received response from Gemini chat API.");
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory.map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        })),
+        { role: 'user', content: question }
+      ];
 
-      if (result && result.response) {
-        const answer = result.response.text();
-        logger.info("Answer length: " + answer.length + " characters");
-        
+      const chatCompletion = await groq.chat.completions.create({
+        messages,
+        model: GROQ_MODEL,
+        temperature: 0.3,
+        max_tokens: 1000,
+      });
+
+      const answer = chatCompletion.choices[0]?.message?.content || "";
+      if (answer) {
         res.json({ answer });
       } else {
         throw new Error("Empty or invalid response from AI service");
       }
     } catch (aiError) {
       sendErrorResponse(res, 500, { message: 'Failed to generate answer', error: aiError });
+    }
+  } catch (error) {
+    sendErrorResponse(res, 500, { message: 'Internal server error', error });
+  }
+});
+
+// POST /api/ai-quiz/search-explanation - Provide a short explanation for CA-related search terms 
+router.post('/search-explanation', authMiddleware, async (req, res) => {
+  try {
+    const { searchTerm } = req.body;
+
+    if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.trim().length === 0) {
+      return res.status(400).json({ error: 'Search term is required.' });
+    }
+
+    const term = searchTerm.trim().toLowerCase();
+
+    // 1. Filter out common/stop words that shouldn't trigger an AI explanation
+    const commonWords = new Set([
+      'what', 'why', 'how', 'when', 'who', 'where', 'are', 'is', 'the', 'a', 'an',
+      'and', 'or', 'but', 'if', 'then', 'else', 'for', 'to', 'with', 'on', 'in',
+      'at', 'by', 'from', 'about', 'as', 'into', 'like', 'through', 'after', 'over',
+      'between', 'out', 'against', 'during', 'without', 'before', 'under', 'around',
+      'among', 'of', 'explain', 'describe', 'define', 'meaning'
+    ]);
+
+    const words = term.split(/\s+/);
+    const allCommon = words.every(w => commonWords.has(w));
+
+    if (allCommon || term.length < 2) {
+      return res.json({ explanation: null });
+    }
+
+    const systemPrompt = `You are "CA Prep Assistant", a specialized AI tutor created exclusively for the CAprep platform to help Indian Chartered Accountancy (CA) students.
+
+    **YOUR STRICT IDENTITY PROTOCOL:**
+    1.  **Name:** You are "CA Prep Assistant".
+    2.  **Origin Denials:** If asked "Who made you?", "Are you Google AI?", "Are you Gemini?", "Which LLM are you?", or "Are you ChatGPT?", you must DENY it.
+        * *Required Answer:* "I am the CA Prep Assistant, a specialized AI designed to help students with the Indian Chartered Accountancy curriculum."
+    3.  **Scope:** You exist solely to teach Accountancy, Law, Taxation, Audit, and Commerce.
+
+    **STRICT GUARDRAILS (WHAT TO REFUSE):**
+    1.  **NO PROGRAMMING CODE:** You must NOT generate computer code (Python, JavaScript, C++, HTML, etc.).
+    2.  **NO GENERAL TOPICS:** You must NOT discuss movies, sports, politics, video games, general science, or recipes.
+    3.  **NON-CA TERMS:** If the search term is completely unrelated to Commerce, Accountancy, or the CA syllabus, you MUST refuse to explain it.
+        * *Action:* Respond EXACTLY with: "null". Do not offer any other explanation or apology.
+
+    **ALLOWED TOPICS (CA SYLLABUS):**
+    * Accountancy (Financial, Cost, Management)
+    * Corporate & Other Laws (Companies Act, Contract Act, etc.)
+    * Taxation (Income Tax, GST)
+    * Auditing & Ethics
+    * Strategic Management (SM) & Financial Management (FM)
+    * Business Economics
+
+    **RESPONSE GUIDELINES:**
+    1.  **Task:** Briefly define and explain the search term in the context of the Indian Chartered Accountancy (CA) curriculum. 
+    2.  **Length:** The explanation MUST be between 100 to 150 words (around 4-5 sentences). It should be concise but informative.
+    3.  **Accuracy:** Align answers with the latest ICAI syllabus and Indian Accounting Standards (Ind AS) or relevant laws where applicable.
+    4.  **Formatting:** Use plain text only. Do NOT use markdown formatting (like *, _, \`, #). Ensure it reads like a clear, professional summary.`;
+
+    try {
+      const prompt = `Explain the term: "${searchTerm}"`;
+
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ],
+        model: GROQ_MODEL,
+        temperature: 0.3,
+        max_tokens: 300,
+      });
+
+      const explanation = (chatCompletion.choices[0]?.message?.content || "").trim();
+
+      // Handle refusal from guardrails
+      if (explanation.toLowerCase() === 'null' || explanation === '') {
+        return res.json({ explanation: null });
+      }
+
+      res.json({ explanation });
+    } catch (aiError) {
+      sendErrorResponse(res, 500, { message: 'Failed to generate explanation', error: aiError });
     }
   } catch (error) {
     sendErrorResponse(res, 500, { message: 'Internal server error', error });
