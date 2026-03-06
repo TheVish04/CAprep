@@ -1,390 +1,359 @@
 import html2pdf from 'html2pdf.js';
 import DOMPurify from 'dompurify';
 
+// Human-readable labels for filter keys
+const FILTER_LABELS = {
+  examStage:      'Exam Stage',
+  subject:        'Subject',
+  paperType:      'Paper Type',
+  year:           'Year',
+  month:          'Month',
+  questionNumber: 'Question No.',
+  search:         'Search Keyword',
+};
+
 const STYLES = `
   <style>
-    /* Base styles */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
     * {
+      box-sizing: border-box;
       background-color: #fff !important;
-      color: #000 !important;
+      color: #111 !important;
     }
-    
-    /* Typography */
+
     body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      font-size: 12pt;
+      font-family: 'Inter', Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.65;
+      color: #111;
+      max-width: 210mm;
+      margin: 0;
+      padding: 0;
     }
 
     /* Headings */
-    h1, h2, h3, h4, h5, h6 {
-      margin: 1em 0 0.5em;
-      font-weight: bold;
+    h1 { font-size: 18pt; font-weight: 700; margin: 0 0 4px 0; }
+    h2 { font-size: 12pt; font-weight: 700; margin: 0; }
+    h3 { font-size: 11pt; font-weight: 700; margin: 8px 0 4px 0; }
+    h4 { font-size: 10pt; font-weight: 600; margin: 6px 0 3px 0; }
+
+    /* Normalize headings inside question/answer HTML */
+    .question-content h1,
+    .question-content h2,
+    .question-content h3,
+    .question-content h4,
+    .question-content h5,
+    .question-content h6,
+    .answer-content h1,
+    .answer-content h2,
+    .answer-content h3,
+    .answer-content h4,
+    .answer-content h5,
+    .answer-content h6 {
+      font-size: 10.5pt !important;
+      font-weight: 700 !important;
+      margin: 6px 0 3px 0 !important;
+      color: #111 !important;
     }
+
+    p { margin: 0 0 5px 0; }
 
     /* Lists */
-    ul, ol {
-      margin-left: 20px;
-      padding-left: 20px;
-      margin-bottom: 1em;
-    }
-
+    ul, ol { margin: 4px 0 8px 20px; padding-left: 16px; }
     ul { list-style-type: disc; }
     ol { list-style-type: decimal; }
-    ul ul { list-style-type: circle; }
-    ul ul ul { list-style-type: square; }
-    
-    li {
-      margin: 8px 0;
-      padding-left: 10px;
-    }
+    li { margin: 3px 0; }
 
     /* Tables */
     table {
       border-collapse: collapse;
       width: 100%;
-      margin: 1em 0;
+      margin: 8px 0;
+      font-size: 10pt !important;
     }
-
     th, td {
-      border: 1px solid #000;
-      padding: 8px;
+      border: 1px solid #444;
+      padding: 6px 9px;
       text-align: left;
+      font-size: 10pt !important;
+      vertical-align: top;
     }
-
     th {
-      background-color: #f0f0f0 !important;
-      font-weight: bold;
+      background-color: #e8e8e8 !important;
+      font-weight: 700;
     }
 
-    /* Code blocks */
+    /* Code */
     pre, code {
       font-family: "Courier New", Courier, monospace;
       background-color: #f5f5f5 !important;
-      padding: 8px;
+      padding: 6px 8px;
       border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 3px;
       white-space: pre-wrap;
       word-wrap: break-word;
+      font-size: 10pt;
     }
 
-    /* Blockquotes */
-    blockquote {
-      margin: 1em 0;
-      padding: 10px 20px;
-      border-left: 3px solid #000;
-      background-color: #f9f9f9 !important;
-    }
-
-    /* Images */
-    img {
-      max-width: 100%;
-      height: auto;
-      margin: 1em 0;
-    }
-
-    /* Mathematical expressions */
-    .math {
-      font-family: "Times New Roman", Times, serif;
-      font-style: italic;
-    }
-
-    /* Subscript and Superscript */
-    sub, sup {
-      font-size: 75%;
-      line-height: 0;
-      position: relative;
-      vertical-align: baseline;
-    }
+    /* Text formatting */
+    strong, b { font-weight: 700; }
+    em, i { font-style: italic; }
+    u { text-decoration: underline; }
+    sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
     sup { top: -0.5em; }
     sub { bottom: -0.25em; }
 
-    /* Text formatting */
-    strong, b { font-weight: bold; }
-    em, i { font-style: italic; }
-    u { text-decoration: underline; }
-    s, strike { text-decoration: line-through; }
-
-    /* Definition lists */
-    dl {
-      margin: 1em 0;
-    }
-    dt {
-      font-weight: bold;
-      margin-top: 0.5em;
-    }
-    dd {
-      margin-left: 20px;
-    }
-
-    /* Case scenario styles */
-    .case-scenario {
-      margin: 15px 0;
-    }
-
-    .case-scenario-title {
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 210mm;
-      margin: 0;
-      padding: 20px;
-    }
-    
+    /* ── PDF Header ── */
     .pdf-header {
-      border-bottom: 1px solid #000;
-      padding: 15px;
-      text-align: center;
-      margin-bottom: 20px;
-      page-break-before: always;
-      page-break-after: avoid;
+      border-bottom: 2px solid #111;
+      padding: 16px 20px 12px;
+      margin-bottom: 16px;
     }
-    
+    .pdf-header-subtitle {
+      font-size: 10pt;
+      color: #555 !important;
+      margin-top: 4px;
+    }
+
+    /* ── Filter Info Box ── */
     .filter-info {
-      border: 1px solid #000;
-      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px 12px;
       margin-bottom: 20px;
-      font-size: 12px;
-      page-break-after: avoid;
+      font-size: 10pt;
+      background-color: #f9f9f9 !important;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 20px;
     }
-    
+    .filter-chip {
+      display: inline-block;
+    }
+    .filter-chip .label {
+      font-weight: 600;
+      color: #333 !important;
+    }
+
+    /* ── Question Card ── */
     .question-card {
-      border: 1px solid #000;
+      border: 1px solid #ccc;
+      border-radius: 4px;
       margin-bottom: 20px;
-      padding: 15px;
+      overflow: hidden;
       page-break-inside: auto;
     }
-    
+
     .question-header {
-      border-bottom: 1px solid #000;
-      padding: 10px;
-      margin: -15px -15px 15px -15px;
+      background-color: #f0f0f0 !important;
+      padding: 8px 14px;
+      border-bottom: 1px solid #ccc;
       page-break-after: avoid;
     }
-    
+
+    .question-body {
+      padding: 12px 14px;
+    }
+
+    .section-label {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #555 !important;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+
     .question-content {
+      margin-bottom: 6px;
       page-break-inside: auto;
     }
-    
-    .case-scenario {
-      border-left: 1px solid #000;
-      padding: 10px;
-      margin: 10px 0;
-    }
-    
-    .sub-questions {
-      margin-left: 20px;
+
+    /* ── Answer Section ── */
+    .answer-section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #aaa;
       page-break-inside: auto;
     }
-    
-    .options {
-      margin-left: 20px;
-    }
-    
-    .option {
-      margin: 5px 0;
-      padding: 5px;
-    }
-    
-    .correct-option {
-      border-left: 1px solid #000;
-      font-weight: bold;
+
+    .answer-label {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #2a7a2a !important;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
     }
 
-    /* Remove any custom colors from question elements */
-    .question-title,
-    .case-scenario-title,
-    .sub-question-title {
-      color: #000 !important;
-      background-color: #fff !important;
+    .answer-content { }
+
+    /* ── Sub Questions ── */
+    .sub-questions-section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
     }
 
-    /* Force override any inline styles */
-    [style*="color"] {
-      color: #000 !important;
+    .subquestion-item {
+      margin-left: 16px;
+      margin-bottom: 10px;
+      padding-left: 10px;
+      border-left: 2px solid #ccc;
     }
 
-    [style*="background"] {
-      background-color: #fff !important;
-    }
+    /* ── Options ── */
+    .options { margin: 6px 0 6px 10px; }
+    .option { margin: 3px 0; padding: 3px 6px; }
+    .correct-option { font-weight: 700; border-left: 3px solid #2a7a2a; padding-left: 6px; }
   </style>
 `;
 
+const sanitizeOptions = {
+  ALLOWED_TAGS: [
+    'div', 'p', 'br', 'hr',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+    'sub', 'sup',
+    'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+    'blockquote', 'pre', 'code',
+    'img', 'span',
+  ],
+  ALLOWED_ATTR: ['src', 'alt', 'title', 'class', 'colspan', 'rowspan'],
+  FORBID_ATTR: ['style', 'color', 'background', 'background-color'],
+};
+
+/** Sanitise already-HTML content for PDF — no double-processing */
+const sanitize = (html) => DOMPurify.sanitize(html || '', sanitizeOptions);
+
+/** Build a smart filename from the active filters */
+const buildFilename = (filters, includeAnswers) => {
+  const parts = ['ca'];
+  if (filters.examStage) parts.push(filters.examStage.toLowerCase());
+  if (filters.subject)   parts.push(filters.subject.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+  if (filters.paperType) parts.push(filters.paperType.toLowerCase());
+  if (filters.year)      parts.push(filters.year);
+  parts.push('questions');
+  if (includeAnswers)    parts.push('with-answers');
+  return `${parts.join('-')}.pdf`;
+};
+
+/** Render the applied filters as readable chips */
+const renderFilterInfo = (filters) => {
+  const chips = Object.entries(FILTER_LABELS)
+    .map(([key, label]) => {
+      const val = filters[key];
+      if (!val || val === false) return '';
+      return `<span class="filter-chip"><span class="label">${label}:</span> ${val}</span>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  if (!chips) return '<span>All Questions</span>';
+  return chips;
+};
+
 export const generateQuestionsPDF = async (questions, filters, includeAnswers, individualAnswers) => {
-  const formatContent = (text) => {
-    if (!text) return '';
-    
-    let formattedText = text;
-
-    // Convert bullet points
-    formattedText = formattedText.replace(/•\s*(.*?)(?=(?:•|\n|$))/g, '<li>$1</li>');
-    if (formattedText.includes('<li>')) {
-      formattedText = `<ul>${formattedText}</ul>`;
-    }
-
-    // Convert numbered lists (e.g., "1.", "2.", etc.)
-    formattedText = formattedText.replace(/^\d+\.\s*(.*?)(?=(?:\n\d+\.|\n|$))/gm, '<li>$1</li>');
-    if (formattedText.match(/^\d+\./m)) {
-      formattedText = `<ol>${formattedText}</ol>`;
-    }
-
-    // Convert simple table syntax (if used)
-    // Example: | Header 1 | Header 2 | -> proper HTML table
-    if (formattedText.includes('|')) {
-      const rows = formattedText.split('\n').filter(row => row.trim().startsWith('|'));
-      if (rows.length > 0) {
-        const tableRows = rows.map(row => {
-          const cells = row.split('|').filter(cell => cell.trim());
-          return `<tr>${cells.map(cell => `<td>${cell.trim()}</td>`).join('')}</tr>`;
-        });
-        formattedText = `<table>${tableRows.join('')}</table>`;
-      }
-    }
-
-    // Handle code blocks
-    formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-
-    // Handle inline code
-    formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // Handle mathematical expressions
-    formattedText = formattedText.replace(/\$([^$]+)\$/g, '<span class="math">$1</span>');
-
-    return formattedText;
-  };
-
-  const sanitizeOptions = {
-    ALLOWED_TAGS: [
-      // Structure
-      'div', 'p', 'br', 'hr',
-      // Typography
-      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'strong', 'b', 'em', 'i', 'u', 's', 'strike',
-      'sub', 'sup',
-      // Lists
-      'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-      // Tables
-      'table', 'thead', 'tbody', 'tr', 'th', 'td',
-      // Other
-      'blockquote', 'pre', 'code',
-      'img', 'span'
-    ],
-    ALLOWED_ATTR: ['src', 'alt', 'title', 'class', 'id'],
-    FORBID_ATTR: ['style', 'color', 'background', 'background-color'],
-  };
-
-  // Create HTML content
   const htmlContent = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
+        <meta charset="UTF-8" />
         ${STYLES}
       </head>
       <body>
         <div class="pdf-header">
-          <h1>CA Exam Preparation</h1>
-          <p>Generated on: ${new Date().toLocaleDateString()}</p>
-        
-          <div class="filter-info">
-            ${Object.entries(filters)
-              .filter(([_, value]) => value)
-              .map(([key, value]) => `<div>${key}: ${value}</div>`)
-              .join('') || 'All Questions'}
+          <h1>CAprep</h1>
+          <div class="pdf-header-subtitle">
+            Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            &nbsp;·&nbsp; ${questions.length} question${questions.length !== 1 ? 's' : ''}
+            ${includeAnswers ? '&nbsp;·&nbsp; Answers included' : ''}
           </div>
         </div>
-        
-        ${questions.map((question, index) => `
+
+        <div class="filter-info">
+          ${renderFilterInfo(filters)}
+        </div>
+
+        ${questions.map((q, index) => `
           <div class="question-card">
             <div class="question-header">
-              <h2>Q${question.questionNumber || (index + 1)}: ${question.subject || ''} (${question.month || ''} ${question.year || ''} | ${question.paperType || ''})</h2>
+              <h2>Q${q.questionNumber || (index + 1)}: ${q.subject || ''} (${[q.month, q.year, q.paperType].filter(Boolean).join(' | ')})</h2>
             </div>
-            
-            <div class="question-content">
-              ${DOMPurify.sanitize(formatContent(question.questionText || ''), sanitizeOptions)}
-            </div>
-            
-            ${(includeAnswers || individualAnswers[question._id]) && question.answerText ? `
-              <div class="answer-section" style="margin-top: 10px; padding: 10px; border-top: 1px solid #ccc;">
-                <h3>Answer:</h3>
-                <div>${DOMPurify.sanitize(formatContent(question.answerText), sanitizeOptions)}</div>
+
+            <div class="question-body">
+              <div class="section-label">Question</div>
+              <div class="question-content">
+                ${sanitize(q.questionText || '')}
               </div>
-            ` : ''}
-            
-            ${question.subQuestions?.map((subQ, subIndex) => `
-              <div class="sub-questions">
-                <h3>Sub-Question ${subQ.subQuestionNumber || (subIndex + 1)}</h3>
-                ${subQ.subQuestionText ? 
-                  `<div>${DOMPurify.sanitize(formatContent(subQ.subQuestionText), sanitizeOptions)}</div>` : ''}
-                
-                ${subQ.subOptions?.length ? `
-                  <div class="options">
-                    ${subQ.subOptions.map((opt, optIndex) => {
-                      const isCorrect = opt.isCorrect && (includeAnswers || individualAnswers[question._id]);
-                      return `
-                        <div class="option ${isCorrect ? 'correct-option' : ''}">
-                          ${String.fromCharCode(65 + optIndex)}. 
-                          ${DOMPurify.sanitize(opt.optionText || '')}
-                          ${isCorrect ? ' ✓' : ''}
+
+              ${(includeAnswers || individualAnswers[q._id]) && q.answerText ? `
+                <div class="answer-section">
+                  <div class="answer-label">Answer</div>
+                  <div class="answer-content">${sanitize(q.answerText)}</div>
+                </div>
+              ` : ''}
+
+              ${q.subQuestions?.length ? `
+                <div class="sub-questions-section">
+                  ${q.subQuestions.map((subQ, subIdx) => `
+                    <div class="subquestion-item">
+                      <h4>Sub-Question ${subQ.subQuestionNumber || (subIdx + 1)}</h4>
+                      ${subQ.subQuestionText ? `<div class="question-content">${sanitize(subQ.subQuestionText)}</div>` : ''}
+
+                      ${subQ.subOptions?.length ? `
+                        <div class="options">
+                          ${subQ.subOptions.map((opt, optIdx) => {
+                            const correct = opt.isCorrect && (includeAnswers || individualAnswers[q._id]);
+                            return `<div class="option ${correct ? 'correct-option' : ''}">
+                              ${String.fromCharCode(65 + optIdx)}. ${DOMPurify.sanitize(opt.optionText || '')}${correct ? ' ✓' : ''}
+                            </div>`;
+                          }).join('')}
                         </div>
-                      `;
-                    }).join('')}
-                  </div>
-                ` : ''}
-                
-                ${(includeAnswers || individualAnswers[question._id]) && subQ.answerText ? `
-                  <div class="answer-section" style="margin-top: 10px; padding: 10px; border-top: 1px dashed #ccc;">
-                    <h4>Answer:</h4>
-                    <div>${DOMPurify.sanitize(formatContent(subQ.answerText), sanitizeOptions)}</div>
-                  </div>
-                ` : ''}
-              </div>
-            `).join('') || ''}
+                      ` : ''}
+
+                      ${(includeAnswers || individualAnswers[q._id]) && subQ.answerText ? `
+                        <div class="answer-section">
+                          <div class="answer-label">Answer</div>
+                          <div class="answer-content">${sanitize(subQ.answerText)}</div>
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
           </div>
         `).join('')}
       </body>
     </html>
   `;
 
-  // PDF generation options
   const options = {
-    margin: [15, 15],
-    filename: `ca-questions-${new Date().toISOString().slice(0, 10)}.pdf`,
+    margin: [12, 14],
+    filename: buildFilename(filters, includeAnswers),
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
+    html2canvas: {
       scale: 2,
       useCORS: true,
-      logging: false
+      logging: false,
     },
-    jsPDF: { 
-      unit: 'mm', 
-      format: 'a4', 
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
       orientation: 'portrait',
-      compress: true
+      compress: true,
     },
-    pagebreak: { 
-      mode: 'avoid-all',
-      before: '.pdf-header',
-      avoid: ['.question-header', 'h3', 'h4']
-    }
+    pagebreak: {
+      mode: ['css'],
+      avoid: ['.question-header', 'h3', 'h4'],
+    },
   };
 
-  // Create temporary container
-  const container = document.createElement('div');
-  container.innerHTML = htmlContent;
-  document.body.appendChild(container);
-
-  try {
-    // Generate PDF
-    const pdf = await html2pdf().set(options).from(container).save();
-    return pdf;
-  } finally {
-    // Clean up
-    document.body.removeChild(container);
-  }
+  // Use string mode — avoids html2canvas blank-page issue with off-screen elements
+  await html2pdf().set(options).from(htmlContent, 'string').save();
 };
 
 export const savePDF = async (questions, filters, includeAnswers, individualAnswers) => {
