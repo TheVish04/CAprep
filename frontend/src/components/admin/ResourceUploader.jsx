@@ -7,7 +7,7 @@ import './ResourceUploader.css';
 const ResourceUploader = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const getActiveTab = () => {
     if (location.pathname.includes('/resources')) return 'resources';
     if (location.pathname.includes('/analytics')) return 'analytics';
@@ -17,11 +17,11 @@ const ResourceUploader = () => {
     return 'questions';
   };
   const [activeTab, setActiveTab] = useState(getActiveTab());
-  
+
   useEffect(() => {
     setActiveTab(getActiveTab());
   }, [location.pathname]);
-  
+
   // Initialize form state with empty values
   const [formData, setFormData] = useState({
     title: '',
@@ -31,7 +31,7 @@ const ResourceUploader = () => {
     month: '',
     examStage: '',
   });
-  
+
   const [file, setFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,12 +79,12 @@ const ResourceUploader = () => {
     const cachedSelections = localStorage.getItem('resourceUploaderSelections');
     if (cachedSelections) {
       try {
-        const { 
-          examStage, 
-          subject, 
-          paperType, 
-          year, 
-          month, 
+        const {
+          examStage,
+          subject,
+          paperType,
+          year,
+          month,
           title
         } = JSON.parse(cachedSelections);
         setFilters(prev => ({
@@ -131,15 +131,15 @@ const ResourceUploader = () => {
     try {
       // Set a loading state
       console.log(`Fetching resources with query: ${query}`);
-      
+
       // Add a cache-busting parameter to ensure we get fresh data
       const timestamp = new Date().getTime();
       const cacheParam = `cacheBust=${timestamp}`;
-      
+
       const url = `${apiUtils.getApiBaseUrl()}/resources${query ? `?${query}&${cacheParam}` : `?${cacheParam}`}`;
-      
+
       console.log(`Fetching from URL: ${url}`);
-      
+
       // First try with standard headers to avoid CORS issues
       try {
         const response = await fetch(url, {
@@ -147,7 +147,7 @@ const ResourceUploader = () => {
             'Authorization': `Bearer ${token}`
           },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           const list = Array.isArray(data) ? data : (data?.data ?? []);
@@ -158,7 +158,7 @@ const ResourceUploader = () => {
       } catch (initialError) {
         console.log('Initial fetch attempt failed, trying with cache headers:', initialError);
       }
-      
+
       // If the first attempt failed, try with cache control headers
       const response = await fetch(url, {
         headers: {
@@ -166,7 +166,7 @@ const ResourceUploader = () => {
           'Cache-Control': 'no-cache, no-store, must-revalidate'
         },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         const list = Array.isArray(data) ? data : (data?.data ?? []);
@@ -205,7 +205,7 @@ const ResourceUploader = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     validateField(name, value);
-    
+
     // Cache selections when any field is changed
     setTimeout(() => cacheFormSelections(), 100);
   };
@@ -222,7 +222,7 @@ const ResourceUploader = () => {
       } else {
         setErrors((prev) => ({ ...prev, file: '' }));
         setFile(selectedFile);
-        
+
         // Set title based on filename (removing .pdf extension)
         const fileName = selectedFile.name.replace(/\.pdf$/i, '');
         setFormData(prev => ({
@@ -240,7 +240,7 @@ const ResourceUploader = () => {
 
   const validateField = (name, value) => {
     let error = '';
-    
+
     switch (name) {
       case 'title':
         if (!value || value.trim() === '') {
@@ -251,37 +251,37 @@ const ResourceUploader = () => {
           error = 'Title must be less than 100 characters';
         }
         break;
-        
+
       case 'subject':
         if (!value || value === '') {
           error = 'Subject is required';
         }
         break;
-        
+
       case 'paperType':
         if (!value || value === '') {
           error = 'Paper Type is required';
         }
         break;
-        
+
       case 'year':
         if (!value || value === '') {
           error = 'Year is required';
         }
         break;
-        
+
       case 'month':
         if (!value || value === '') {
           error = 'Month is required';
         }
         break;
-        
+
       case 'examStage':
         if (!value || value === '') {
           error = 'Exam Stage is required';
         }
         break;
-        
+
       case 'file':
         if (!value && !isEditMode) {
           error = 'File is required';
@@ -291,50 +291,50 @@ const ResourceUploader = () => {
           error = 'File size must be less than 20MB';
         }
         break;
-        
+
       default:
         break;
     }
-    
+
     // Update error state for the specific field
     setErrors(prev => ({ ...prev, [name]: error }));
-    
+
     return error === '';
   };
 
   const validateForm = () => {
     const newErrors = {};
     const requiredFields = ['title', 'subject', 'paperType', 'year', 'month', 'examStage'];
-    
+
     requiredFields.forEach((field) => {
       validateField(field, formData[field]);
       if (errors[field]) newErrors[field] = errors[field];
     });
-    
+
     // For new resource, validate file
     if (!isEditMode && !file) {
       newErrors.file = 'PDF file is required';
     }
-    
+
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
     const validationErrors = validateForm();
-    
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const token = apiUtils.getAuthToken();
-      
+
       if (isEditMode) {
         // Update existing resource (PUT request)
         const response = await fetch(`${apiUtils.getApiBaseUrl()}/resources/${editingResourceId}`, {
@@ -345,11 +345,11 @@ const ResourceUploader = () => {
           },
           body: JSON.stringify(formData),
         });
-        
+
         if (response.ok) {
           // Cache form selections before resetting
           cacheFormSelections();
-          
+
           // Fetch fresh resources after update
           await fetchResources(token);
           resetForm();
@@ -370,10 +370,10 @@ const ResourceUploader = () => {
         formDataObj.append('month', formData.month);
         formDataObj.append('examStage', formData.examStage);
         formDataObj.append('file', file);
-        
+
         // Cache form selections before submission
         cacheFormSelections();
-        
+
         const response = await fetch(`${apiUtils.getApiBaseUrl()}/resources`, {
           method: 'POST',
           headers: {
@@ -381,7 +381,7 @@ const ResourceUploader = () => {
           },
           body: formDataObj,
         });
-        
+
         if (response.ok) {
           // Clear server cache via admin endpoint
           try {
@@ -396,7 +396,7 @@ const ResourceUploader = () => {
           } catch (cacheError) {
             console.error('Failed to clear cache:', cacheError);
           }
-          
+
           // Fetch fresh resources after adding new one
           resetForm();
           await fetchResources(token);
@@ -432,18 +432,18 @@ const ResourceUploader = () => {
     if (!window.confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
       return;
     }
-    
+
     try {
       const token = apiUtils.getAuthToken();
       if (!token) return;
-      
+
       const response = await fetch(`${apiUtils.getApiBaseUrl()}/resources/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       if (response.ok) {
         fetchResources(token);
         alert('Resource deleted successfully!');
@@ -463,10 +463,10 @@ const ResourceUploader = () => {
       examStage: formData.examStage,
       subject: formData.subject,
       paperType: formData.paperType,
-      year: formData.year, 
+      year: formData.year,
       month: formData.month
     };
-    
+
     // Clear the form
     setFormData({
       title: '',
@@ -480,7 +480,7 @@ const ResourceUploader = () => {
     setErrors({});
     setIsEditMode(false);
     setEditingResourceId(null);
-    
+
     // Restore the cached values from the current form
     setTimeout(() => {
       setFormData(prev => ({
@@ -498,7 +498,7 @@ const ResourceUploader = () => {
   const resetFormAndCache = () => {
     resetForm();
     clearCachedSelections();
-    
+
     // Re-initialize form with empty values
     setFormData({
       title: '',
@@ -508,10 +508,10 @@ const ResourceUploader = () => {
       month: '',
       examStage: '',
     });
-    
+
     setFile(null);
     setErrors({});
-    
+
     // Clear input file element
     const fileInput = document.getElementById('file-upload');
     if (fileInput) {
@@ -521,7 +521,7 @@ const ResourceUploader = () => {
 
   // Filter resources based on the selected filters
   const filteredResources = resources;
-  
+
   // Pagination
   const indexOfLastResource = currentPage * resourcesPerPage;
   const indexOfFirstResource = indexOfLastResource - resourcesPerPage;
@@ -535,7 +535,7 @@ const ResourceUploader = () => {
     if (!token) return;
 
     let queryParams = new URLSearchParams();
-    
+
     // Add each non-empty filter to query params
     if (filters.subject) queryParams.append('subject', filters.subject);
     if (filters.paperType) queryParams.append('paperType', filters.paperType);
@@ -546,13 +546,13 @@ const ResourceUploader = () => {
 
     const query = queryParams.toString();
     console.log(`Applying filters: ${query}`);
-    
+
     // Reset to first page when applying filters
     setCurrentPage(1);
-    
+
     // Fetch with the filters
     fetchResources(token, query);
-    
+
     // Cache the filter selections including the search term
     const selectionsToCache = {
       examStage: filters.examStage || '',
@@ -566,13 +566,27 @@ const ResourceUploader = () => {
   };
 
   // Add a new function to handle viewing resources with proper filename
-  const handleViewResource = (resource) => {
-    // Open resource in new tab
-    window.open(resource.fileUrl, '_blank');
-    
+  const handleViewResource = async (resource) => {
+    const token = apiUtils.getAuthToken();
+    try {
+      if (token) {
+        const response = await api.get(`/resources/${resource._id}/download-url`);
+        const { viewUrl, downloadUrl } = response.data;
+        if (viewUrl || downloadUrl) {
+          window.open(viewUrl || downloadUrl, '_blank');
+        } else {
+          window.open(resource.fileUrl, '_blank');
+        }
+      } else {
+        window.open(resource.fileUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to get formatted view URL:', error);
+      window.open(resource.fileUrl, '_blank');
+    }
+
     // Trigger cache update for this resource
     setTimeout(() => {
-      const token = apiUtils.getAuthToken();
       if (token) {
         fetchResources(token);
       }
@@ -585,8 +599,8 @@ const ResourceUploader = () => {
       <div className="resource-uploader-section">
         <div className="resource-uploader-container">
           <div className="admin-tabs">
-            <button 
-              className={activeTab === 'questions' ? 'active-tab' : ''} 
+            <button
+              className={activeTab === 'questions' ? 'active-tab' : ''}
               onClick={() => {
                 setActiveTab('questions');
                 navigate('/admin');
@@ -594,8 +608,8 @@ const ResourceUploader = () => {
             >
               Manage Questions
             </button>
-            <button 
-              className={activeTab === 'resources' ? 'active-tab' : ''} 
+            <button
+              className={activeTab === 'resources' ? 'active-tab' : ''}
               onClick={() => {
                 setActiveTab('resources');
                 navigate('/admin/resources');
@@ -603,8 +617,8 @@ const ResourceUploader = () => {
             >
               Manage Resources
             </button>
-            <button 
-              className={activeTab === 'announcements' ? 'active-tab' : ''} 
+            <button
+              className={activeTab === 'announcements' ? 'active-tab' : ''}
               onClick={() => {
                 setActiveTab('announcements');
                 navigate('/admin/announcements');
@@ -612,8 +626,8 @@ const ResourceUploader = () => {
             >
               Manage Announcements
             </button>
-            <button 
-              className={activeTab === 'analytics' ? 'active-tab' : ''} 
+            <button
+              className={activeTab === 'analytics' ? 'active-tab' : ''}
               onClick={() => {
                 setActiveTab('analytics');
                 navigate('/admin/analytics');
@@ -621,22 +635,22 @@ const ResourceUploader = () => {
             >
               Analytics
             </button>
-            <button 
-              className={activeTab === 'feature-requests' ? 'active-tab' : ''} 
+            <button
+              className={activeTab === 'feature-requests' ? 'active-tab' : ''}
               onClick={() => navigate('/admin/feature-requests')}
             >
               Request Feature
             </button>
-            <button 
-              className={activeTab === 'report-issues' ? 'active-tab' : ''} 
+            <button
+              className={activeTab === 'report-issues' ? 'active-tab' : ''}
               onClick={() => navigate('/admin/report-issues')}
             >
               Report Issue
             </button>
           </div>
-          
+
           <h2>{isEditMode ? 'Edit Resource' : 'Upload PDF Resource'}</h2>
-          
+
           <form onSubmit={handleSubmit} className="resource-form">
             <div className="form-group">
               <label htmlFor="title">Title *</label>
@@ -652,7 +666,7 @@ const ResourceUploader = () => {
               />
               {errors.title && <div className="error-message">{errors.title}</div>}
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="examStage">Exam Stage *</label>
               <select
@@ -662,8 +676,8 @@ const ResourceUploader = () => {
                 onChange={(e) => {
                   // Reset subject when exam stage changes
                   handleChange(e);
-                  setFormData(prev => ({ 
-                    ...prev, 
+                  setFormData(prev => ({
+                    ...prev,
                     examStage: e.target.value,
                     subject: '',
                   }));
@@ -677,7 +691,7 @@ const ResourceUploader = () => {
               </select>
               {errors.examStage && <div className="error-message">{errors.examStage}</div>}
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="subject">Subject *</label>
               <select
@@ -722,7 +736,7 @@ const ResourceUploader = () => {
               </select>
               {errors.subject && <div className="error-message">{errors.subject}</div>}
             </div>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="paperType">Paper Type *</label>
@@ -741,7 +755,7 @@ const ResourceUploader = () => {
                 </select>
                 {errors.paperType && <div className="error-message">{errors.paperType}</div>}
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="year">Year *</label>
                 <select
@@ -760,7 +774,7 @@ const ResourceUploader = () => {
                 </select>
                 {errors.year && <div className="error-message">{errors.year}</div>}
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="month">Month *</label>
                 <select
@@ -787,7 +801,7 @@ const ResourceUploader = () => {
                 {errors.month && <div className="error-message">{errors.month}</div>}
               </div>
             </div>
-            
+
             {!isEditMode && (
               <div className="form-group">
                 <label htmlFor="file">PDF File *</label>
@@ -801,28 +815,28 @@ const ResourceUploader = () => {
                 {errors.file && <div className="error-message">{errors.file}</div>}
               </div>
             )}
-            
+
             <div className="form-actions">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="submit-btn"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Processing...' : isEditMode ? 'Update Resource' : 'Upload Resource'}
               </button>
-              
+
               {isEditMode && (
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="cancel-btn"
                   onClick={resetForm}
                 >
                   Cancel
                 </button>
               )}
-              
-              <button 
-                type="button" 
+
+              <button
+                type="button"
                 className="reset-btn"
                 onClick={resetFormAndCache}
               >
@@ -830,10 +844,10 @@ const ResourceUploader = () => {
               </button>
             </div>
           </form>
-          
+
           <div className="resources-management">
             <h3>Manage Resources</h3>
-            
+
             <div className="filter-toolbar">
               <div className="filter-row">
                 <select
@@ -847,7 +861,7 @@ const ResourceUploader = () => {
                   <option value="Intermediate">Intermediate</option>
                   <option value="Final">Final</option>
                 </select>
-                
+
                 <select
                   name="subject"
                   value={filters.subject}
@@ -905,7 +919,7 @@ const ResourceUploader = () => {
                     </>
                   )}
                 </select>
-                
+
                 <select
                   name="paperType"
                   value={filters.paperType}
@@ -919,7 +933,7 @@ const ResourceUploader = () => {
                   <option value="Model TP">Model TP</option>
                 </select>
               </div>
-              
+
               <div className="filter-row">
                 <select
                   name="year"
@@ -934,7 +948,7 @@ const ResourceUploader = () => {
                     </option>
                   ))}
                 </select>
-                
+
                 <select
                   name="month"
                   value={filters.month}
@@ -955,7 +969,7 @@ const ResourceUploader = () => {
                   <option value="November">November</option>
                   <option value="December">December</option>
                 </select>
-                
+
                 <div className="search-box">
                   <input
                     type="text"
@@ -965,15 +979,15 @@ const ResourceUploader = () => {
                   />
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 className="filter-btn"
                 onClick={applyFilters}
               >
                 Apply Filters
               </button>
-              
-              <button 
+
+              <button
                 className="reset-filter-btn"
                 onClick={() => {
                   // Reset all filters to empty values
@@ -985,13 +999,13 @@ const ResourceUploader = () => {
                     examStage: '',
                     search: '',
                   });
-                  
+
                   // Reset to first page
                   setCurrentPage(1);
-                  
+
                   // Clear cached filters
                   localStorage.removeItem('resourceFilterSelections');
-                  
+
                   // Fetch all resources without any query parameters
                   const token = apiUtils.getAuthToken();
                   if (token) {
@@ -1002,7 +1016,7 @@ const ResourceUploader = () => {
                 Reset Filters
               </button>
             </div>
-            
+
             <div className="resources-table-container">
               {resources.length === 0 ? (
                 <p className="no-resources">No resources found.</p>
@@ -1051,7 +1065,7 @@ const ResourceUploader = () => {
                       ))}
                     </tbody>
                   </table>
-                  
+
                   {/* Pagination */}
                   {totalPages > 1 && (
                     <div className="pagination">

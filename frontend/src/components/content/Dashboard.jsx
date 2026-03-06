@@ -11,14 +11,14 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 
 // Register ChartJS components
 ChartJS.register(
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
+  CategoryScale,
+  LinearScale,
+  PointElement,
   LineElement,
   BarElement,
   ArcElement,
-  Title, 
-  Tooltip, 
+  Title,
+  Tooltip,
   Legend
 );
 
@@ -110,7 +110,7 @@ const Dashboard = () => {
   // Start Pomodoro timer
   const startPomodoro = () => {
     if (pomodoroActive) return;
-    
+
     setPomodoroActive(true);
     timerRef.current = setInterval(() => {
       setPomodoroTime(prev => {
@@ -141,24 +141,24 @@ const Dashboard = () => {
   // Handle Pomodoro completion
   const handlePomodoroComplete = async () => {
     setPomodoroActive(false);
-    
+
     try {
       const token = apiUtils.getAuthToken();
       if (!token) {
         navigate('/login');
         return;
       }
-      
+
       // Record study session (25 min = 0.42 hours)
       await api.post('/dashboard/study-session', {
         hours: 0.42, // 25 minutes in hours
         subject: pomodoroSubject || null,
         examStage: pomodoroExamStage || null
       });
-      
+
       // Show completion notification
       alert('Pomodoro session completed! Take a short break before starting the next one.');
-      
+
     } catch (err) {
       console.error('Error recording study session:', err);
     }
@@ -197,10 +197,10 @@ const Dashboard = () => {
     try {
       const token = apiUtils.getAuthToken();
       if (!token) return;
-      
+
       // Track the resource view on the backend
       await api.post('/dashboard/resource-view', { resourceId });
-      
+
       // Navigate to the resource
       navigateToItem('resource', resourceId, resourceTitle);
     } catch (err) {
@@ -209,23 +209,37 @@ const Dashboard = () => {
       navigateToItem('resource', resourceId, resourceTitle);
     }
   };
-  
+
   // Download resource directly
   const downloadResource = async (resourceId, resourceTitle = null) => {
     try {
       const token = apiUtils.getAuthToken();
       if (!token) return;
-      
-      // Increment download count
+
+      try {
+        // Fetch a properly formatted URL (e.g., Cloudinary URL with .pdf extension)
+        const response = await api.get(`/resources/${resourceId}/download-url`);
+        const { downloadUrl, viewUrl } = response.data;
+
+        // Prefer downloadUrl for triggering a download, fallback to viewUrl, or direct URL
+        if (downloadUrl || viewUrl) {
+          window.open(downloadUrl || viewUrl, '_blank');
+          return;
+        }
+      } catch (urlError) {
+        console.error('Failed to get download URL, falling back:', urlError);
+      }
+
+      // Fallback behavior
       try {
         await api.post(`/resources/${resourceId}/download`, {});
       } catch (countError) {
         console.error('Failed to increment download count:', countError);
       }
-      
-      // Get the resource data
+
+      // Get the resource data to fallback
       const response = await api.get(`/resources/${resourceId}`);
-      
+
       if (response.data && response.data.fileUrl) {
         // Open the PDF in a new tab (browser's native PDF viewer)
         window.open(response.data.fileUrl, '_blank');
@@ -243,9 +257,9 @@ const Dashboard = () => {
     try {
       const token = apiUtils.getAuthToken();
       if (!token) return;
-      
+
       await api.post('/dashboard/question-view', { questionId });
-      
+
       navigateToItem('question', questionId, questionTitle);
     } catch (err) {
       console.error('Error tracking question view:', err);
@@ -352,7 +366,7 @@ const Dashboard = () => {
       // Get dates and scores
       const dates = scores.map(item => new Date(item.date).toLocaleDateString());
       const scoreValues = scores.map(item => item.score);
-      
+
       // Add dataset for this subject
       quizTrendsData.datasets.push({
         label: subject,
@@ -361,7 +375,7 @@ const Dashboard = () => {
         backgroundColor: getColorByIndex(index, 0.2),
         tension: 0.3
       });
-      
+
       // Set labels if not already set
       if (quizTrendsData.labels.length === 0) {
         quizTrendsData.labels = dates;
@@ -454,7 +468,7 @@ const Dashboard = () => {
       <Navbar />
       <div className="dashboard-wrapper">
         <h1 className="dashboard-title">Your Personal Dashboard</h1>
-        
+
         {loading ? (
           <DashboardSkeleton />
         ) : error ? (
@@ -470,8 +484,8 @@ const Dashboard = () => {
               <h2>Quiz Performance Trends</h2>
               {dashboardData && dashboardData.quizScoreTrends && Object.keys(dashboardData.quizScoreTrends).length > 0 ? (
                 <div className="chart-container chart-container-quiz-trends">
-                  <Line 
-                    data={quizTrendsData} 
+                  <Line
+                    data={quizTrendsData}
                     options={{
                       responsive: true,
                       maintainAspectRatio: false,
@@ -564,13 +578,13 @@ const Dashboard = () => {
             <div className="dashboard-card bookmarks">
               <h2>Bookmarked Content</h2>
               <div className="tabs">
-                <button 
+                <button
                   className={`tab ${activeBookmarkTab === 'questions' ? 'active' : ''}`}
                   onClick={() => setActiveBookmarkTab('questions')}
                 >
                   Questions
                 </button>
-                <button 
+                <button
                   className={`tab ${activeBookmarkTab === 'resources' ? 'active' : ''}`}
                   onClick={() => setActiveBookmarkTab('resources')}
                 >
@@ -633,7 +647,7 @@ const Dashboard = () => {
               <h2>Subject Performance Analysis</h2>
               {dashboardData && dashboardData.subjectStrengths && dashboardData.subjectStrengths.length > 0 ? (
                 <div className="chart-container chart-container-full">
-                  <Pie 
+                  <Pie
                     data={subjectStrengthsData}
                     options={{
                       responsive: true,

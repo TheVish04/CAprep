@@ -22,8 +22,8 @@ const PaperViewHeader = ({ title, paperType, month, year, examStage, subject, on
           <span className="paper-tag">{month} {year}</span>
         </div>
       </div>
-      <button 
-        onClick={onViewPDF} 
+      <button
+        onClick={onViewPDF}
         className="download-btn view-pdf-btn"
         disabled={isLoading}
       >
@@ -72,27 +72,38 @@ const Resources = () => {
     try {
       const token = apiUtils.getAuthToken();
       if (!token) return navigate('/login');
-      
+
       console.log('Starting download process for resource:', resource.title);
       setDownloadingResource(resource._id);
-      
+
       // Track resource view for "Recently Viewed Resources" on dashboard
       try {
         await api.post('/dashboard/resource-view', { resourceId: resource._id });
       } catch (viewError) {
         console.error('Failed to track resource view:', viewError);
       }
-      // Increment download count
+
       try {
-        await api.post(`/resources/${resource._id}/download`, {});
-      } catch (countError) {
-        console.error('Failed to increment download count:', countError);
+        // Fetch a properly formatted URL (e.g., Cloudinary URL with .pdf extension)
+        const response = await api.get(`/resources/${resource._id}/download-url`);
+        const { downloadUrl, viewUrl } = response.data;
+
+        // Prefer downloadUrl for triggering a download, fallback to viewUrl, or direct URL
+        window.open(downloadUrl || viewUrl || resource.fileUrl, '_blank');
+      } catch (urlError) {
+        console.error('Failed to get download URL, falling back:', urlError);
+        // Fallback: Increment download count manually
+        try {
+          await api.post(`/resources/${resource._id}/download`, {});
+        } catch (countError) {
+          console.error('Failed to increment download count:', countError);
+        }
+
+        // Simplest and most reliable method: just open the PDF in a new tab
+        // This allows the browser to handle the PDF natively
+        window.open(resource.fileUrl, '_blank');
       }
-      
-      // Simplest and most reliable method: just open the PDF in a new tab
-      // This allows the browser to handle the PDF natively
-      window.open(resource.fileUrl, '_blank');
-      
+
     } catch (error) {
       console.error('Error in download process:', error);
       setError('Failed to download the resource. Please try again later.');
@@ -163,7 +174,7 @@ const Resources = () => {
       };
       setFilters(prev => {
         if (prev.examStage === fromUrl.examStage && prev.subject === fromUrl.subject &&
-            prev.bookmarked === fromUrl.bookmarked && prev.search === fromUrl.search) {
+          prev.bookmarked === fromUrl.bookmarked && prev.search === fromUrl.search) {
           return prev;
         }
         return { ...prev, ...fromUrl };
@@ -194,7 +205,7 @@ const Resources = () => {
     setFilters(prevFilters => {
       const updatedFilters = { ...prevFilters, [name]: newValue };
       if (name === 'examStage') {
-          updatedFilters.subject = '';
+        updatedFilters.subject = '';
       }
       setCurrentPage(1); // Reset page on filter change
       return updatedFilters;
@@ -207,7 +218,7 @@ const Resources = () => {
     if (!token) return navigate('/login');
 
     const isCurrentlyBookmarked = bookmarkedResourceIds.has(resourceId);
-    
+
     if (isCurrentlyBookmarked) {
       try {
         const response = await api.delete(`/users/me/bookmarks/resource/${resourceId}`);
@@ -240,11 +251,11 @@ const Resources = () => {
 
   // Format file size
   const formatFileSize = (bytes) => {
-      if (bytes === 0 || !bytes) return '0 Bytes';
-      const k = 1024;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    if (bytes === 0 || !bytes) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   // --- Handle opening the discussion modal ---
@@ -264,7 +275,7 @@ const Resources = () => {
       <div className="resources-section">
         <div className="resources-container">
           <h1>Study Resources</h1>
-          
+
           {loading && <ResourcesListSkeleton />}
           {error && <div className="error"><p>Error: {error}</p></div>}
 
@@ -396,8 +407,8 @@ const Resources = () => {
               {currentResources.map((r) => (
                 <div key={r._id} className="resource-card">
                   <div className="resource-top-actions">
-                    <button 
-                      onClick={() => handleBookmarkToggle(r._id)} 
+                    <button
+                      onClick={() => handleBookmarkToggle(r._id)}
                       className="bookmark-btn resource-bookmark"
                       title={bookmarkedResourceIds.has(r._id) ? 'Remove Bookmark' : 'Add Bookmark'}
                     >
@@ -407,8 +418,8 @@ const Resources = () => {
                       <MoreMenu onDiscuss={() => handleOpenDiscussion(r)} />
                     </div>
                   </div>
-                  
-                  <PaperViewHeader 
+
+                  <PaperViewHeader
                     title={r.title}
                     paperType={r.paperType}
                     month={r.month}
@@ -422,21 +433,21 @@ const Resources = () => {
               ))}
             </div>
           )}
-          
+
           {/* --- Pagination --- */}
           {!loading && totalPages > 1 && (
-             <div className="pagination">
-               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                 <button
-                   key={page}
-                   onClick={() => paginate(page)}
-                   className={currentPage === page ? 'active' : ''}
-                 >
-                   {page}
-                 </button>
-               ))}
-             </div>
-           )}
+            <div className="pagination">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => paginate(page)}
+                  className={currentPage === page ? 'active' : ''}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
