@@ -116,7 +116,7 @@ const LandingPage = () => {
               </motion.span>
               <motion.span layout style={{ color: '#239ecf' }}>
                 <RotatingText 
-                  texts={['Foundation', 'Intermediate', 'Finals']}
+                  texts={['Journey','Foundation', 'Intermediate', 'Final']}
                   mainClassName="overflow-hidden justify-center"
                   staggerFrom={"last"}
                   initial={{ y: "100%" }}
