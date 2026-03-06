@@ -191,13 +191,15 @@ Title:`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: GROQ_MODEL,
+      model: 'llama-3.1-8b-instant',
       temperature: 0.3,
-      max_tokens: 50,
+      max_tokens: 30,
     });
 
     const raw = chatCompletion.choices[0]?.message?.content || "";
-    const title = raw.trim().replace(/^["']|["']$/g, '') || question.substring(0, 40);
+    // Strip <think>...</think> reasoning tags emitted by some models
+    const cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    const title = cleaned.replace(/^["']|["']$/g, '') || question.substring(0, 40);
     res.json({ title });
   } catch (error) {
     logger.error('suggest-title error: ' + (error && error.message));
