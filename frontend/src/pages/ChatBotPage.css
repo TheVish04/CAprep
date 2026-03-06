@@ -149,10 +149,14 @@
 
 .chat-message {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   line-height: 1.6;
-  padding: 20px 0;
-  border-bottom: 1px solid #2a2b32;
+  padding: 10px 0;
+  width: 100%;
+}
+
+.chat-message.user {
+  flex-direction: row-reverse;
 }
 
 .message-avatar {
@@ -188,17 +192,75 @@
 
 .message-content {
   flex: 1;
+  max-width: 75%;
+}
+
+.chat-message.user .message-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.chat-message.bot .message-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .message-text {
-  font-size: 16px;
+  font-size: 15px;
   white-space: pre-wrap;
+  padding: 14px 18px;
+  border-radius: 16px;
+  display: inline-block;
+}
+
+.chat-message.user .message-text {
+  background-color: #03a9f4;
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.chat-message.bot .message-text {
+  background-color: #2a2b32;
+  color: white;
+  border-top-left-radius: 4px;
 }
 
 .message-time {
   font-size: 12px;
   color: #8e8ea0;
-  margin-top: 5px;
+  margin-top: 6px;
+}
+
+.chat-message.user .message-time {
+  text-align: right;
+  padding-right: 4px;
+}
+
+.chat-message.bot .message-time {
+  text-align: left;
+  padding-left: 4px;
+}
+
+.message-image {
+  max-width: 300px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #444;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.message-image:hover {
+  opacity: 0.85;
+}
+
+.message-image img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* Token-by-token streaming cursor (ChatGPT-like) */
@@ -300,12 +362,18 @@
   align-items: flex-end;
 }
 
+.input-row {
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+}
+
 .chatbot-input textarea {
   flex: 1;
-  background-color: #1e1e1e;
+  background-color: transparent;
   color: #fff;
   border: none;
-  padding: 16px 20px;
+  padding: 16px 12px;
   font-size: 16px;
   resize: none;
   outline: none;
@@ -313,34 +381,60 @@
   max-height: 200px;
   overflow-y: auto;
   line-height: 1.5;
-  border-radius: 16px;
+}
+
+.attach-btn {
+  flex-shrink: 0;
+  margin: 8px 0 8px 12px;
+  background: transparent;
+  color: #8e8ea0;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  align-self: flex-end;
+}
+
+.attach-btn:hover:not(:disabled) {
+  background-color: #2a2b32;
+  color: #fff;
+}
+
+.attach-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .send-button {
   flex-shrink: 0;
-  margin: 8px 10px 8px 0;
+  margin: 0 10px 14px 0; /* Moved up relative to textarea to center it vertically */
   background-color: #03a9f4;
-  padding: 8px 16px;
-  border-radius: 18px;
-  color: white;
-  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: 20px;
+  color: #ffffff; /* Explicit visible text */
+  font-weight: 600;
   font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   align-self: flex-end;
 }
 
-.send-button:hover {
+.send-button:hover:not(:disabled) {
   background-color: #0288d1;
 }
 
 .send-button:disabled {
-  background-color: #666;
-  opacity: 0.7;
+  background-color: #333333; /* Dark gray empty pill style */
+  color: #999999; /* Text remains explicitly visible */
+  opacity: 1; /* Removed transparency to ensure solid text */
   cursor: not-allowed;
 }
 
@@ -355,18 +449,54 @@
 .input-selectors {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap; /* allow wrapping if very long */
+}
+
+.select-wrapper {
+  display: inline-block;
+  position: relative;
+  vertical-align: top;
+}
+
+/* This ::after pseudo-element creates a hidden block of space exactly the 
+   size of the text inside data-value, plus padding. The wrapper expands to fit. */
+.select-wrapper::after {
+  content: attr(data-value);
+  visibility: hidden;
+  display: inline-block;
+  font-size: 14px;
+  padding: 8px 36px 8px 16px; /* must exactly match .input-selector padding */
+  white-space: pre; /* better than nowrap to respect spaces */
 }
 
 .input-selector {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   background-color: #2a2a2a;
   color: #fff;
   border: none;
   border-radius: 20px;
-  padding: 8px 16px;
+  padding: 8px 36px 8px 16px;
   font-size: 14px;
   outline: none;
   cursor: pointer;
   transition: background-color 0.2s;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  
+  /* Use a single custom downward arrow and remove browser/global defaults */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
 }
 
 .input-selector:hover {
@@ -382,11 +512,13 @@
   .input-selectors {
     display: flex;
     flex-wrap: wrap;
+    width: 100%;
   }
   
-  .input-selector {
+  .select-wrapper {
     flex: 1;
-    min-width: 120px;
+    /* remove min-width on mobile to let it fit content naturally if needed or keep a small min-width */
+    min-width: 0;
   }
 }
 
@@ -426,7 +558,7 @@
 
 /* Add styling for warning text */
 .warning-text {
-  color: #da3939;
+  color: #db5959;
   font-weight: bold;
   display: block;
   margin-top: 8px;
@@ -435,13 +567,116 @@
 
 /* Style links within the warning text */
 .warning-text a {
-  color: #da3939;
+  color: #db5959;
   text-decoration: underline;
   font-weight: bold;
   transition: color 0.2s;
 }
 
 .warning-text a:hover {
-  color: #63c0ff;
+  color: #ffbaba;
   text-decoration: underline;
 } 
+
+/* Drag & Drop and Image Preview Styles */
+.input-wrapper.dragging {
+  border: 2px dashed #03a9f4;
+  background-color: rgba(3, 169, 244, 0.05);
+}
+
+.input-wrapper.has-image {
+  flex-direction: column;
+  padding-top: 12px;
+}
+
+.image-preview-container {
+  width: 100%;
+  padding: 0 16px 8px;
+  display: flex;
+  justify-content: flex-start;
+  border-bottom: 1px solid #2a2b32;
+}
+
+.image-preview {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #444;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.remove-image-btn:hover {
+  background: rgba(218, 57, 57, 0.9);
+}
+
+/* Lightbox overlay for full-size images */
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  cursor: zoom-out;
+  padding: 40px;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  z-index: 10001;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

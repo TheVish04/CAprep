@@ -183,9 +183,9 @@ router.post('/suggest-title', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Question is required.' });
     }
 
-    const prompt = `Based on this CA exam study question, generate a very short title (3-6 words) for a chat. Extract the main topic or concept. Use proper casing (e.g. CGST and SGST, not cgst and sgst). Return ONLY the title, no quotes, punctuation, or explanation.
+    const prompt = `Based on this CA exam study context, generate a very short title (3-6 words) for a chat. Extract the main topic or concept. Use proper casing (e.g. CGST and SGST, not cgst and sgst). Return ONLY the title, no quotes, punctuation, or explanation.
 
-Question: ${question.substring(0, 500)}
+Context: ${question.substring(0, 1000)}
 
 Title:`;
 
@@ -210,13 +210,13 @@ Title:`;
 // POST /api/ai-quiz/ask - Answer CA-related questions using AI (auth required)
 router.post('/ask', authMiddleware, async (req, res) => {
   try {
-    const { question, examStage, subject, conversationHistory = [] } = req.body;
+    const { question, examStage, subject, conversationHistory = [], image = null } = req.body;
 
-    logger.info('AI Bot Question Request: historyLength=' + conversationHistory.length);
+    logger.info('AI Bot Question Request: historyLength=' + conversationHistory.length + ', hasImage=' + !!image);
 
     // Input Validation
-    if (!question) {
-      return res.status(400).json({ error: 'Question is required.' });
+    if (!question && !image) {
+      return res.status(400).json({ error: 'Question or image is required.' });
     }
 
     // Build context based on provided parameters
@@ -259,20 +259,47 @@ router.post('/ask', authMiddleware, async (req, res) => {
     3.  **Formatting:** Use plain text only. Do NOT use markdown formatting (like *, _, \`, #).`;
 
     try {
+      let finalQuestionText = question || "";
+
+      // If an image is provided, first use Llama 4 Maverick to read/extract it
+      if (image) {
+        logger.info('Processing uploaded image with Llama 4 Maverick...');
+        const visionPrompt = `Please carefully examine this image. If it contains any text, questions, or data related to accounting, commerce, finance, tax, or law, extract it verbatim and explain any relevant tables or diagrams. If it's a test question, transcribe it fully. Only output the extracted content and a brief description of what the image shows.`;
+
+        const visionCompletion = await groq.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: visionPrompt },
+                { type: "image_url", image_url: { url: image } }
+              ]
+            }
+          ],
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+          temperature: 0.2,
+          max_tokens: 8192,
+        });
+
+        const imageExtraction = visionCompletion.choices[0]?.message?.content || "";
+        logger.info('Image fully processed by Maverick. Adding to prompt context.');
+
+        finalQuestionText = `[User provided an image. The AI vision system extracted the following context from it:]\n\n${imageExtraction}\n\n[User's additional question/prompt about this image:]\n${finalQuestionText || 'Can you answer the question in the image or explain it?'}`;
+      }
       const messages = [
         { role: 'system', content: systemPrompt },
         ...conversationHistory.map(msg => ({
           role: msg.type === 'user' ? 'user' : 'assistant',
           content: msg.content
         })),
-        { role: 'user', content: question }
+        { role: 'user', content: finalQuestionText }
       ];
 
       const chatCompletion = await groq.chat.completions.create({
         messages,
         model: GROQ_MODEL,
         temperature: 0.3,
-        max_tokens: 2048,
+        max_tokens: 8192,
       });
 
       const answer = chatCompletion.choices[0]?.message?.content || "";

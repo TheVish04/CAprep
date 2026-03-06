@@ -35,6 +35,13 @@ const ChatBotPage = () => {
   const createdConversationRef = useRef(null); // Track newly created convo for error-path update
   const [selectedExamStage, setSelectedExamStage] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
+  
+  const [selectedImage, setSelectedImage] = useState(null); // { file, base64 }
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+  
+  // Image Lightbox State
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   // Load chat history from localStorage (per user) on component mount
   useEffect(() => {
@@ -52,16 +59,28 @@ const ChatBotPage = () => {
     }
   }, [apiUtils.getAuthUserId()]);
   
-  // Auto scroll to bottom of messages (including during streaming)
+  // Track if we just loaded a chat from history
+  const [justLoadedHistory, setJustLoadedHistory] = useState(false);
+
+  // Auto scroll to bottom of messages
   useEffect(() => {
     if (messageEndRef.current) {
-      messageEndRef.current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'end',
-        inline: 'nearest'
-      });
+      if (justLoadedHistory) {
+        // Jump instantly when switching loaded chats
+        messageEndRef.current.scrollIntoView({ 
+          behavior: 'auto', 
+          block: 'end' 
+        });
+        setJustLoadedHistory(false);
+      } else {
+        // Smooth scroll for user typing / bot streaming
+        messageEndRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'end' 
+        });
+      }
     }
-  }, [messages, streamingMessage?.displayedLength]);
+  }, [messages, streamingMessage?.displayedLength, justLoadedHistory]);
 
   // Token-by-token animation effect (ChatGPT-like)
   useEffect(() => {
@@ -141,6 +160,66 @@ const ChatBotPage = () => {
       handleSendMessage();
     }
   };
+
+  // Image Handling Methods
+  const processFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Please upload an image file.');
+      return;
+    }
+    
+    // Convert to base64 for preview and API
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setSelectedImage({
+        file,
+        base64: e.target.result // Includes data:image/jpeg;base64, prefix
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+    // Reset input so the same file could be selected again if removed
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handlePaste = (e) => {
+    if (e.clipboardData && e.clipboardData.items) {
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          processFile(file);
+          break; // Process only the first image pasted
+        }
+      }
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+  };
   
   const createNewChat = () => {
     createdConversationRef.current = null;
@@ -180,15 +259,9 @@ const ChatBotPage = () => {
 
   // Create conversation in history as soon as user sends first message (instant appearance)
   const createConversationOnFirstMessage = (messagesWithUser) => {
-    const firstUserMessage = messagesWithUser.find(m => m.type === 'user');
-    const placeholderTitle = firstUserMessage
-      ? (firstUserMessage.content.length > 40
-          ? firstUserMessage.content.substring(0, 40) + '...'
-          : firstUserMessage.content)
-      : 'New chat';
     const newConvo = {
       id: Date.now(),
-      title: placeholderTitle,
+      title: 'New Chat',
       timestamp: new Date(),
       messages: messagesWithUser
     };
@@ -199,19 +272,6 @@ const ChatBotPage = () => {
       return newHistory;
     });
     setSelectedConversation(newConvo);
-
-    // Fetch AI-generated title (e.g. "CGST and SGST" from "please explain about cgst and sgst")
-    if (firstUserMessage?.content) {
-      api
-        .post('/ai-quiz/suggest-title', { question: firstUserMessage.content })
-        .then(res => {
-          const aiTitle = res.data?.title?.trim();
-          if (aiTitle && aiTitle.length > 0) {
-            setStreamingTitle({ convoId: newConvo.id, fullTitle: aiTitle, displayedLength: 0 });
-          }
-        })
-        .catch(() => {});
-    }
   };
 
   // Update or create conversation in history (called when bot responds)
@@ -242,15 +302,30 @@ const ChatBotPage = () => {
         const titleToKeep = (prev?.id === convoToUpdate.id && prev?.title) ? prev.title : convoToUpdate.title;
         return { ...convoToUpdate, messages: conversation, timestamp: new Date(), title: titleToKeep };
       });
+
+      // Generate title based on AI's first response if it's a new chat
+      const titleToKeep = convoToUpdate.title;
+      if (conversation.length === 3 && titleToKeep === 'New Chat') {
+        const firstUserMessage = conversation[1];
+        const firstBotMessage = conversation[2];
+        // Combine the prompt and AI's answer so the title generator has full context
+        const dialogueContext = `User: ${firstUserMessage.content || '[Image uploaded]'}\nAI: ${firstBotMessage.content}`;
+        
+        api
+          .post('/ai-quiz/suggest-title', { question: dialogueContext })
+          .then(res => {
+            const aiTitle = res.data?.title?.trim();
+            if (aiTitle && aiTitle.length > 0) {
+              setStreamingTitle({ convoId: convoToUpdate.id, fullTitle: aiTitle, displayedLength: 0 });
+            }
+          })
+          .catch(() => {});
+      }
     } else {
       // Fallback: create new (e.g. if user navigated away before first message)
       const timestamp = new Date();
       const firstUserMessage = conversation.find(msg => msg.type === 'user');
-      const title = firstUserMessage
-        ? (firstUserMessage.content.length > 40
-            ? firstUserMessage.content.substring(0, 40) + '...'
-            : firstUserMessage.content)
-        : 'New chat';
+      const title = 'New Chat';
       const newConvo = { id: Date.now(), title, timestamp, messages: conversation };
       setChatHistory(prev => {
         const newHistory = [newConvo, ...prev.filter(c => c.id !== newConvo.id).slice(0, 9)];
@@ -263,17 +338,26 @@ const ChatBotPage = () => {
   };
 
   const handleSendMessage = async () => {
-    if (input.trim() === '' || isLoading) return;
+    if ((input.trim() === '' && !selectedImage) || isLoading) return;
     
+    // Prepare the message text
+    let userMsgContent = input.trim();
+
     const userMessage = {
       type: 'user',
-      content: input.trim(),
-      timestamp: new Date()
+      content: userMsgContent,
+      timestamp: new Date(),
+      image: selectedImage ? selectedImage.base64 : null
     };
     
     const messagesWithUser = [...messages, userMessage];
     setMessages(prev => [...prev, userMessage]);
+    
+    // Temporarily capture image to send, then clear input UI
+    const imageToSend = selectedImage ? selectedImage.base64 : null;
+    
     setInput('');
+    setSelectedImage(null);
     setIsLoading(true);
 
     // Create chat in history immediately on first message (ChatGPT-style: instant + auto-title)
@@ -296,8 +380,9 @@ const ChatBotPage = () => {
       
       // Include the selected options in the API request if they're set
       const requestData = { 
-        question: userMessage.content,
-        conversationHistory: conversationHistory
+        question: input.trim(), // Send whatever the user typed (can be empty string)
+        conversationHistory: conversationHistory,
+        image: imageToSend // the base64 string
       };
       
       if (selectedExamStage) {
@@ -336,6 +421,7 @@ const ChatBotPage = () => {
     setIsLoading(false);
     setMessages(convo.messages);
     setSelectedConversation(convo);
+    setJustLoadedHistory(true);
   };
   
   const deleteConversation = (e, historyId) => {
@@ -478,11 +564,18 @@ const ChatBotPage = () => {
                   )}
                 </div>
                 <div className="message-content">
-                  <div className="message-text">
-                    {message.type === 'bot' 
-                      ? formatMessageWithWarning(message.content) 
-                      : message.content}
-                  </div>
+                  {message.image && (
+                    <div className="message-image" onClick={() => setLightboxImage(message.image)}>
+                      <img src={message.image} alt="User attached" />
+                    </div>
+                  )}
+                  {message.content && message.content.trim() !== '' && (
+                    <div className="message-text">
+                      {message.type === 'bot' 
+                        ? formatMessageWithWarning(message.content) 
+                        : message.content}
+                    </div>
+                  )}
                   <div className="message-time">{formatTime(message.timestamp)}</div>
                 </div>
               </div>
@@ -537,78 +630,135 @@ const ChatBotPage = () => {
           </div>
           
           <div className="chatbot-input">
-            <div className="input-wrapper">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your question here..."
-                disabled={isLoading}
-                rows={1}
-              />
-            
-              <button 
-                onClick={handleSendMessage} 
-                disabled={isLoading || !input.trim()}
-                className="send-button"
-              >
-                Send
-              </button>
+            <div 
+              className={`input-wrapper ${isDragging ? 'dragging' : ''} ${selectedImage ? 'has-image' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {selectedImage && (
+                <div className="image-preview-container">
+                  <div className="image-preview">
+                    <img src={selectedImage.base64} alt="Selected" />
+                    <button className="remove-image-btn" onClick={removeImage} title="Remove image">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="input-row">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImageSelect} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
+                <button 
+                  className="attach-btn" 
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Attach Image"
+                  disabled={isLoading}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                  </svg>
+                </button>
+
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  onPaste={handlePaste}
+                  placeholder="Type your question or paste an image here..."
+                  disabled={isLoading}
+                  rows={1}
+                />
+              
+                <button 
+                  onClick={handleSendMessage} 
+                  disabled={isLoading || (input.trim() === '' && !selectedImage)}
+                  className="send-button"
+                >
+                  Send
+                </button>
+              </div>
             </div>
             
             <div className="input-controls">
               <div className="input-selectors">
-                <select 
-                  value={selectedExamStage}
-                  onChange={handleExamStageChange}
-                  className="input-selector"
-                >
-                  <option value="">Exam Stage</option>
-                  <option value="Foundation">Foundation</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Final">Final</option>
-                </select>
+                <div className="select-wrapper" data-value={selectedExamStage || "Exam Stage"}>
+                  <select 
+                    value={selectedExamStage}
+                    onChange={handleExamStageChange}
+                    className="input-selector"
+                  >
+                    <option value="">Exam Stage</option>
+                    <option value="Foundation">Foundation</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Final">Final</option>
+                  </select>
+                </div>
                 
-                <select
-                  value={selectedSubject}
-                  onChange={handleSubjectChange}
-                  disabled={!selectedExamStage}
-                  className="input-selector"
-                >
-                  <option value="">Subject</option>
-                  {selectedExamStage === 'Foundation' ? (
-                    <>
-                      <option value="Accounting">Accounting</option>
-                      <option value="Business Laws">Business Laws</option>
-                      <option value="Quantitative Aptitude">Quantitative Aptitude</option>
-                      <option value="Business Economics">Business Economics</option>
-                    </>
-                  ) : selectedExamStage === 'Intermediate' ? (
-                    <>
-                      <option value="Advanced Accounting">Advanced Accounting</option>
-                      <option value="Corporate Laws">Corporate Laws</option>
-                      <option value="Cost and Management Accounting">Cost and Management Accounting</option>
-                      <option value="Taxation">Taxation</option>
-                      <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
-                      <option value="Financial and Strategic Management">Financial and Strategic Management</option>
-                    </>
-                  ) : selectedExamStage === 'Final' ? (
-                    <>
-                      <option value="Financial Reporting">Financial Reporting</option>
-                      <option value="Advanced Financial Management">Advanced Financial Management</option>
-                      <option value="Advanced Auditing">Advanced Auditing</option>
-                      <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
-                      <option value="Indirect Tax Laws">Indirect Tax Laws</option>
-                      <option value="Integrated Business Solutions">Integrated Business Solutions</option>
-                    </>
-                  ) : null}
-                </select>
+                <div className="select-wrapper" data-value={selectedSubject || "Subject"}>
+                  <select
+                    value={selectedSubject}
+                    onChange={handleSubjectChange}
+                    disabled={!selectedExamStage}
+                    className="input-selector"
+                  >
+                    <option value="">Subject</option>
+                    {selectedExamStage === 'Foundation' ? (
+                      <>
+                        <option value="Accounting">Accounting</option>
+                        <option value="Business Laws">Business Laws</option>
+                        <option value="Quantitative Aptitude">Quantitative Aptitude</option>
+                        <option value="Business Economics">Business Economics</option>
+                      </>
+                    ) : selectedExamStage === 'Intermediate' ? (
+                      <>
+                        <option value="Advanced Accounting">Advanced Accounting</option>
+                        <option value="Corporate Laws">Corporate Laws</option>
+                        <option value="Cost and Management Accounting">Cost and Management Accounting</option>
+                        <option value="Taxation">Taxation</option>
+                        <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
+                        <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                      </>
+                    ) : selectedExamStage === 'Final' ? (
+                      <>
+                        <option value="Financial Reporting">Financial Reporting</option>
+                        <option value="Advanced Financial Management">Advanced Financial Management</option>
+                        <option value="Advanced Auditing">Advanced Auditing</option>
+                        <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
+                        <option value="Indirect Tax Laws">Indirect Tax Laws</option>
+                        <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                      </>
+                    ) : null}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Image Lightbox Modal */}
+      {lightboxImage && (
+        <div className="lightbox-overlay" onClick={() => setLightboxImage(null)}>
+          <button className="lightbox-close" onClick={(e) => { e.stopPropagation(); setLightboxImage(null); }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <img src={lightboxImage} alt="Expanded view" className="lightbox-image" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 };
