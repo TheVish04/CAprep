@@ -354,7 +354,7 @@ router.post('/search-explanation', authMiddleware, async (req, res) => {
         ],
         model: GROQ_MODEL,
         temperature: 0.3,
-        max_tokens: 300,
+        max_tokens: 600,
       });
 
       const explanation = (chatCompletion.choices[0]?.message?.content || "").trim();
