@@ -84,13 +84,10 @@ const PreviewPanel = ({ data, onClose, questionType = 'objective-subjective' }) 
               <span className="preview-value">{data.month || 'N/A'}</span>
             </div>
             <div className="preview-info-item">
-              <span className="preview-label">Paper No.</span>
-              <span className="preview-value">{data.paperNo || 'N/A'}</span>
-            </div>
-            <div className="preview-info-item">
               <span className="preview-label">Question Number</span>
               <span className="preview-value">{data.questionNumber || 'N/A'}</span>
             </div>
+
           </div>
 
           <div className="preview-section">

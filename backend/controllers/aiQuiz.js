@@ -400,4 +400,119 @@ router.post('/search-explanation', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/ai-quiz/extract-question-image - Extract structured question data from uploaded images
+router.post('/extract-question-image', authMiddleware, async (req, res) => {
+  try {
+    const { images } = req.body;
+
+    if (!images || !Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: 'Please provide an array of base64 image strings.' });
+    }
+
+    logger.info(`Extract Question Request: processing ${images.length} image(s) via Groq Vision.`);
+
+    const visionPrompt = `CRITICAL INSTRUCTION: Your ONLY job is to transcribe EVERY SINGLE character, word, number, symbol, and table from this image with ZERO omissions.
+DO NOT skip any word. DO NOT skip any line. DO NOT summarize. DO NOT rephrase. DO NOT add anything. EVERY piece of text visible in the image — including headings, sub-headings, table titles, row labels, and cell values — MUST appear in your output.
+If you are unsure of a word, make your best effort to transcribe it rather than skipping it.
+TABLE TITLES ARE MANDATORY: Any text appearing above or below a table that acts as its title or caption (such as "Raw Material A/c", "Creditors A/c", "Manufacturing A/c") MUST be transcribed immediately before that table's content.
+For tables, transcribe EVERY row and EVERY cell. Do NOT abbreviate multi-line tables. Output the raw text in the exact order it appears in the image, top to bottom, left to right.`;
+
+    const messageContent = [
+      { type: "text", text: visionPrompt }
+    ];
+
+    images.forEach(img => {
+      messageContent.push({ type: "image_url", image_url: { url: img } });
+    });
+
+    try {
+      // Stage 1: Raw Text Extraction via Vision Model
+      logger.info('Stage 1: Extracting raw text using Maverick vision...');
+      const visionCompletion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: messageContent }],
+        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+        temperature: 0.0, // Set to 0 for maximum strictness
+        max_tokens: 8192,
+      });
+
+      const rawExtractedText = visionCompletion.choices[0]?.message?.content || "";
+      
+      if (!rawExtractedText) {
+        throw new Error("Vision model returned empty text.");
+      }
+      
+      logger.info('Stage 2: Structuring raw text into JSON using 120b model...');
+      
+      const structurePrompt = `You are an expert OCR formatting and data extraction AI specializing in the CA curriculum. 
+I have raw text extracted from an image of a CA exam question. Your task is to structure it into a strict JSON format.
+
+RAW TEXT FROM IMAGE:
+"""
+${rawExtractedText}
+"""
+
+CRITICAL INSTRUCTIONS:
+1. STRICT VERBATIM COPY WITH ZERO OMISSIONS: You must copy the text DITTO TO DITTO from the raw text. DO NOT summarize, DO NOT rephrase, DO NOT change ANY words, lines, or numbers. DO NOT drop or skip any word \u2014 every word from the raw text MUST appear in your output. If a sentence spans multiple lines in the raw text, include all lines fully.
+2. QUESTION NUMBER ISOLATION: Extract the question number (e.g. "3", "3a", "Q.2") and place it ONLY in the "questionNumber" field. DO NOT include the question number label at the beginning of "questionText" or "answerText". For example, if the image starts with "3. (a) Following are...", the questionText should start with "Following are..." — NOT "3. (a) Following are..."
+3. ENFORCE FULL HTML FORMATTING: Your entire output for text fields ("questionText", "answerText", "subQuestionText") MUST be pure HTML. 
+   - Wrap paragraphs in <p> tags. 
+   - Use <br> tags for single line breaks where necessary to preserve formatting.
+   - PRETTY-PRINT HTML: The HTML code MUST be beautifully formatted, with proper line breaks (\\n) and indentation. Do NOT output a single minified line of HTML. It must be highly readable code.
+4. STRICT TABLE EXTRACTION: If tabular data exists, convert it strictly to clean HTML <table> tags. Follow these rules EXACTLY:
+   a) TABLE TITLES ARE MANDATORY: If any text appears immediately above or below a table as its title or caption, it MUST be rendered as an <h3> tag directly before the <table> tag. NEVER drop a table caption.
+   b) COUNT the number of visible columns in the image FIRST before writing any HTML. The number of <td> elements per row MUST match the exact number of visible columns.
+   c) COLUMN ACCURACY IS ABSOLUTE: Every piece of data MUST land in the EXACT <td> that corresponds to its visual column. Placing data in the wrong column is a critical failure.
+   d) If a cell is visually EMPTY in the image, output an empty <td></td>. NEVER skip empty cells or shift adjacent data sideways to fill gaps.
+   e) NEVER use colspan or rowspan. Every single row MUST have an identical number of <td> elements.
+   f) For financial ledger accounts, the column count varies. ALWAYS determine the actual number of columns from the visual image — never assume. Treat every column as fully independent and never merge them.
+5. Identify the Question Type strictly as one of: "objective-only", "subjective-only", or "objective-subjective".
+6. Do NOT include markdown blocks like \`\`\`json outside the JSON output. Return pure JSON.
+
+JSON SCHEMA:
+{
+  "questionNumber": "Extracted question number (e.g. '1', '2a', etc) or empty string if none",
+  "questionType": "objective-subjective" | "objective-only" | "subjective-only",
+  "questionText": "Main question text or HTML table (if any)...",
+  "answerText": "Detailed answer text or HTML table (if any)...",
+  "subQuestions": [
+    {
+      "subQuestionText": "Sub-question text...",
+      "subOptions": [
+        { "optionText": "Option A text...", "isCorrect": false },
+        { "optionText": "Option B text...", "isCorrect": true }
+      ]
+    }
+  ]
+}
+
+Ensure "subQuestions" is an empty array if there are none. If it's an objective-only question, "answerText" should be empty. Return ONLY valid JSON and nothing else.`;
+
+      const structCompletion = await groq.chat.completions.create({
+        messages: [{ role: "user", content: structurePrompt }],
+        model: GROQ_MODEL, // openai/gpt-oss-120b
+        temperature: 0.0, // Maximum deterministic output
+        max_tokens: 8192,
+        response_format: { type: "json_object" }
+      });
+
+      const structuredJsonText = structCompletion.choices[0]?.message?.content || "";
+      let parsedData;
+      
+      try {
+        parsedData = JSON.parse(structuredJsonText.trim().replace(/^```json|```$/g, ''));
+      } catch (e) {
+        logger.error('Failed to parse Groq 120b structured response as JSON');
+        parsedData = JSON.parse((structuredJsonText.match(/\{[\s\S]*\}/) || ['{}'])[0]);
+      }
+
+      res.status(200).json(parsedData);
+    } catch (apiError) {
+      logger.error('Groq Vision API error: ' + apiError.message);
+      sendErrorResponse(res, 500, { message: 'Failed to extract text from image', error: apiError });
+    }
+  } catch (error) {
+    sendErrorResponse(res, 500, { message: 'Internal server error', error });
+  }
+});
+
 module.exports = router;

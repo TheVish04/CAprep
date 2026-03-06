@@ -9,6 +9,7 @@ import AdminReportIssues from './AdminReportIssues';
 import ResourceUploader from './ResourceUploader';
 import authUtils from '../../utils/authUtils';
 import apiUtils from '../../utils/apiUtils';
+import ImageExtractor from './ImageExtractor';
 import './AdminPanel.css';
 
 const AdminPanel = () => {
@@ -121,6 +122,56 @@ const AdminPanel = () => {
       applyFilters(token);
     }
   }, [navigate, applyFilters]);
+
+  const handleImageExtract = (extractedData) => {
+    if (extractedData.questionType) {
+      setQuestionType(extractedData.questionType);
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      questionNumber: extractedData.questionNumber || prev.questionNumber || '',
+      questionText: extractedData.questionText || '',
+      answerText: extractedData.answerText || '',
+      subQuestions: Array.isArray(extractedData.subQuestions) ? extractedData.subQuestions.map(sq => ({
+        subQuestionText: sq.subQuestionText || '',
+        subOptions: Array.isArray(sq.subOptions) && sq.subOptions.length > 0 ? sq.subOptions.map(opt => ({
+          optionText: opt.optionText || '',
+          isCorrect: !!opt.isCorrect
+        })) : [{ optionText: '', isCorrect: false }]
+      })) : [],
+    }));
+    
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.questionText;
+      delete newErrors.answerText;
+      // also clear subQuestion errors manually if present
+      Object.keys(newErrors).forEach(key => {
+        if (key.startsWith('subQuestion') || key.startsWith('subOption')) {
+          delete newErrors[key];
+        }
+      });
+      return newErrors;
+    });
+    
+    // Auto-resize all textareas after hydration
+    setTimeout(() => {
+      const textareas = document.querySelectorAll('.admin-form textarea');
+      textareas.forEach(textarea => {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 600)}px`;
+      });
+    }, 100);
+
+    alert('Content successfully extracted and filled into the form below!');
+  };
+
+  const autoResizeTextarea = (e) => {
+    const textarea = e.target;
+    textarea.style.height = 'auto'; // Reset to auto to get actual scrollHeight
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 600)}px`; // Max height of 600px
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -743,6 +794,12 @@ const AdminPanel = () => {
                 Clear Form Cache
               </button>
             </div>
+            
+            <ImageExtractor 
+              onExtract={handleImageExtract} 
+              disabled={!!editingQuestionId} 
+            />
+            
             <form 
               onSubmit={editingQuestionId ? handleUpdate : handleSubmit} 
               className={`admin-form ${editingQuestionId ? 'edit-mode' : ''}`}
@@ -779,45 +836,50 @@ const AdminPanel = () => {
                     <select
                       name="subject"
                       value={formData.subject}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                    handleChange(e);
+                    autoResizeTextarea(e);
+                  }}
+                  onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
                       <option value="">Select Subject</option>
                       {formData.examStage === 'Foundation' ? (
                         <>
-                          <option value="Accounting">Accounting</option>
-                          <option value="Business Laws">Business Laws</option>
-                          <option value="Quantitative Aptitude">Quantitative Aptitude</option>
-                          <option value="Business Economics">Business Economics</option>
+                          <option value="Accounting">1 - Accounting</option>
+                          <option value="Business Laws">2 - Business Laws</option>
+                          <option value="Quantitative Aptitude">3 - Quantitative Aptitude</option>
+                          <option value="Business Economics">4 - Business Economics</option>
                         </>
                       ) : formData.examStage === 'Intermediate' ? (
                         <>
-                          <option value="Advanced Accounting">Advanced Accounting</option>
-                          <option value="Corporate Laws">Corporate Laws</option>
-                          <option value="Cost and Management Accounting">Cost and Management Accounting</option>
-                          <option value="Taxation">Taxation</option>
-                          <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
-                          <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                          <optgroup label="Group I">
+                            <option value="Advanced Accounting">1 - Advanced Accounting</option>
+                            <option value="Corporate and Other Laws">2 - Corporate and Other Laws</option>
+                            <option value="Taxation">3 - Taxation</option>
+                          </optgroup>
+                          <optgroup label="Group II">
+                            <option value="Cost and Management Accounting">4 - Cost and Management Accounting</option>
+                            <option value="Auditing and Ethics">5 - Auditing and Ethics</option>
+                            <option value="Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
+                          </optgroup>
                         </>
                       ) : formData.examStage === 'Final' ? (
                         <>
-                          <option value="Financial Reporting">Financial Reporting</option>
-                          <option value="Advanced Financial Management">Advanced Financial Management</option>
-                          <option value="Advanced Auditing">Advanced Auditing</option>
-                          <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
-                          <option value="Indirect Tax Laws">Indirect Tax Laws</option>
-                          <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                          <optgroup label="Group I">
+                            <option value="Financial Reporting">1 - Financial Reporting</option>
+                            <option value="Advanced Financial Management">2 - Advanced Financial Management</option>
+                            <option value="Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
+                          </optgroup>
+                          <optgroup label="Group II">
+                            <option value="Direct Tax Laws and International Taxation">4 - Direct Tax Laws &amp; International Taxation</option>
+                            <option value="Indirect Tax Laws">5 - Indirect Tax Laws</option>
+                            <option value="Integrated Business Solutions">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
+                          </optgroup>
                         </>
                       ) : (
-                        <>
-                          <option value="Advanced Accounting">Advanced Accounting</option>
-                          <option value="Corporate Laws">Corporate Laws</option>
-                          <option value="Taxation">Taxation</option>
-                          <option value="Cost & Management">Cost & Management</option>
-                          <option value="Auditing">Auditing</option>
-                          <option value="Financial Management">Financial Management</option>
-                        </>
+                        <option value="" disabled>Please select an Exam Stage first</option>
                       )}
                     </select>
                     {errors.subject && <p className="error-message">{errors.subject}</p>}
@@ -827,7 +889,11 @@ const AdminPanel = () => {
                     <select
                       name="paperType"
                       value={formData.paperType}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                    handleChange(e);
+                    autoResizeTextarea(e);
+                  }}
+                  onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
@@ -844,7 +910,11 @@ const AdminPanel = () => {
                     <select
                       name="year"
                       value={formData.year}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                    handleChange(e);
+                    autoResizeTextarea(e);
+                  }}
+                  onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
@@ -860,7 +930,11 @@ const AdminPanel = () => {
                     <select
                       name="month"
                       value={formData.month}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                    handleChange(e);
+                    autoResizeTextarea(e);
+                  }}
+                  onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
@@ -920,7 +994,11 @@ const AdminPanel = () => {
                     type="text"
                     name="questionNumber"
                     value={formData.questionNumber}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                    handleChange(e);
+                    autoResizeTextarea(e);
+                  }}
+                  onInput={autoResizeTextarea}
                     className="form-input"
                     required
                   />
@@ -931,7 +1009,11 @@ const AdminPanel = () => {
                   <textarea
                     name="questionText"
                     value={formData.questionText}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                    handleChange(e);
+                    autoResizeTextarea(e);
+                  }}
+                  onInput={autoResizeTextarea}
                     rows={6}
                     className="form-input"
                     placeholder="Optional: Paste HTML code for tables, or type your question text..."
@@ -950,7 +1032,11 @@ const AdminPanel = () => {
                     <textarea
                       name="answerText"
                       value={formData.answerText}
-                      onChange={handleChange}
+                      onChange={(e) => {
+                    handleChange(e);
+                    autoResizeTextarea(e);
+                  }}
+                  onInput={autoResizeTextarea}
                       rows={6}
                       className="form-input"
                       placeholder="Paste HTML code for tables, or just type your answer..."
@@ -969,9 +1055,14 @@ const AdminPanel = () => {
                       <div className="form-group">
                         <label>{questionType === 'objective-only' ? 'Question' : `Sub Question ${subIndex + 1}`}:</label>
                         <textarea
+                          id={`subQuestionText-${subIndex}`}
                           name="subQuestionText"
                           value={subQ.subQuestionText}
-                          onChange={(e) => handleSubQuestionChange(subIndex, e.target.name, e.target.value)}
+                          onChange={(e) => {
+                            handleSubQuestionChange(subIndex, 'subQuestionText', e.target.value);
+                            autoResizeTextarea(e);
+                          }}
+                          onInput={autoResizeTextarea}
                           className="form-input html-content"
                           rows={questionType === 'objective-only' ? 4 : 6}
                           placeholder={

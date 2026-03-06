@@ -577,8 +577,7 @@
 
 .question-text {
   color: var(--text-light) !important;
-  /* Ensure text is white */
-  font-size: 1rem;
+  font-size: 1.0625rem;
   line-height: 1.35 !important;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -586,12 +585,25 @@
   max-width: 100%;
 }
 
+/* Normalize all headings inside HTML content to body text size */
+.question-text h1,
+.question-text h2,
+.question-text h3,
+.question-text h4,
+.question-text h5,
+.question-text h6 {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #4fc3f7 !important;
+  margin: 8px 0 4px 0 !important;
+  line-height: 1.35 !important;
+}
+
 .question-text p,
 .question-text span,
 .question-text div,
 .question-text li {
   color: var(--text-light) !important;
-  /* Ensure all nested content is white */
 }
 
 .question-text p {
@@ -610,6 +622,7 @@
   margin: 10px 0 !important;
   overflow-x: auto;
   display: block;
+  font-size: 0.9rem !important;
 }
 
 .question-text th,
@@ -618,6 +631,7 @@
   text-align: left;
   border: 1px solid var(--border-color);
   color: var(--text-light) !important;
+  font-size: 0.9rem !important;
 }
 
 .question-text th {
@@ -652,10 +666,24 @@
 
 .answer-text {
   color: var(--text-light) !important;
-  font-size: 1rem;
+  font-size: 1.0625rem;
   line-height: 1.35 !important;
   overflow-wrap: break-word;
   word-wrap: break-word;
+}
+
+/* Normalize all headings inside answer HTML content */
+.answer-text h1,
+.answer-text h2,
+.answer-text h3,
+.answer-text h4,
+.answer-text h5,
+.answer-text h6 {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #4fc3f7 !important;
+  margin: 8px 0 4px 0 !important;
+  line-height: 1.35 !important;
 }
 
 .answer-text p,
@@ -681,6 +709,7 @@
   margin: 10px 0 !important;
   overflow-x: auto;
   display: block;
+  font-size: 0.9rem !important;
 }
 
 .answer-text th,
@@ -689,6 +718,7 @@
   text-align: left;
   border: 1px solid var(--border-color);
   color: var(--text-light) !important;
+  font-size: 0.9rem !important;
 }
 
 /* Sub Questions */
