@@ -4,6 +4,7 @@ import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
 import AnimatedPlaceholder from '../components/ui/AnimatedPlaceholder';
 import AnimatedModal from '../components/shared/AnimatedModal';
+import { LinkPreview } from '../components/ui/LinkPreview';
 import './ChatBotPage.css';
 
 const getChatHistoryStorageKey = () => {
@@ -510,18 +511,22 @@ const ChatBotPage = () => {
       const parts = content.split('CA Assistant can make mistakes');
       
       if (parts.length === 2) {
-        // Replace "official ICAI publications" with hyperlink
-        const warningText = parts[1].replace(
-          'official ICAI publications', 
-          '<a href="https://boslive.icai.org/index.php" target="_blank" rel="noopener noreferrer">official ICAI publications</a>'
-        );
+        // Find the text between "CA Assistant can make mistakes" and "official ICAI publications"
+        // The original string was: "CA Assistant can make mistakes. Check important info. Please dont rely on answers blindly. Check the official ICAI publications for the most up-to-date information."
+        const warningPart = parts[1];
+        const subParts = warningPart.split('official ICAI publications');
         
         return (
           <>
             {parts[0]}
-            <span className="warning-text" dangerouslySetInnerHTML={{ 
-              __html: `CA Assistant can make mistakes${warningText}` 
-            }} />
+            <span className="warning-text">
+              <strong>CA Assistant can make mistakes</strong>
+              {subParts[0]}
+              <LinkPreview url="https://boslive.icai.org/index.php">
+                official ICAI publications
+              </LinkPreview>
+              {subParts[1]}
+            </span>
           </>
         );
       }
