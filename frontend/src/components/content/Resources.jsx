@@ -84,7 +84,9 @@ const Resources = () => {
       }
 
       // Simplest and most reliable method: open the proxy URL which sets attachment headers
-      const downloadUrl = `${apiUtils.getApiBaseUrl()}/resources/${resource._id}/download?token=${token}`;
+      const safeTitle = (resource.title || 'resource').replace(/[^\w\s.-]/g, '').trim().replace(/\s+/g, '_');
+      const filename = `${safeTitle}.pdf`;
+      const downloadUrl = `${apiUtils.getApiBaseUrl()}/resources/${resource._id}/download/${encodeURIComponent(filename)}?token=${token}`;
       window.open(downloadUrl, '_blank');
 
     } catch (error) {

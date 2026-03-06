@@ -342,7 +342,7 @@ router.post('/:id/download', async (req, res) => {
 });
 
 // GET - Stream a PDF file from Cloudinary
-router.get('/:id/download', async (req, res) => {
+router.get(['/:id/download', '/:id/download/:filename'], async (req, res) => {
   try {
     logger.info(`PDF download request for resource ID: ${req.params.id}`);
 
@@ -416,7 +416,8 @@ router.get('/:id/download', async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         // Use 'inline' so the PDF displays in the browser tab, but still provides a valid default filename when 'Save' is clicked
         const safeFilename = resource.title.replace(/[^\w\s.-]/g, '');
-        res.setHeader('Content-Disposition', `inline; filename="${safeFilename}.pdf"`);
+        const encodedFilename = encodeURIComponent(safeFilename + '.pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${safeFilename}.pdf"; filename*=UTF-8''${encodedFilename}`);
 
         // Pipe the file to the response
         response.data.pipe(res);

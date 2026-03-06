@@ -217,7 +217,9 @@ const Dashboard = () => {
       if (!token) return;
 
       // Simplest and most reliable method: open the proxy URL which sets attachment headers
-      const downloadUrl = `${apiUtils.getApiBaseUrl()}/resources/${resourceId}/download?token=${token}`;
+      const safeTitle = (resourceTitle || 'resource').replace(/[^\w\s.-]/g, '').trim().replace(/\s+/g, '_');
+      const filename = `${safeTitle}.pdf`;
+      const downloadUrl = `${apiUtils.getApiBaseUrl()}/resources/${resourceId}/download/${encodeURIComponent(filename)}?token=${token}`;
       window.open(downloadUrl, '_blank');
     } catch (err) {
       console.error('Error downloading resource:', err);
