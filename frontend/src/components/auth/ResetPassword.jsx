@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../layout/Navbar';
 import apiUtils from '../../utils/apiUtils';
+import SegmentedOTPInput from '../shared/SegmentedOTPInput';
 import './ForgotPassword.css';
 
 const ResetPassword = () => {
@@ -164,14 +165,10 @@ const ResetPassword = () => {
                 </div>
                 <div>
                   <label>OTP:</label>
-                  <input
-                    type="text"
-                    name="otp"
+                  <SegmentedOTPInput
                     value={formData.otp}
-                    onChange={handleChange}
-                    required
-                    placeholder="Enter OTP sent to your email"
-                    autoComplete="one-time-code"
+                    onChange={(val) => setFormData({ ...formData, otp: val })}
+                    disabled={isLoading}
                   />
                 </div>
                 <button 

@@ -149,6 +149,17 @@ const CloseIcon = () => {
  * Internally creates a Modal context driven by the `isOpen` prop.
  */
 const AnimatedModalLegacy = ({ isOpen, onClose, children, className = '' }) => {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -179,7 +190,9 @@ const AnimatedModalLegacy = ({ isOpen, onClose, children, className = '' }) => {
                 <path d="M18 6 6 18" /><path d="M6 6l12 12" />
               </svg>
             </button>
-            {children}
+            <div className="animated-modal-content">
+              {children}
+            </div>
           </motion.div>
         </motion.div>
       )}

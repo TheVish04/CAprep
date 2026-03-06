@@ -147,8 +147,8 @@ const Navbar = () => {
             <>
               <motion.li
                 className="nav-item nav-dropdown-wrapper"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <div ref={studyDropdownRef} className="nav-dropdown-inner">
                 <button
@@ -165,21 +165,33 @@ const Navbar = () => {
                 </button>
                 {studyDropdownOpen && (
                   <ul className="nav-dropdown-menu" role="menu">
-                    <li role="none">
+                    <motion.li 
+                      role="none"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       <Link to="/questions" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
                         Questions
                       </Link>
-                    </li>
-                    <li role="none">
+                    </motion.li>
+                    <motion.li 
+                      role="none"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       <Link to="/quiz" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
                         Quiz
                       </Link>
-                    </li>
-                    <li role="none">
+                    </motion.li>
+                    <motion.li 
+                      role="none"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       <Link to="/resources" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
                         Resources
                       </Link>
-                    </li>
+                    </motion.li>
                   </ul>
                 )}
                 </div>
@@ -208,8 +220,8 @@ const Navbar = () => {
               )}
               
               <motion.li 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
                 className="nav-item nav-profile-dropdown-wrapper"
               >
                 <div ref={profileDropdownRef} className="nav-dropdown-inner">
@@ -233,19 +245,27 @@ const Navbar = () => {
                   </button>
                   {profileDropdownOpen && (
                     <ul className="nav-dropdown-menu nav-profile-dropdown-menu" role="menu">
-                      <li role="none">
+                      <motion.li 
+                        role="none"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
                         <Link to="/profile" className="nav-dropdown-item" onClick={() => { setProfileDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
                           Profile
                         </Link>
-                      </li>
+                      </motion.li>
                       <li role="none" className="nav-profile-notifications-item">
                         <NotificationsDropdown embedded />
                       </li>
-                      <li role="none">
+                      <motion.li 
+                        role="none"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
                         <button type="button" className="nav-dropdown-item nav-dropdown-item-button nav-dropdown-item-button--logout" onClick={() => { setProfileDropdownOpen(false); handleLogout(); }} role="menuitem">
                           Logout
                         </button>
-                      </li>
+                      </motion.li>
                     </ul>
                   )}
                 </div>

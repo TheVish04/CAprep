@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/axiosConfig';
 import Navbar from '../layout/Navbar';
 import apiUtils from '../../utils/apiUtils';
+import SegmentedOTPInput from '../shared/SegmentedOTPInput';
 import './Register.css';
 
 const Register = () => {
@@ -363,19 +364,10 @@ const Register = () => {
             <div className="otp-form-group">
               <label>Enter OTP:</label>
               <div className="otp-input-container">
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={handleOtpChange}
-                  placeholder="Enter 6-digit OTP"
-                  maxLength={6}
-                  required
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleVerifyOtp();
-                    }
-                  }}
+                <SegmentedOTPInput 
+                  value={otp} 
+                  onChange={setOtp} 
+                  disabled={verifyingOtp} 
                 />
                 {countdown === 0 && (
                   <button 

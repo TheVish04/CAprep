@@ -1,0 +1,43 @@
+.segmented-otp-container {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.segmented-otp-input {
+  width: 48px;
+  height: 56px;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.segmented-otp-input:focus {
+  border-color: #03a9f4;
+  background: #252525;
+  box-shadow: 0 0 0 1px rgba(3, 169, 244, 0.3);
+  transform: scale(1.05);
+}
+
+.segmented-otp-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .segmented-otp-container {
+    gap: 8px;
+  }
+  .segmented-otp-input {
+    width: 40px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+}

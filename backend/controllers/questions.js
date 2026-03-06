@@ -155,13 +155,16 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
       filter._id = { $in: user.bookmarkedQuestions };
     }
 
-    // Pagination: default limit 20, max 100
-    const limitNum = Math.min(parseInt(limit, 10) || 20, 100);
-    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
-    const skip = (pageNum - 1) * limitNum;
+    // Pagination: default limit 20, max 100, or 'all'
+    const isAllMode = limit === 'all';
+    const limitNum = isAllMode ? 0 : Math.min(parseInt(limit, 10) || 20, 100);
+    const pageNum = isAllMode ? 1 : Math.max(parseInt(page, 10) || 1, 1);
+    const skip = isAllMode ? 0 : (pageNum - 1) * limitNum;
 
     const [questions, total] = await Promise.all([
-      Question.find(filter).skip(skip).limit(limitNum),
+      isAllMode 
+        ? Question.find(filter) 
+        : Question.find(filter).skip(skip).limit(limitNum),
       Question.countDocuments(filter)
     ]);
 
@@ -170,8 +173,8 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
       pagination: {
         total,
         page: pageNum,
-        pages: Math.ceil(total / limitNum),
-        limit: limitNum
+        pages: isAllMode ? 1 : Math.ceil(total / limitNum),
+        limit: isAllMode ? total : limitNum
       }
     });
   } catch (error) {

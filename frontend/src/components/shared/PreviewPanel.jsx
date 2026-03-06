@@ -60,9 +60,6 @@ const PreviewPanel = ({ data, onClose, questionType = 'objective-subjective' }) 
           </svg>
           {getPreviewTitle()}
         </h2>
-        <button className="preview-close" onClick={onClose} aria-label="Close">
-          ×
-        </button>
         
         <div className="preview-content">
           <div className="preview-info-grid">
@@ -164,20 +161,6 @@ const PreviewPanel = ({ data, onClose, questionType = 'objective-subjective' }) 
               ))}
             </div>
           )}
-        </div>
-
-        <div className="preview-actions">
-          <button
-            onClick={onClose}
-            className="preview-close-btn"
-            aria-label="Close preview"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6 6 18"></path>
-              <path d="m6 6 12 12"></path>
-            </svg>
-            Close Preview
-          </button>
         </div>
       </div>
     </AnimatedModal>

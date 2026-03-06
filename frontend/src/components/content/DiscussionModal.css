@@ -1,29 +1,6 @@
 /* DiscussionModal.css */
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.75);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
 
-.modal-container {
-  background-color: #1e1e1e;
-  border-radius: 8px;
-  width: 80%;
-  max-width: 700px;
-  height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
 
 .modal-header {
   display: flex;
@@ -93,26 +70,13 @@
   align-self: flex-start;
 }
 
-.discussion-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
 
 .discussion-modal {
   width: 100%;
-  max-height: 90vh;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
+  background: transparent;
 }
 
 .discussion-modal-header {
@@ -135,28 +99,12 @@
   white-space: nowrap;
 }
 
-.discussion-close-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #b0b0b0;
-  padding: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.discussion-close-btn:hover {
-  color: #03a9f4;
-}
 
 .discussion-content {
   padding: 20px;
   overflow-y: auto;
   flex-grow: 1;
-  max-height: calc(90vh - 180px);
-  background-color: #1e1e1e;
+  background-color: transparent;
 }
 
 .discussion-messages {

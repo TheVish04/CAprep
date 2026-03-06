@@ -684,34 +684,12 @@ textarea.form-input {
 .question-card {
   background: #1F2833;
   border-radius: 12px;
-  padding: 25px;
+  padding: 16px 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
   border: 1px solid #03a9f4;
-}
-
-.question-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 6px;
-  background: linear-gradient(90deg, #0288d1, #03a9f4);
-  transform: scaleX(0);
-  transform-origin: 0 50%;
-  transition: transform 0.5s ease;
-}
-
-.question-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.question-card:hover::after {
-  transform: scaleX(1);
 }
 
 .question-card p {
@@ -723,8 +701,8 @@ textarea.form-input {
 .question-card h3 {
   color: #0288d1;
   font-size: 1.3rem;
-  margin-bottom: 15px;
-  line-height: 1.4;
+  margin-bottom: 8px;
+  line-height: 1.3;
 }
 
 .question-text {
@@ -735,7 +713,7 @@ textarea.form-input {
   line-clamp: unset !important;
   -webkit-line-clamp: unset !important;
   -webkit-box-orient: vertical !important;
-  margin-bottom: 15px !important;
+  margin-bottom: 6px !important;
 }
 
 /* Specifically override the truncation in question cards */
@@ -747,7 +725,7 @@ textarea.form-input {
   line-clamp: unset !important;
   -webkit-line-clamp: unset !important;
   -webkit-box-orient: vertical !important;
-  margin-bottom: 15px !important;
+  margin-bottom: 6px !important;
 }
 
 .sub-question {

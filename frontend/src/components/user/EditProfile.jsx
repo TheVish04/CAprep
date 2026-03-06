@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/axiosConfig';
 import apiUtils from '../../utils/apiUtils';
 import ProfilePlaceholder from '../shared/ProfilePlaceholder';
+import SegmentedOTPInput from '../shared/SegmentedOTPInput';
 import './EditProfile.css';
 
 const defaultAvatar = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
@@ -55,13 +56,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
         setOtpValue('');
     }, [userData]);
 
-    useEffect(() => {
-        const prev = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = prev;
-        };
-    }, []);
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -257,197 +252,187 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
     const emailVerified = emailChanged && emailVerifiedForChange === newEmailTrimmed;
 
     return (
-        <div className="edit-profile-modal" role="dialog" aria-labelledby="edit-profile-title">
-            <div className="edit-profile-content">
+        <>
+            <div className="edit-profile-wrapper">
                 <header className="edit-profile-header">
-                    <h2 id="edit-profile-title">Edit Profile</h2>
-                    <button
-                        type="button"
-                        className="edit-profile-close"
-                        onClick={onClose}
-                        aria-label="Close"
-                        disabled={loading}
-                    >
-                        ×
-                    </button>
+                    <h2>Edit Profile</h2>
                 </header>
 
-                {banner && (
-                    <div
-                        className={`edit-profile-banner edit-profile-banner-${banner.type}`}
-                        role="alert"
-                    >
-                        {banner.message}
-                    </div>
-                )}
-                {error && <div className="edit-profile-error" role="alert">{error}</div>}
+                <div className="edit-profile-scroll-area">
+                    {banner && (
+                        <div className={`edit-profile-banner edit-profile-banner-${banner.type}`} role="alert">
+                            {banner.message}
+                        </div>
+                    )}
+                    {error && <div className="edit-profile-error" role="alert">{error}</div>}
 
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    id="profilePicture"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="edit-profile-hidden-file-input"
-                    aria-hidden="true"
-                />
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        id="profilePicture"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="edit-profile-hidden-file-input"
+                        aria-hidden="true"
+                    />
 
-                <form onSubmit={handleSubmit} className="edit-profile-form">
-                    <div className="edit-profile-body">
-                        <div className="edit-profile-photo-col">
-                            <div className="edit-profile-photo-row">
-                                <div className="edit-profile-avatar-wrap">
-                                    {hasCustomProfileImage(previewUrl) ? (
-                                        <img
-                                            src={previewUrl}
-                                            alt=""
-                                            className="edit-profile-avatar"
-                                        />
-                                    ) : (
-                                        <ProfilePlaceholder className="edit-profile-placeholder" />
-                                    )}
-                                </div>
+                    <form onSubmit={handleSubmit} className="edit-profile-form">
+                        {/* Centered Avatar Section */}
+                        <div className="edit-profile-photo-centered">
+                            <div className="edit-profile-avatar-container">
+                                {hasCustomProfileImage(previewUrl) ? (
+                                    <img src={previewUrl} alt="" className="edit-profile-avatar" />
+                                ) : (
+                                    <ProfilePlaceholder className="edit-profile-placeholder" />
+                                )}
                                 <button
                                     type="button"
-                                    className="edit-profile-change-photo-btn"
+                                    className="edit-profile-avatar-edit-overlay"
                                     onClick={() => setShowChangePhotoModal(true)}
+                                    aria-label="Change photo"
                                 >
-                                    Change photo
+                                    <span className="edit-icon">📷</span>
+                                    <span className="edit-text">Edit</span>
                                 </button>
                             </div>
                         </div>
-                        <div className="edit-profile-fields-col">
-                            <section className="edit-profile-section" aria-labelledby="account-heading">
-                                <h3 id="account-heading" className="edit-profile-section-title">Account</h3>
-                                <div className="form-group">
-                                    <label htmlFor="fullName">Full name</label>
-                                    <input
-                                        type="text"
-                                        id="fullName"
-                                        name="fullName"
-                                        value={formData.fullName}
-                                        onChange={handleChange}
-                                        required
-                                        autoComplete="name"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="email">Email</label>
-                                    <input
-                                        type="email"
-                                        id="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                        autoComplete="email"
-                                    />
-                                    {emailChanged && (
-                                        <div className="edit-profile-email-otp">
-                                            {!emailVerified ? (
-                                                <>
-                                                    {!otpSent ? (
+
+                        {/* General Information Section */}
+                        <div className="edit-profile-section-divider">
+                            <span>GENERAL INFORMATION</span>
+                        </div>
+
+                        <div className="edit-profile-field-group">
+                            <div className="form-group">
+                                <label htmlFor="fullName">Full name</label>
+                                <input
+                                    type="text"
+                                    id="fullName"
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={handleChange}
+                                    required
+                                    autoComplete="name"
+                                    placeholder="Enter your full name"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="email">Email</label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    autoComplete="email"
+                                    placeholder="Enter your email"
+                                />
+                                {emailChanged && (
+                                    <div className="edit-profile-email-otp-box">
+                                        {!emailVerified ? (
+                                            <>
+                                                {!otpSent ? (
+                                                    <button
+                                                        type="button"
+                                                        className="edit-profile-otp-trigger-btn"
+                                                        onClick={handleSendEmailChangeOtp}
+                                                        disabled={otpSending}
+                                                    >
+                                                        {otpSending ? 'Sending…' : 'Send OTP'}
+                                                    </button>
+                                                ) : (
+                                                    <div className="edit-profile-otp-entry">
+                                                        <SegmentedOTPInput
+                                                            value={otpValue}
+                                                            onChange={setOtpValue}
+                                                            disabled={otpVerifying}
+                                                        />
                                                         <button
                                                             type="button"
-                                                            className="edit-profile-otp-btn"
-                                                            onClick={handleSendEmailChangeOtp}
-                                                            disabled={otpSending}
+                                                            className="edit-profile-otp-verify-btn"
+                                                            onClick={handleVerifyEmailChangeOtp}
+                                                            disabled={otpVerifying || otpValue.length < 6}
                                                         >
-                                                            {otpSending ? 'Sending…' : 'Send OTP to new email'}
+                                                            {otpVerifying ? 'Verifying…' : 'Verify'}
                                                         </button>
-                                                    ) : (
-                                                        <>
-                                                            <input
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                maxLength={6}
-                                                                placeholder="Enter 6-digit OTP"
-                                                                value={otpValue}
-                                                                onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ''))}
-                                                                className="edit-profile-otp-input"
-                                                            />
-                                                            <button
-                                                                type="button"
-                                                                className="edit-profile-otp-btn"
-                                                                onClick={handleVerifyEmailChangeOtp}
-                                                                disabled={otpVerifying || otpValue.length < 6}
-                                                            >
-                                                                {otpVerifying ? 'Verifying…' : 'Verify OTP'}
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <span className="edit-profile-email-verified">✓ New email verified. Save changes to update.</span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
-
-                            <section className="edit-profile-section edit-profile-password-section" aria-labelledby="password-heading">
-                                <h3 id="password-heading" className="edit-profile-section-title">Password (optional)</h3>
-                                <div className="form-group">
-                                    <label htmlFor="currentPassword">Current password</label>
-                                    <input
-                                        type="password"
-                                        id="currentPassword"
-                                        name="currentPassword"
-                                        value={passwordData.currentPassword}
-                                        onChange={handlePasswordChange}
-                                        placeholder="Enter current password"
-                                        autoComplete="current-password"
-                                        className="edit-profile-password-input"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="newPassword">New password</label>
-                                    <input
-                                        type="password"
-                                        id="newPassword"
-                                        name="newPassword"
-                                        value={passwordData.newPassword}
-                                        onChange={handlePasswordChange}
-                                        placeholder="Enter new password"
-                                        autoComplete="new-password"
-                                        className="edit-profile-password-input"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="confirmPassword">Confirm new password</label>
-                                    <input
-                                        type="password"
-                                        id="confirmPassword"
-                                        name="confirmPassword"
-                                        value={passwordData.confirmPassword}
-                                        onChange={handlePasswordChange}
-                                        placeholder="Confirm new password"
-                                        autoComplete="new-password"
-                                        className="edit-profile-password-input"
-                                    />
-                                </div>
-                            </section>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="edit-profile-verified-badge">✓ Email Verified</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    <footer className="edit-profile-footer">
-                        <button
-                            type="button"
-                            className="edit-profile-btn edit-profile-btn-secondary"
-                            onClick={onClose}
-                            disabled={loading}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="edit-profile-btn edit-profile-btn-primary"
-                            disabled={loading}
-                        >
-                            {loading ? 'Saving…' : 'Save changes'}
-                        </button>
-                    </footer>
-                </form>
+                        {/* Security Section */}
+                        <div className="edit-profile-section-divider">
+                            <span>SECURITY</span>
+                        </div>
+
+                        <div className="edit-profile-field-group">
+                            <div className="form-group">
+                                <label htmlFor="currentPassword">Current password</label>
+                                <input
+                                    type="password"
+                                    id="currentPassword"
+                                    name="currentPassword"
+                                    value={passwordData.currentPassword}
+                                    onChange={handlePasswordChange}
+                                    placeholder="Enter current password"
+                                    autoComplete="current-password"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="newPassword">New password</label>
+                                <input
+                                    type="password"
+                                    id="newPassword"
+                                    name="newPassword"
+                                    value={passwordData.newPassword}
+                                    onChange={handlePasswordChange}
+                                    placeholder="Enter new password"
+                                    autoComplete="new-password"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="confirmPassword">Confirm new password</label>
+                                <input
+                                    type="password"
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    value={passwordData.confirmPassword}
+                                    onChange={handlePasswordChange}
+                                    placeholder="Confirm new password"
+                                    autoComplete="new-password"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="edit-profile-actions">
+                            <button
+                                type="submit"
+                                className="edit-profile-main-btn btn-primary"
+                                disabled={loading || (emailChanged && !emailVerified)}
+                            >
+                                {loading ? 'Saving…' : 'Save changes'}
+                            </button>
+                            <button
+                                type="button"
+                                className="edit-profile-main-btn btn-secondary"
+                                onClick={onClose}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             {showChangePhotoModal && (
@@ -488,7 +473,7 @@ const EditProfile = ({ userData, onClose, onUpdate }) => {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

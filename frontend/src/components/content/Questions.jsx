@@ -60,6 +60,7 @@ const Questions = () => {
     };
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [isAllMode, setIsAllMode] = useState(false);
   const [serverPagination, setServerPagination] = useState({ total: 0, page: 1, pages: 1, limit: 10 });
   const [showAnswers, setShowAnswers] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -104,14 +105,18 @@ const Questions = () => {
       Object.entries(currentFilters).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
-      params.append('page', String(page));
-      params.append('limit', String(questionsPerPage));
+      if (!isAllMode) {
+        params.append('page', String(page));
+        params.append('limit', String(questionsPerPage));
+      } else {
+        params.append('limit', 'all');
+      }
 
       const response = await api.get(`/questions?${params.toString()}`);
 
       const data = response.data;
       const list = Array.isArray(data) ? data : (data?.data ?? []);
-      const pagination = data?.pagination ?? { total: list.length, page: 1, pages: 1, limit: questionsPerPage };
+      const pagination = data?.pagination ?? { total: list.length, page: 1, pages: 1, limit: isAllMode ? list.length : questionsPerPage };
       setQuestions(list);
       setServerPagination(pagination);
     } catch (err) {
@@ -122,7 +127,7 @@ const Questions = () => {
     } finally {
       setLoading(false);
     }
-  }, [questionsPerPage]);
+  }, [questionsPerPage, isAllMode]);
 
   // --- Initial Load: Check Token, Fetch Bookmarks --- 
   useEffect(() => {
@@ -150,10 +155,14 @@ const Questions = () => {
   useEffect(() => {
     const token = apiUtils.getAuthToken();
     if (token) {
-      setCurrentPage(1);
-      fetchQuestions(filters, 1);
+      if (!isAllMode) {
+        setCurrentPage(1);
+        fetchQuestions(filters, 1);
+      } else {
+        fetchQuestions(filters); // fetch all with current filters
+      }
     }
-  }, [filters, fetchQuestions]);
+  }, [filters, isAllMode, fetchQuestions]);
 
   // --- Apply query parameters from URL when URL changes (e.g. back/forward) --- 
   useEffect(() => {
@@ -285,6 +294,11 @@ const Questions = () => {
     setIsAiLoading(false);
     setCurrentPage(1);
     setFilters(prev => ({ ...prev, search: trimmed }));
+  };
+
+  const handleShowAll = () => {
+    setIsAllMode(prev => !prev);
+    setCurrentPage(1);
   };
 
   // Allow pressing Enter in search box to trigger search
@@ -647,16 +661,16 @@ const Questions = () => {
                     className="toggle-answer-btn"
                     onClick={() => toggleIndividualAnswer(q._id)}
                   >
-                    {individualShowAnswers[q._id] ? 'Hide Answer/Details' : 'Show Answer/Details'}
+                    {individualShowAnswers[q._id] ? 'Hide Answer / Details' : 'Show Answer / Details'}
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          {!loading && totalPages > 1 && (
+          {!loading && (serverPagination.total > questionsPerPage || isAllMode) && (
             <div className="pagination">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              {!isAllMode && Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => paginate(page)}
@@ -665,6 +679,12 @@ const Questions = () => {
                   {page}
                 </button>
               ))}
+              <button 
+                className={`show-all-btn ${isAllMode ? 'active' : ''}`}
+                onClick={handleShowAll}
+              >
+                {isAllMode ? 'Show Pages' : 'Show All Questions'}
+              </button>
             </div>
           )}
         </div>

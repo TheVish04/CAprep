@@ -13,19 +13,12 @@
 }
 
 .preview-modal {
-    background: #1e1e1e;
-    border-radius: 15px;
-    padding: 30px;
-    width: 90%;
-    max-width: 900px;
+    padding: 0;
+    width: 100%;
     max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     position: relative;
-    border: 1px solid #03a9f4;
-    animation: fadeIn 0.3s ease;
     z-index: 10000;
 }
 
@@ -39,11 +32,9 @@
     font-weight: 700;
     margin-bottom: 20px;
     color: #239ecf;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #03a9f4;
+    padding: 20px 30px 10px;
     display: flex;
     align-items: center;
-    padding-right: 40px;
 }
 
 .preview-title svg {
@@ -51,35 +42,12 @@
     color: #239ecf;
 }
 
-.preview-close {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: #1e1e1e;
-    border: 1px solid #03a9f4;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    color: #b0b0b0;
-    font-size: 1.8rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-}
-
-.preview-close:hover {
-    color: #ffffff;
-    background: #03a9f4;
-    border-color: #03a9f4;
-    transform: rotate(90deg);
-}
 
 .preview-content {
     flex: 1;
     text-align: left;
+    padding: 0 30px 30px;
+    overflow-y: auto;
 }
 
 .preview-info-grid {
@@ -288,33 +256,6 @@
     box-shadow: none;
 }
 
-.preview-close-btn {
-    padding: 12px 24px;
-    border-radius: 8px;
-    background: #1F2833;
-    color: #b0b0b0;
-    border: 1px solid #03a9f4;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 140px;
-    transition: all 0.3s ease;
-    box-shadow: none;
-}
-
-.preview-close-btn svg {
-    margin-right: 8px;
-}
-
-.preview-close-btn:hover {
-    background: #03a9f4;
-    color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: none;
-}
 
 @media (max-width: 768px) {
     .preview-modal {

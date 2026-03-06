@@ -248,36 +248,48 @@
 
 .filter-group-bookmark {
   display: inline-flex !important;
-  align-items: center;
-  min-height: 40px;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 40px !important;
   margin-top: 26px !important;
   background: #2c2c2c;
-  padding: 0 12px;
-  border-radius: 6px;
+  padding: 0 16px !important;
+  border-radius: 8px;
   border: 1px solid #444;
-  transition: all 0.2s ease-out;
+  transition: all 0.2s ease;
+  user-select: none;
+  align-self: flex-start !important;
+  width: auto !important;
 }
 
 .filter-group-bookmark:hover {
-  border-color: #666;
+  border-color: var(--primary-color);
+  background: #333;
 }
 
 .bookmark-filter-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
+  display: inline-block !important; /* Switched from flex to inline-block for vertical-align control */
+  vertical-align: middle !important;
+  cursor: pointer !important;
   white-space: nowrap;
-  padding: 8px 0;
-  font-size: 0.9rem;
-  color: white;
+  font-size: 0.9rem !important;
+  color: #fff !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 40px !important; /* Matches container height for perfect vertical centering */
 }
 
 .bookmark-checkbox {
-  margin-right: 8px;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin: 0 8px 0 0 !important; /* Space between checkbox and text */
+  padding: 0 !important;
   accent-color: var(--primary-color);
-  width: 16px;
-  height: 16px;
+  width: 16px !important;
+  height: 16px !important;
   cursor: pointer;
+  position: relative;
+  top: -1px; /* Tiny nudge to account for font baseline offset */
 }
 
 /* AI Explanation Box */
@@ -524,12 +536,12 @@
 
 /* Question Content */
 .question-content-container {
-  padding: 0 0 16px 0;
+  padding: 0 0 8px 0 !important;
   text-align: left;
 }
 
 .question-label {
-  margin-bottom: 12px;
+  margin-bottom: 4px !important;
   font-size: 0.9rem;
   color: var(--text-muted);
   font-weight: 600;
@@ -539,7 +551,7 @@
   color: var(--text-light) !important;
   /* Ensure text is white */
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.35 !important;
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
@@ -555,19 +567,19 @@
 }
 
 .question-text p {
-  margin-bottom: 16px;
+  margin-bottom: 4px !important;
 }
 
 .question-text img {
   max-width: 100%;
-  margin: 16px 0;
+  margin: 10px 0 !important;
   border-radius: var(--radius-sm);
 }
 
 .question-text table {
   width: 100%;
   border-collapse: collapse;
-  margin: 16px 0;
+  margin: 10px 0 !important;
   overflow-x: auto;
   display: block;
 }
@@ -587,7 +599,7 @@
 .question-text ul,
 .question-text ol {
   margin-left: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 10px !important;
 }
 
 .question-text ul li,
@@ -597,23 +609,23 @@
 
 /* Answer Sections */
 .answer-section {
-  padding: 16px 20px;
+  padding: 12px 20px !important;
   background: rgba(102, 187, 106, 0.05);
   border-top: 1px solid var(--border-color);
-  margin-top: 8px;
+  margin-top: 4px !important;
 }
 
 .answer-section h3 {
   font-size: 1rem;
   color: var(--success-color);
   margin-top: 0;
-  margin-bottom: 12px;
+  margin-bottom: 6px !important;
 }
 
 .answer-text {
   color: var(--text-light) !important;
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.35 !important;
   overflow-wrap: break-word;
   word-wrap: break-word;
 }
@@ -626,19 +638,19 @@
 }
 
 .answer-text p {
-  margin-bottom: 16px;
+  margin-bottom: 4px !important;
 }
 
 .answer-text img {
   max-width: 100%;
-  margin: 16px 0;
+  margin: 10px 0 !important;
   border-radius: var(--radius-sm);
 }
 
 .answer-text table {
   width: 100%;
   border-collapse: collapse;
-  margin: 16px 0;
+  margin: 10px 0 !important;
   overflow-x: auto;
   display: block;
 }
@@ -653,31 +665,31 @@
 
 /* Sub Questions */
 .subquestions-container {
-  padding: 0 20px 16px;
+  padding: 0 20px 8px !important;
 }
 
 .subquestions-container h3 {
   font-size: 1rem;
   color: var(--secondary-color);
-  margin: 16px 0;
+  margin: 12px 0 8px !important;
 }
 
 .subquestion-item {
   background: rgba(255, 255, 255, 0.03);
   border-radius: var(--radius-sm);
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 12px 16px !important;
+  margin-bottom: 12px !important;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .subquestion-options {
   padding-left: 20px;
-  margin: 16px 0;
+  margin: 0px 0 !important;
 }
 
 .subquestion-options li {
-  margin-bottom: 8px;
-  padding: 8px;
+  margin-bottom: 0px !important;
+  padding: 6px 8px !important;
   border-radius: var(--radius-sm);
   color: var(--text-light) !important;
 }
@@ -726,6 +738,24 @@
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
+}
+
+.show-all-btn {
+  padding: 0 16px !important;
+  width: auto !important;
+  font-weight: 700;
+  background: var(--bg-highlight);
+  transition: all 0.2s ease;
+}
+
+.show-all-btn:hover {
+  background: var(--border-color);
+}
+
+.show-all-btn.active {
+  background: var(--primary-color) !important;
+  color: white !important;
+  border-color: var(--primary-color) !important;
 }
 
 /* Mobile Responsive Adjustments */
