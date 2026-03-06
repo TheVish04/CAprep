@@ -15,12 +15,79 @@
 
 /* Sidebar styles */
 .chatbot-sidebar {
-  width: 260px;
+  width: var(--sidebar-width, 260px);
+  min-width: 200px;
+  max-width: 50%vw;
   background-color: #202123;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #333;
   height: 100%;
+  position: relative;
+  transition: width 0.3s ease, transform 0.3s ease;
+  will-change: width, transform;
+  z-index: 10;
+}
+
+.chatbot-sidebar.collapsed {
+  width: 0 !important;
+  min-width: 0;
+  transform: translateX(-100%);
+  overflow: hidden;
+}
+
+.chatbot-sidebar.is-dragging {
+  transition: none;
+}
+
+/* Resizer handle */
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.sidebar-resizer:hover,
+.chatbot-sidebar.is-dragging .sidebar-resizer {
+  background-color: #03a9f4;
+}
+
+/* Border wrapper inside to prevent drag glitching */
+.sidebar-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: var(--sidebar-width, 260px);
+  min-width: 200px;
+  border-right: 1px solid #333;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle-btn {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  z-index: 5;
+  background: transparent;
+  border: none;
+  color: #8e8ea0;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #2a2b32;
+  color: #fff;
 }
 
 .new-chat-button {
@@ -91,7 +158,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  flex: 1;
+  padding-right: 10px;
 }
 
 .history-delete-btn {
@@ -147,6 +215,16 @@
   gap: 20px;
 }
 
+@keyframes slideUpFadeInUser {
+  0% { opacity: 0; transform: translateY(15px) scale(0.9); transform-origin: bottom right; }
+  100% { opacity: 1; transform: translateY(0) scale(1); transform-origin: bottom right; }
+}
+
+@keyframes slideUpFadeInBot {
+  0% { opacity: 0; transform: translateY(15px) scale(0.9); transform-origin: bottom left; }
+  100% { opacity: 1; transform: translateY(0) scale(1); transform-origin: bottom left; }
+}
+
 .chat-message {
   display: flex;
   gap: 12px;
@@ -157,6 +235,14 @@
 
 .chat-message.user {
   flex-direction: row-reverse;
+}
+
+.chat-message.user.animate-in {
+  animation: slideUpFadeInUser 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.chat-message.bot.animate-in {
+  animation: slideUpFadeInBot 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .message-avatar {

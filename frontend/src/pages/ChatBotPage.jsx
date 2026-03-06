@@ -43,6 +43,11 @@ const ChatBotPage = () => {
   // Image Lightbox State
   const [lightboxImage, setLightboxImage] = useState(null);
 
+  // Sidebar State (Resizable & Collapsible)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(260); // Default width
+  const isResizing = useRef(false);
+
   // Load chat history from localStorage (per user) on component mount
   useEffect(() => {
     const key = getChatHistoryStorageKey();
@@ -61,6 +66,43 @@ const ChatBotPage = () => {
   
   // Track if we just loaded a chat from history
   const [justLoadedHistory, setJustLoadedHistory] = useState(false);
+
+  // Mouse event listeners for resizing the sidebar
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing.current) return;
+      // Calculate new width, preventing it from getting too small or too large
+      const newWidth = Math.max(200, Math.min(e.clientX, window.innerWidth * 0.5));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing.current) {
+        isResizing.current = false;
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto'; // Re-enable text selection
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault(); // Prevent text selection while dragging
+    isResizing.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; // Disable text selection during drag
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
 
   // Auto scroll to bottom of messages
   useEffect(() => {
@@ -347,7 +389,8 @@ const ChatBotPage = () => {
       type: 'user',
       content: userMsgContent,
       timestamp: new Date(),
-      image: selectedImage ? selectedImage.base64 : null
+      image: selectedImage ? selectedImage.base64 : null,
+      animate: true
     };
     
     const messagesWithUser = [...messages, userMessage];
@@ -491,53 +534,79 @@ const ChatBotPage = () => {
       <Navbar />
       
       <div className="chatbot-container">
-        <div className="chatbot-sidebar">
-          <button className="new-chat-button" onClick={createNewChat}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" strokeWidth="2">
-              <path d="M12 4v16m-8-8h16" stroke="currentColor" strokeLinecap="round" />
-            </svg>
-            New chat
-          </button>
-          
-          <div className="history-divider">
-            <span>Chat History</span>
-          </div>
-          
-          <div className="chat-history-list">
-            {chatHistory.length === 0 ? (
-              <div className="empty-history-message">
-                No chat history yet
-              </div>
-            ) : (
-              chatHistory.map(convo => (
-                <div 
-                  key={convo.id} 
-                  className={`history-item ${selectedConversation?.id === convo.id ? 'active' : ''}`}
-                  onClick={() => loadConversation(convo)}
-                >
-                  <div className="history-item-title">
-                    {streamingTitle?.convoId === convo.id ? (
-                      <>
-                        {streamingTitle.fullTitle.slice(0, streamingTitle.displayedLength)}
-                        <span className="streaming-cursor" aria-hidden="true">|</span>
-                      </>
-                    ) : (
-                      convo.title
-                    )}
-                  </div>
-                  <button 
-                    className="history-delete-btn"
-                    onClick={(e) => deleteConversation(e, convo.id)}
-                    aria-label="Delete conversation"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                    </svg>
-                  </button>
+        {/* Toggle Button for Sidebar */}
+        <button 
+          className="sidebar-toggle-btn" 
+          onClick={toggleSidebar}
+          title={isSidebarCollapsed ? "Open Sidebar" : "Close Sidebar"}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        <div 
+          className={`chatbot-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}
+          style={{ '--sidebar-width': `${sidebarWidth}px` }}
+        >
+          <div className="sidebar-content-wrapper" style={{ width: sidebarWidth }}>
+            <button className="new-chat-button" onClick={createNewChat}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" strokeWidth="2">
+                <path d="M12 4v16m-8-8h16" stroke="currentColor" strokeLinecap="round" />
+              </svg>
+              New chat
+            </button>
+            
+            <div className="history-divider">
+              <span>Chat History</span>
+            </div>
+            
+            <div className="chat-history-list">
+              {chatHistory.length === 0 ? (
+                <div className="empty-history-message">
+                  No chat history yet
                 </div>
-              ))
-            )}
+              ) : (
+                chatHistory.map(convo => (
+                  <div 
+                    key={convo.id} 
+                    className={`history-item ${selectedConversation?.id === convo.id ? 'active' : ''}`}
+                    onClick={() => loadConversation(convo)}
+                  >
+                    <div className="history-item-title" title={convo.title}>
+                      {streamingTitle?.convoId === convo.id ? (
+                        <>
+                          {streamingTitle.fullTitle.slice(0, streamingTitle.displayedLength)}
+                          <span className="streaming-cursor" aria-hidden="true">|</span>
+                        </>
+                      ) : (
+                        convo.title
+                      )}
+                    </div>
+                    <button 
+                      className="history-delete-btn"
+                      onClick={(e) => deleteConversation(e, convo.id)}
+                      aria-label="Delete conversation"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                      </svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
+          
+          {/* Draggable Resizer Handle */}
+          {!isSidebarCollapsed && (
+            <div 
+              className="sidebar-resizer" 
+              onMouseDown={handleMouseDown}
+            ></div>
+          )}
         </div>
         
         <div className="chatbot-main">
@@ -547,7 +616,7 @@ const ChatBotPage = () => {
           
           <div className="chat-messages">
             {messages.map((message, index) => (
-              <div key={index} className={`chat-message ${message.type}`}>
+              <div key={index} className={`chat-message ${message.type} ${message.animate ? 'animate-in' : ''}`}>
                 <div className="message-avatar">
                   {message.type === 'bot' ? (
                     <div className="bot-avatar">
@@ -603,7 +672,7 @@ const ChatBotPage = () => {
               </div>
             )}
             {isLoading && !streamingMessage && (
-              <div className="chat-message bot">
+              <div className="chat-message bot animate-in">
                 <div className="message-avatar">
                   <div className="bot-avatar">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -639,7 +708,13 @@ const ChatBotPage = () => {
               {selectedImage && (
                 <div className="image-preview-container">
                   <div className="image-preview">
-                    <img src={selectedImage.base64} alt="Selected" />
+                    <img 
+                      src={selectedImage.base64} 
+                      alt="Selected" 
+                      onClick={() => setLightboxImage(selectedImage.base64)}
+                      title="Click to expand"
+                      style={{ cursor: 'zoom-in' }}
+                    />
                     <button className="remove-image-btn" onClick={removeImage} title="Remove image">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
