@@ -31,6 +31,7 @@ const ChatBotPage = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const messageEndRef = useRef(null);
+  const textareaRef = useRef(null);
   const createdConversationRef = useRef(null); // Track newly created convo for error-path update
   const [selectedExamStage, setSelectedExamStage] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -121,6 +122,14 @@ const ChatBotPage = () => {
     
     return sanitized;
   };
+
+  // Auto-resize textarea as content grows
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+  }, [input]);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
@@ -530,11 +539,13 @@ const ChatBotPage = () => {
           <div className="chatbot-input">
             <div className="input-wrapper">
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your question here..."
                 disabled={isLoading}
+                rows={1}
               />
             
               <button 
