@@ -8,6 +8,7 @@ import api from '../../utils/axiosConfig';
 import apiUtils from '../../utils/apiUtils';
 import MoreMenu from '../shared/MoreMenu';
 import DiscussionModal from './DiscussionModal';
+import AnimatedList from '../ui/AnimatedList';
 
 // Paper Title with View PDF button component
 const PaperViewHeader = ({ title, paperType, month, year, examStage, subject, onViewPDF, isLoading }) => {
@@ -386,12 +387,16 @@ const Resources = () => {
           )}
 
           {!loading && resources.length > 0 && (
-            <div className="resources-list">
-              {currentResources.map((r) => (
+            <AnimatedList
+              items={currentResources}
+              showGradients={false}
+              enableArrowNavigation={false}
+              displayScrollbar={false}
+              renderItem={(r) => (
                 <div key={r._id} className="resource-card">
                   <div className="resource-top-actions">
                     <button
-                      onClick={() => handleBookmarkToggle(r._id)}
+                      onClick={(e) => { e.stopPropagation(); handleBookmarkToggle(r._id); }}
                       className="bookmark-btn resource-bookmark"
                       title={bookmarkedResourceIds.has(r._id) ? 'Remove Bookmark' : 'Add Bookmark'}
                     >
@@ -409,12 +414,12 @@ const Resources = () => {
                     year={r.year}
                     examStage={r.examStage}
                     subject={r.subject}
-                    onViewPDF={() => handleDownload(r)}
+                    onViewPDF={(e) => { e?.stopPropagation?.(); handleDownload(r); }}
                     isLoading={downloadingResource === r._id}
                   />
                 </div>
-              ))}
-            </div>
+              )}
+            />
           )}
 
           {/* --- Pagination --- */}

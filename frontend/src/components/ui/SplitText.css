@@ -1,0 +1,31 @@
+/* ==========================================
+   SplitText component styles
+   ========================================== */
+
+.split-text-wrapper {
+  display: inline;
+  /* overflow: hidden is intentionally NOT set here to avoid layout shift */
+}
+
+/* Each character wrapper — clips the animation so chars slide up from below */
+.split-char {
+  display: inline-block;
+  /* Clip overflow within each character container */
+  overflow: hidden;
+  vertical-align: bottom; /* prevents baseline jitter */
+
+  /* Starting state: invisible and pushed down */
+  opacity: 0;
+  transform: translateY(60%) rotateX(15deg);
+
+  /* Animate to final state */
+  transition:
+    opacity 0.55s cubic-bezier(0.215, 0.61, 0.355, 1),
+    transform 0.55s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* Target state applied by JS when in-viewport */
+.split-char.animated {
+  opacity: 1;
+  transform: translateY(0) rotateX(0deg);
+}

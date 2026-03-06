@@ -6,6 +6,10 @@ import './LandingPage.css';
 import Navbar from '../components/layout/Navbar';
 import CountUp from 'react-countup';
 import apiUtils from '../utils/apiUtils';
+import SplitText from '../components/ui/SplitText';
+import RotatingText from '../components/ui/RotatingText';
+import Magnet from '../components/ui/Magnet';
+import SpotlightCard from '../components/ui/SpotlightCard';
 
 const LandingPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -100,13 +104,15 @@ const LandingPage = () => {
       <section className="hero">
         <div className="hero-overlay"></div>
         <div className="hero-content" data-aos="fade-up">
-          <h1>Master Your CA Journey</h1>
+          <h1>Master Your CA <RotatingText texts={['Foundation', 'Intermediate', 'Finals']} rotationInterval={2200} staggerDuration={0.03} splitBy="characters" /></h1>
           <p>Access organized question papers, practice strategically, and excel in your CA examinations with our comprehensive preparation platform.</p>
           <div className="cta-buttons">
             {!isLoggedIn && (
               <Link to="/register" className="cta-btn primary-btn">Get Started</Link>
             )}
-            <Link to="/about" className="cta-btn secondary-btn">Learn More</Link>
+            <Magnet>
+              <Link to="/about" className="cta-btn secondary-btn">Learn More</Link>
+            </Magnet>
           </div>
           <div className="hero-stats">
             <div className="stat-item">
@@ -140,10 +146,10 @@ const LandingPage = () => {
       </section>
 
       <section className="exam-levels" data-aos="fade-up">
-        <h2>Comprehensive Coverage for All CA Levels</h2>
+        <h2><SplitText text="Comprehensive Coverage for All CA Levels" tag="span" stagger={25} /></h2>
         <div className="level-cards">
           <div className="level-card" data-aos="fade-up" data-aos-delay="100">
-            <div className="level-card-inner">
+            <SpotlightCard className="level-card-inner" spotlightColor="rgba(3, 169, 244, 0.15)">
               <div className="level-icon foundation-icon">
                 <i className="fas fa-building"></i>
               </div>
@@ -154,12 +160,14 @@ const LandingPage = () => {
                 <li><Link to={isLoggedIn ? "/questions?examStage=Foundation&subject=Quantitative Aptitude" : "/login"}>Quantitative Aptitude</Link></li>
                 <li><Link to={isLoggedIn ? "/questions?examStage=Foundation&subject=Business Economics" : "/login"}>Business Economics</Link></li>
               </ul>
-              <Link to={isLoggedIn ? "/questions?examStage=Foundation" : "/login"} className="level-btn">Start Learning</Link>
-            </div>
+              <Magnet>
+                <Link to={isLoggedIn ? "/questions?examStage=Foundation" : "/login"} className="level-btn">Start Learning</Link>
+              </Magnet>
+            </SpotlightCard>
           </div>
           
           <div className="level-card" data-aos="fade-up" data-aos-delay="200">
-            <div className="level-card-inner">
+            <SpotlightCard className="level-card-inner" spotlightColor="rgba(3, 169, 244, 0.15)">
               <div className="level-icon intermediate-icon">
                 <i className="fas fa-chart-line"></i>
               </div>
@@ -172,12 +180,14 @@ const LandingPage = () => {
                 <li><Link to={isLoggedIn ? "/questions?examStage=Intermediate&subject=Auditing and Code of Ethics" : "/login"}>Auditing and Code of Ethics</Link></li>
                 <li><Link to={isLoggedIn ? "/questions?examStage=Intermediate&subject=Financial and Strategic Management" : "/login"}>Financial and Strategic Management</Link></li>
               </ul>
-              <Link to={isLoggedIn ? "/questions?examStage=Intermediate" : "/login"} className="level-btn">Start Learning</Link>
-            </div>
+              <Magnet>
+                <Link to={isLoggedIn ? "/questions?examStage=Intermediate" : "/login"} className="level-btn">Start Learning</Link>
+              </Magnet>
+            </SpotlightCard>
           </div>
           
           <div className="level-card" data-aos="fade-up" data-aos-delay="300">
-            <div className="level-card-inner">
+            <SpotlightCard className="level-card-inner" spotlightColor="rgba(3, 169, 244, 0.15)">
               <div className="level-icon final-icon">
                 <i className="fas fa-award"></i>
               </div>
@@ -190,8 +200,10 @@ const LandingPage = () => {
                 <li><Link to={isLoggedIn ? "/questions?examStage=Final&subject=Indirect Tax Laws" : "/login"}>Indirect Tax Laws</Link></li>
                 <li><Link to={isLoggedIn ? "/questions?examStage=Final&subject=Integrated Business Solutions" : "/login"}>Integrated Business Solutions</Link></li>
               </ul>
-              <Link to={isLoggedIn ? "/questions?examStage=Final" : "/login"} className="level-btn">Start Learning</Link>
-            </div>
+              <Magnet>
+                <Link to={isLoggedIn ? "/questions?examStage=Final" : "/login"} className="level-btn">Start Learning</Link>
+              </Magnet>
+            </SpotlightCard>
           </div>
         </div>
       </section>
@@ -199,7 +211,7 @@ const LandingPage = () => {
       <section className="features" data-aos="fade-up">
         <div className="section-heading">
           <span className="section-subtitle">Our Platform Benefits</span>
-          <h2>Why Top CA Aspirants Choose Us</h2>
+          <h2><SplitText text="Why Top CA Aspirants Choose Us" tag="span" stagger={25} /></h2>
           <div className="heading-underline"></div>
         </div>
         
@@ -289,7 +301,7 @@ const LandingPage = () => {
       <section className="how-it-works" data-aos="fade-up">
         <div className="section-heading">
           <span className="section-subtitle">Simple Process</span>
-          <h2>How CAprep Works</h2>
+          <h2><SplitText text="How CAprep Works" tag="span" stagger={35} /></h2>
           <div className="heading-underline"></div>
         </div>
         
@@ -339,9 +351,11 @@ const LandingPage = () => {
 
       <section className="call-to-action" data-aos="fade-up">
         <div className="cta-content">
-          <h2>Ready to Excel in Your CA Exams?</h2>
+          <h2><SplitText text="Ready to Excel in Your CA Exams?" tag="span" stagger={30} /></h2>
           <p>Join thousands of successful CA Aspirants who have transformed their exam preparation.</p>
-          <Link to="/register" className="cta-btn primary-btn">Start Your Journey Today</Link>
+          <Magnet>
+            <Link to="/register" className="cta-btn primary-btn">Start Your Journey Today</Link>
+          </Magnet>
         </div>
       </section>
 

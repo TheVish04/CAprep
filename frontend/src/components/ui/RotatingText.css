@@ -1,0 +1,49 @@
+/* ==========================================
+   ReactBits RotatingText component styles
+   ========================================== */
+
+.text-rotate {
+  display: inline-flex;
+  flex-wrap: wrap;
+  white-space: pre-wrap;
+  position: relative;
+  overflow: hidden;   /* clips the y-axis slide animation */
+  vertical-align: bottom;
+  color: #03a9f4;     /* Brand accent colour for the rotating word */
+}
+
+.text-rotate-lines {
+  display: inline-flex;
+  flex-direction: column;
+  white-space: pre-wrap;
+  position: relative;
+}
+
+.text-rotate-word {
+  display: inline-flex;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.text-rotate-space {
+  width: 0.25em;
+  display: inline-block;
+}
+
+.text-rotate-element {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+/* Screen-reader only text */
+.text-rotate-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
