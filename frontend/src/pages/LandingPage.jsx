@@ -10,6 +10,7 @@ import SplitText from '../components/ui/SplitText';
 import RotatingText from '../components/ui/RotatingText';
 import Magnet from '../components/ui/Magnet';
 import SpotlightCard from '../components/ui/SpotlightCard';
+import { motion, LayoutGroup } from 'motion/react';
 
 const LandingPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -104,7 +105,31 @@ const LandingPage = () => {
       <section className="hero">
         <div className="hero-overlay"></div>
         <div className="hero-content" data-aos="fade-up">
-          <h1>Master Your CA <RotatingText texts={['Foundation', 'Intermediate', 'Finals']} rotationInterval={2200} staggerDuration={0.03} splitBy="characters" /></h1>
+          <LayoutGroup>
+            <motion.h1 
+              layout 
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              style={{ overflow: 'hidden', padding: '0.2em', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            >
+              <motion.span layout style={{ whiteSpace: 'nowrap' }}>
+                Master Your CA&nbsp;
+              </motion.span>
+              <motion.span layout style={{ color: '#239ecf' }}>
+                <RotatingText 
+                  texts={['Foundation', 'Intermediate', 'Finals']}
+                  mainClassName="overflow-hidden justify-center"
+                  staggerFrom={"last"}
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: "-120%" }}
+                  staggerDuration={0.025}
+                  splitLevelClassName="overflow-hidden"
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  rotationInterval={2000}
+                />
+              </motion.span>
+            </motion.h1>
+          </LayoutGroup>
           <p>Access organized question papers, practice strategically, and excel in your CA examinations with our comprehensive preparation platform.</p>
           <div className="cta-buttons">
             {!isLoggedIn && (
