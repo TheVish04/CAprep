@@ -459,7 +459,7 @@ const FAQ = () => {
                 <div className="faq-answer">
                   <p>Our AI-powered quizzes represent the cutting edge of personalized learning:</p>
                   <ul>
-                    <li>Dynamically generated questions using Google's Generative AI technology</li>
+                    <li>Dynamically generated questions using Groq AI technology</li>
                     <li>Questions tailored to your specific learning needs and knowledge gaps</li>
                     <li>Adaptive difficulty based on your performance</li>
                     <li>Comprehensive explanations generated specifically for each question</li>

@@ -79,11 +79,11 @@ CAprep addresses these by providing a single platform for questions, resources, 
 
 - **Quizzes**
   - **Bank quiz:** MCQ questions from DB by exam stage and subject (random sample).
-  - **AI quiz:** Google Gemini generates MCQs by subject and exam stage; uses existing questions as few-shot examples; returns JSON array of questions with options, correct index, and explanation.
+  - **AI quiz:** Groq generates MCQs by subject and exam stage; uses existing questions as few-shot examples; returns JSON array of questions with options, correct index, and explanation.
   - Quiz results (score, total, percentage, questions attempted) saved to user’s quiz history (with per-question attempt detail for review).
 
 - **AI Chat (CA Prep Assistant)**
-  - Authenticated chat with Google Gemini; system prompt restricts to CA syllabus and denies code/general topics; supports conversation history.
+  - Authenticated chat with Groq; system prompt restricts to CA syllabus and denies code/general topics; supports conversation history.
 
 - **Discussions**
   - One discussion per item (question or resource); thread-style messages with optional parent; like; edit/delete (author or admin).
@@ -133,7 +133,7 @@ CAprep addresses these by providing a single platform for questions, resources, 
 | **Auth** | JWT (access token, optional refresh via `/auth/refresh-token`), bcrypt for passwords |
 | **File storage** | Cloudinary (PDF upload, optional proxy for download) |
 | **Email** | SendGrid |
-| **AI** | Google Gemini (`@google/generative-ai`); model configurable via `GEMINI_MODEL` (default `gemini-2.5-flash-lite`) |
+| **AI** | Groq (`groq-sdk`); model configurable via `GROQ_MODEL` |
 | **Validation** | Joi for questions, contact (feature/issue), and announcements (create/update); search input escaped before MongoDB `$regex` (no regex injection) |
 | **Security** | Helmet, xss-clean, express-mongo-sanitize, express-rate-limit (global + route-specific), CORS allowlist; server errors return generic message in production (no stack or internal details); auth logging avoids PII in production |
 | **Caching** | node-cache (in-memory); cache middleware for GET routes; admin clear-cache endpoint |
@@ -166,7 +166,7 @@ flowchart TB
         end
         subgraph Practice["Practice & assess"]
             QuizBank["Quiz from question bank<br/>MCQ by subject and stage<br/>Score and review answers"]
-            AIQuiz["AI-generated quiz<br/>Gemini creates new MCQs<br/>Instant practice with explanations"]
+            AIQuiz["AI-generated quiz<br/>Groq creates new MCQs<br/>Instant practice with explanations"]
         end
         subgraph Help["Get help"]
             AIChat["CA Prep Assistant<br/>Chat with AI tutor<br/>CA syllabus only, no code or off-topic"]
@@ -336,14 +336,14 @@ flowchart LR
         direction TB
         Cloudinary["Cloudinary · PDF, profile image"]
         SendGrid["SendGrid · OTP, reset"]
-        Gemini["Gemini · AI quiz, chat"]
+        Groq["Groq · AI quiz, chat"]
     end
 
     Client -->|HTTPS · Bearer| Backend
     Backend --> Mongoose
     Backend --> Cloudinary
     Backend --> SendGrid
-    Backend --> Gemini
+    Backend --> Groq
 ```
 
 ### Request–response flow diagram (detailed)
@@ -359,7 +359,7 @@ sequenceDiagram
     participant CacheMW as cacheMiddleware
     participant Handler as Route handler
     participant DB as MongoDB
-    participant Ext as Cloudinary/Gemini/SendGrid
+    participant Ext as Cloudinary/Groq/SendGrid
 
     User->>Page: Click or navigate
     Page->>Axios: api.get/post with config
@@ -403,7 +403,7 @@ sequenceDiagram
         Handler->>DB: Model.create, update, delete
         Handler->>Handler: clearCache for affected keys
         alt Upload or AI or email
-            Handler->>Ext: Cloudinary upload, Gemini API, SendGrid send
+            Handler->>Ext: Cloudinary upload, Groq API, SendGrid send
             Ext-->>Handler: result
         end
         Handler->>Axios: res.status 201/200 json
@@ -443,7 +443,7 @@ sequenceDiagram
 
     Backend->>Backend: Security, rate limit, CORS, body parse
     Backend->>Backend: auth/cache if needed, then route handler
-    Backend->>DB: Read or write (MongoDB / Cloudinary / Gemini / SendGrid)
+    Backend->>DB: Read or write (MongoDB / Cloudinary / Groq / SendGrid)
     DB-->>Backend: result
     Backend->>Axios: res.json
 
@@ -524,7 +524,7 @@ flowchart TB
         subgraph AiQuizRoutes["aiQuiz.js"]
             AI1["generate, ask"]
             AI1 --> QuestionModel
-            AI1 --> Gemini
+            AI1 --> Groq
         end
         subgraph DiscussionRoutes["discussions.js"]
             D1["user/me, get, message<br/>like, edit, delete"]
@@ -578,7 +578,7 @@ flowchart TB
 
     subgraph External["External"]
         Cloudinary["Cloudinary"]
-        Gemini["Google Gemini"]
+        Groq["Groq"]
         SendGrid["SendGrid"]
     end
 
@@ -708,7 +708,7 @@ CAPrep/
     │   ├── users.js             # me (profile, bookmarks), bookmarks CRUD, quiz-history CRUD, profile update, profile image upload, delete account, bookmark folders CRUD
     │   ├── admin.js             # users list, analytics, announcements CRUD, audit log, contact/feature-requests, contact/report-issues
     │   ├── dashboard.js         # GET dashboard data, study-session, resource-engagement, question-view, resource-view, announcements
-    │   ├── aiQuiz.js            # POST generate (AI MCQs), POST ask (chat with Gemini)
+    │   ├── aiQuiz.js            # POST generate (AI MCQs), POST ask (chat with Groq)
     │   ├── discussions.js       # user/me, get by itemType+itemId, post message, like, edit, delete message
     │   ├── announcements.js     # GET active announcements (mounted with authMiddleware)
     │   ├── notifications.js     # GET list, PATCH read-all, PATCH :id/read
@@ -828,8 +828,8 @@ CAPrep/
 | `JWT_REFRESH_SECRET` | Optional; refresh token secret if used |
 | `JWT_REFRESH_EXPIRES_IN` | Optional; refresh token expiry |
 | `CORS_ORIGIN` | Comma-separated allowed origins (e.g. http://localhost:5173, https://caprep.vercel.app) |
-| `GEMINI_API_KEY` | Google Gemini API key for AI quiz and chat |
-| `GEMINI_MODEL` | Optional; model name (default gemini-2.5-flash-lite) |
+| `GROQ_API_KEY` | Groq API key for AI quiz and chat |
+| `GROQ_MODEL` | Optional; model name (used in codebase) |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary for PDF and profile images |
 | `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL` | SendGrid for OTP and password reset |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FULL_NAME` | Bootstrap first admin if none exist |
@@ -856,7 +856,7 @@ CAPrep/
    ```bash
    cd backend
    npm install
-   # Create .env with MONGODB_URI, JWT_SECRET, and optionally GEMINI_API_KEY, Cloudinary, SendGrid (SENDGRID_API_KEY, SENDGRID_FROM_EMAIL); see env vars table
+   # Create .env with MONGODB_URI, JWT_SECRET, and optionally GROQ_API_KEY, Cloudinary, SendGrid (SENDGRID_API_KEY, SENDGRID_FROM_EMAIL); see env vars table
    npm run dev   # or node server.js
    ```
    Server runs at `http://localhost:5000` (or the port in `PORT`). Health: `GET /health`.  
@@ -882,7 +882,7 @@ CAPrep/
 
 - **Backend**
   - Set `NODE_ENV=production`.
-  - Set all required env vars (MongoDB, JWT, CORS, Gemini, Cloudinary, SendGrid, admin bootstrap).
+  - Set all required env vars (MongoDB, JWT, CORS, Groq, Cloudinary, SendGrid, admin bootstrap).
   - Run `npm install --omit=dev` and start with `node server.js` or a process manager (e.g. PM2).
   - No Docker or Dockerfile is present in the repo; you can add one if needed.
 
@@ -895,7 +895,7 @@ CAPrep/
   - MongoDB (Atlas or self-hosted).
   - Cloudinary (for PDFs and profile images).
   - SendGrid (for OTP and password reset).
-  - Google AI (Gemini) for AI quiz and chat.
+  - Groq for AI quiz and chat.
 
 ---
 
