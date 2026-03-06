@@ -259,9 +259,125 @@ const Resources = () => {
         <div className="resources-container">
           <h1>Study Resources</h1>
 
-          {/* --- Resource List --- */}
-          {loading && <ResourcesListSkeleton />}
+          {error && <div className="error"><p>Error: {error}</p></div>}
 
+          <div className="resources-actions">
+            <div className="search-bar">
+              <input
+                type="text"
+                name="search"
+                placeholder="Search resources by title/description..."
+                value={filters.search}
+                onChange={handleFilterChange}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* --- Filters Section --- */}
+          <div className="filters">
+            <div className="filter-group">
+              <label>Exam Stage:</label>
+              <select name="examStage" value={filters.examStage} onChange={handleFilterChange} disabled={loading}>
+                <option value="">All</option>
+                <option value="Foundation">Foundation</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Final">Final</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Subject:</label>
+              <select name="subject" value={filters.subject} onChange={handleFilterChange} disabled={loading || !filters.examStage}>
+                <option value="">All</option>
+                {filters.examStage === 'Foundation' ? (
+                  <>
+                    <option value="Accounting">Accounting</option>
+                    <option value="Business Laws">Business Laws</option>
+                    <option value="Quantitative Aptitude">Quantitative Aptitude</option>
+                    <option value="Business Economics">Business Economics</option>
+                  </>
+                ) : filters.examStage === 'Intermediate' ? (
+                  <>
+                    <option value="Advanced Accounting">Advanced Accounting</option>
+                    <option value="Corporate Laws">Corporate Laws</option>
+                    <option value="Cost and Management Accounting">Cost and Management Accounting</option>
+                    <option value="Taxation">Taxation</option>
+                    <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
+                    <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                  </>
+                ) : filters.examStage === 'Final' ? (
+                  <>
+                    <option value="Financial Reporting">Financial Reporting</option>
+                    <option value="Advanced Financial Management">Advanced Financial Management</option>
+                    <option value="Advanced Auditing">Advanced Auditing</option>
+                    <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
+                    <option value="Indirect Tax Laws">Indirect Tax Laws</option>
+                    <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="Advanced Accounting">Advanced Accounting</option>
+                    <option value="Corporate Laws">Corporate Laws</option>
+                    <option value="Taxation">Taxation</option>
+                    <option value="Cost & Management">Cost & Management</option>
+                    <option value="Auditing">Auditing</option>
+                    <option value="Financial Management">Financial Management</option>
+                  </>
+                )}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Paper Type:</label>
+              <select name="paperType" value={filters.paperType} onChange={handleFilterChange} disabled={loading}>
+                <option value="">All</option>
+                <option value="MTP">MTP</option>
+                <option value="RTP">RTP</option>
+                <option value="PYQS">PYQS</option>
+                <option value="Model TP">Model TP</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Year:</label>
+              <select name="year" value={filters.year} onChange={handleFilterChange} disabled={loading}>
+                <option value="">All</option>
+                {getUniqueYears().map(year => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Month:</label>
+              <select name="month" value={filters.month} onChange={handleFilterChange} disabled={loading}>
+                <option value="">All</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+            </div>
+            <div className="filter-group filter-group-bookmark">
+              <label htmlFor="resourceBookmarkFilter" className="bookmark-filter-label">
+                <input
+                  type="checkbox"
+                  id="resourceBookmarkFilter"
+                  name="bookmarked"
+                  checked={filters.bookmarked}
+                  onChange={handleFilterChange}
+                  disabled={loading}
+                  className="bookmark-checkbox"
+                />
+                Show Bookmarked Only
+              </label>
+            </div>
+          </div>
+          {loading && <ResourcesListSkeleton />}
+          {/* --- Resource List --- */}
           {!loading && resources.length === 0 && !error && (
             <div className="no-resources">
               <p>No resources found matching the selected filters.</p>
