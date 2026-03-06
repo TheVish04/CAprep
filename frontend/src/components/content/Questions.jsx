@@ -71,6 +71,12 @@ const Questions = () => {
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
   const [aiExplanation, setAiExplanation] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  // Streaming animation state: { full: string, displayed: number } | null
+  const [streamingAiText, setStreamingAiText] = useState(null);
+
+  // Streaming animation constants (chars per tick, tick interval ms)
+  const AI_STREAM_CHARS = 5;
+  const AI_STREAM_MS = 25;
 
   // --- Fetch Bookmarked Question IDs --- 
   const fetchBookmarkIds = useCallback(async () => {
@@ -186,15 +192,19 @@ const Questions = () => {
         const response = await api.post('/ai-quiz/search-explanation', { searchTerm });
         if (!ignore) {
           if (response.data?.explanation) {
-            setAiExplanation(response.data.explanation);
+            // Start streaming animation instead of setting text directly
+            setAiExplanation(null);
+            setStreamingAiText({ full: response.data.explanation, displayed: 0 });
           } else {
-            setAiExplanation(null); // Clear if no explanation returned
+            setAiExplanation(null);
+            setStreamingAiText(null);
           }
         }
       } catch (err) {
         if (!ignore) {
           console.error('Error fetching AI explanation:', err);
           setAiExplanation("Our AI assistant is experiencing high traffic. Please try again in a few moments.");
+          setStreamingAiText(null);
         }
       } finally {
         if (!ignore) {
@@ -208,6 +218,25 @@ const Questions = () => {
       clearTimeout(debounceTimer);
     };
   }, [filters.search]);
+
+  // --- Streaming animation for AI explanation ---
+  useEffect(() => {
+    if (!streamingAiText) return;
+    const { full, displayed } = streamingAiText;
+    if (displayed >= full.length) {
+      setAiExplanation(full);
+      setStreamingAiText(null);
+      return;
+    }
+    const timer = setInterval(() => {
+      setStreamingAiText(prev => {
+        if (!prev) return null;
+        const next = Math.min(prev.displayed + AI_STREAM_CHARS, prev.full.length);
+        return { ...prev, displayed: next };
+      });
+    }, AI_STREAM_MS);
+    return () => clearInterval(timer);
+  }, [streamingAiText]);
 
   // --- Get unique years for filtering --- 
   const getUniqueYears = () => {
@@ -468,7 +497,7 @@ const Questions = () => {
           </div>
 
           {/* AI Explanation Box */}
-          {(isAiLoading && filters.search?.trim().length >= 2) || (aiExplanation && filters.search?.trim().length >= 2) ? (
+          {filters.search?.trim().length >= 2 && (isAiLoading || streamingAiText || aiExplanation) ? (
             <div className="ai-explanation-container">
               <div className="ai-explanation-header">
                 <AiIcon /> AI Assistant explains "{filters.search.trim()}"
@@ -480,6 +509,11 @@ const Questions = () => {
                     <div className="shimmer-line"></div>
                     <div className="shimmer-line short"></div>
                   </div>
+                ) : streamingAiText ? (
+                  <p>
+                    {streamingAiText.full.slice(0, streamingAiText.displayed)}
+                    <span className="ai-stream-cursor" aria-hidden="true">|</span>
+                  </p>
                 ) : (
                   <p>{aiExplanation}</p>
                 )}

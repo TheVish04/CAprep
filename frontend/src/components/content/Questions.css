@@ -299,6 +299,20 @@
   margin: 0;
 }
 
+/* Blinking cursor during AI explanation streaming animation */
+.ai-stream-cursor {
+  display: inline-block;
+  margin-left: 1px;
+  color: #4fc3f7;
+  animation: aiCursorBlink 1s step-end infinite;
+  font-weight: 300;
+}
+
+@keyframes aiCursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 /* AI Loading Shimmer */
 .ai-loading-shimmer {
   display: flex;
