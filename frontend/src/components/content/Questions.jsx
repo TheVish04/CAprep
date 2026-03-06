@@ -6,7 +6,6 @@ import { generateQuestionsPDF, savePDF } from '../../utils/pdfGenerator';
 import './Questions.css';
 import api from '../../utils/axiosConfig';
 import apiUtils from '../../utils/apiUtils';
-import MoreMenu from '../shared/MoreMenu';
 import DiscussionModal from './DiscussionModal';
 import { QuestionsListSkeleton } from '../shared/Skeleton';
 
@@ -32,8 +31,14 @@ const AiIcon = () => (
 );
 
 // Add a Bookmark icon component (simple example)
+const DiscussIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+  </svg>
+);
+
 const BookmarkIcon = ({ filled }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? '#03a9f4' : 'none'} stroke={filled ? 'none' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="32" height="32" viewBox="0 0 24 24" fill={filled ? '#03a9f4' : 'none'} stroke={filled ? 'none' : 'currentColor'} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
   </svg>
 );
@@ -591,9 +596,13 @@ const Questions = () => {
                       >
                         <BookmarkIcon filled={bookmarkedQuestionIds.has(q._id)} />
                       </button>
-                      <div className="more-menu-wrapper">
-                        <MoreMenu onDiscuss={() => handleOpenDiscussion(q)} />
-                      </div>
+                      <button 
+                        className="discuss-btn" 
+                        onClick={() => handleOpenDiscussion(q)}
+                        title="Discuss this question"
+                      >
+                        <DiscussIcon /> Discuss
+                      </button>
                     </div>
                   </div>
 

@@ -222,27 +222,35 @@
   margin-top: 29px;
   margin-left: 10px;
   height: 40px;
-  padding: 0 18px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 6px;
+  padding: 0 20px;
+  background: transparent;
+  color: #03a9f4;
+  border: 1.5px solid #03a9f4;
+  border-radius: 50px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 0.3px;
-  transition: background 0.2s ease, transform 0.15s ease;
+  transition: all 0.25s ease;
   white-space: nowrap;
   align-self: flex-start;
 }
 
 .search-submit-btn:hover:not(:disabled) {
-  background: #0277bd;
+  color: #fff;
+  background: #03a9f4;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(3, 169, 244, 0.2);
+}
+
+.search-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .search-submit-btn:disabled {
-  background: #555;
+  color: #555;
+  border-color: #555;
+  background: transparent;
   cursor: not-allowed;
 }
 
@@ -473,13 +481,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
-  padding: 6px 10px;
   margin-left: 10px;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .bookmark-btn {
@@ -487,28 +490,53 @@
   border: none;
   color: var(--text-light);
   cursor: pointer;
-  padding: 4px;
+  padding: 0;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  min-width: 24px;
-  min-height: 24px;
+  width: 34px;
+  height: 34px;
 }
 
 .bookmark-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
 }
 
 .bookmark-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.more-menu-wrapper {
-  position: relative;
+/* Discuss Button Styling - Matches Chat link in Navbar */
+.discuss-btn {
   display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #03a9f4 !important;
+  background: transparent;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0 16px;
+  height: 34px;
+  border: 1.5px solid #03a9f4;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.discuss-btn:hover {
+  color: #fff !important;
+  background: #03a9f4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(3, 169, 244, 0.2);
+}
+
+.discuss-btn:active {
+  transform: translateY(0);
 }
 
 /* Toggle Answer Button */
