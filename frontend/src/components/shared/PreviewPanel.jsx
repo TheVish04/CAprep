@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import './PreviewPanel.css'; // Import CSS for styling
+import AnimatedModal from './AnimatedModal';
+import './PreviewPanel.css';
 
 const PreviewPanel = ({ data, onClose, questionType = 'objective-subjective' }) => {
   // Create a ref for the modal dialog
@@ -43,14 +44,7 @@ const PreviewPanel = ({ data, onClose, questionType = 'objective-subjective' }) 
   };
 
   return (
-    <>
-      {/* Modal Backdrop */}
-      <div
-        className="preview-backdrop"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      {/* Modal Content */}
+    <AnimatedModal isOpen={true} onClose={onClose}>
       <div 
         className="preview-modal"
         ref={modalRef}
@@ -186,7 +180,7 @@ const PreviewPanel = ({ data, onClose, questionType = 'objective-subjective' }) 
           </button>
         </div>
       </div>
-    </>
+    </AnimatedModal>
   );
 };
 

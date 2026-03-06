@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/axiosConfig';
-import '../user/UserProfile.css'; // Reuse existing styles
-import './BookmarkFolderSelector.css'; // Add specific styles for this component
+import AnimatedModal from './AnimatedModal';
+import '../user/UserProfile.css';
+import './BookmarkFolderSelector.css';
 
 const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
     const [folders, setFolders] = useState([]);
@@ -128,7 +129,7 @@ const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
     };
 
     return (
-        <div className="modal-overlay">
+        <AnimatedModal isOpen={true} onClose={onClose}>
             <div className="delete-confirmation-modal" style={{ maxWidth: '500px' }}>
                 <h2>Add to Bookmark Folder</h2>
                 
@@ -226,7 +227,7 @@ const BookmarkFolderSelector = ({ itemId, itemType, onClose, onSuccess }) => {
                     </>
                 )}
             </div>
-        </div>
+        </AnimatedModal>
     );
 };
 

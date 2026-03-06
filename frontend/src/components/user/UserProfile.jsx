@@ -4,6 +4,7 @@ import api from '../../utils/axiosConfig';
 import apiUtils from '../../utils/apiUtils';
 import Navbar from '../layout/Navbar';
 import EditProfile from './EditProfile';
+import AnimatedModal from '../shared/AnimatedModal';
 import ProfilePlaceholder from '../shared/ProfilePlaceholder';
 import './UserProfile.css';
 
@@ -225,7 +226,7 @@ const UserProfile = () => {
                     <button onClick={handleLogout} className="logout-button">Logout</button>
                     <button onClick={() => setShowDeleteConfirm(true)} className="delete-account-button">Delete Account</button>
                 </div>
-                {showEditModal && (
+                <AnimatedModal isOpen={showEditModal} onClose={() => setShowEditModal(false)}>
                     <EditProfile 
                         userData={userData} 
                         onClose={() => setShowEditModal(false)} 
@@ -234,28 +235,25 @@ const UserProfile = () => {
                             setShowEditModal(false);
                         }} 
                     />
-                )}
-                {/* Delete Account Modal */}
-                {showDeleteConfirm && (
-                    <div className="modal-overlay">
-                        <div className="modal-content delete-confirmation-modal"> {/* Added specific class */}
-                            <h2>Confirm Account Deletion</h2>
-                            <p>This action is irreversible. Please enter your password to confirm:</p>
-                            <input 
-                                type="password" 
-                                value={deletePassword} 
-                                onChange={e => setDeletePassword(e.target.value)} 
-                                placeholder="Password" 
-                                className="delete-password-input" // Added class
-                            />
-                            {deleteError && <div className="error-message">{deleteError}</div>}
-                            <div className="modal-actions">
-                                <button onClick={handleDeleteAccount} className="delete-account-button confirm-delete-btn">Delete</button> {/* Added specific class */}
-                                <button onClick={() => setShowDeleteConfirm(false)} className="cancel-delete-button">Cancel</button> {/* Added class */}
-                            </div>
+                </AnimatedModal>
+                <AnimatedModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+                    <div className="modal-content delete-confirmation-modal">
+                        <h2>Confirm Account Deletion</h2>
+                        <p>This action is irreversible. Please enter your password to confirm:</p>
+                        <input 
+                            type="password" 
+                            value={deletePassword} 
+                            onChange={e => setDeletePassword(e.target.value)} 
+                            placeholder="Password" 
+                            className="delete-password-input"
+                        />
+                        {deleteError && <div className="error-message">{deleteError}</div>}
+                        <div className="modal-actions">
+                            <button onClick={handleDeleteAccount} className="delete-account-button confirm-delete-btn">Delete</button>
+                            <button onClick={() => setShowDeleteConfirm(false)} className="cancel-delete-button">Cancel</button>
                         </div>
                     </div>
-                )}
+                </AnimatedModal>
             </div>
         </div>
     );

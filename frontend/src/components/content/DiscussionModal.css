@@ -107,17 +107,12 @@
 }
 
 .discussion-modal {
-  background: #1e1e1e;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
+  width: 100%;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
   position: relative;
-  border: 1px solid #333;
 }
 
 .discussion-modal-header {

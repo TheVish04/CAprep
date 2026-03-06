@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
 import apiUtils from '../../utils/apiUtils';
+import AnimatedModal from '../shared/AnimatedModal';
 import './DiscussionModal.css';
 
 const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
@@ -284,8 +285,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
     }
   };
   
-  if (!isOpen) return null;
-  
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -638,11 +638,10 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
   };
   
   return (
-    <div className="discussion-modal-overlay" onClick={onClose}>
+    <AnimatedModal isOpen={isOpen} onClose={onClose}>
       <div className="discussion-modal" onClick={(e) => e.stopPropagation()}>
         <div className="discussion-modal-header">
           <h2>Discussion: {itemTitle}</h2>
-          <button className="discussion-close-btn" onClick={onClose}>×</button>
         </div>
         
         <div className="discussion-content">
@@ -711,7 +710,7 @@ const DiscussionModal = ({ isOpen, onClose, itemType, itemId, itemTitle }) => {
           )}
         </div>
       </div>
-    </div>
+    </AnimatedModal>
   );
 };
 
