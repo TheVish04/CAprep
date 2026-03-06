@@ -125,7 +125,7 @@ Generate ${count} new, unique MCQs suitable for the CA ${examStage} level, focus
         messages: [{ role: "user", content: prompt }],
         model: GROQ_MODEL,
         temperature: 0.7,
-        max_tokens: 8192,
+        max_tokens: 32768,
         response_format: { type: "json_object" }
       });
 
@@ -272,7 +272,7 @@ router.post('/ask', authMiddleware, async (req, res) => {
         messages,
         model: GROQ_MODEL,
         temperature: 0.3,
-        max_tokens: 1000,
+        max_tokens: 2048,
       });
 
       const answer = chatCompletion.choices[0]?.message?.content || "";
