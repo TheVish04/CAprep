@@ -10,7 +10,7 @@ require('dotenv').config(); // Ensure environment variables are loaded
 // Initialize Groq Client
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 // Fast and versatile model for standard queries
-const GROQ_MODEL = 'llama-3.1-405b-reasoning';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
 // POST /api/ai-quiz/generate - Generate questions using AI
 router.post('/generate', authMiddleware, async (req, res) => {
