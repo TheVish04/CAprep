@@ -1,0 +1,19 @@
+/* AnimatedPlaceholder overlay – sits inside .input-row which is position:relative */
+
+.animated-placeholder {
+  position: absolute;
+  left: 63px;   /* attach-btn (~48px) + textarea left padding (12px) + 1 space offset (8px) */
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  user-select: none;
+  color: rgba(160, 160, 180, 0.5);
+  font-size: 17px;               /* matches textarea font-size */
+  font-family: var(--font-family, 'Poppins', sans-serif);
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: calc(100% - 170px); /* leave room for send button */
+  text-overflow: ellipsis;
+  line-height: 1.5;
+  z-index: 1;
+}

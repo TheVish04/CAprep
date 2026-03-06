@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import api from '../utils/axiosConfig';
 import apiUtils from '../utils/apiUtils';
+import AnimatedPlaceholder from '../components/ui/AnimatedPlaceholder';
 import './ChatBotPage.css';
 
 const getChatHistoryStorageKey = () => {
@@ -725,7 +726,7 @@ const ChatBotPage = () => {
                 </div>
               )}
               
-              <div className="input-row">
+              <div className="input-row" style={{ position: 'relative' }}>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
@@ -738,11 +739,46 @@ const ChatBotPage = () => {
                   onClick={() => fileInputRef.current?.click()}
                   title="Attach Image"
                   disabled={isLoading}
+                  style={{ alignSelf: 'center' }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
                   </svg>
                 </button>
+
+                <AnimatedPlaceholder
+                  placeholders={[
+                    'What is the scope of Section 44AB of Income Tax?',
+                    'Explain the concept of Marginal Costing...',
+                    'What are the reporting requirements under SA 700?',
+                    'Difference between IFRS and Ind AS?',
+                    'How is Transfer Pricing computed under the Act?',
+                    'What is the time limit for GST registration?',
+                    'Explain the concept of deferred tax under Ind AS 12.',
+                    'What is the significance of SA 315 in an audit?',
+                    'How is goodwill accounted under Ind AS 103?',
+                    'What are the provisions of Section 80C?',
+                    'Explain CARO 2020 reporting requirements.',
+                    'What is the difference between CGST, SGST and IGST?',
+                    'What is the due date for filing GSTR-1?',
+                    'Explain the provisions of Section 194C on TDS.',
+                    'What is the concept of Going Concern in auditing?',
+                    'How are contingent liabilities disclosed under Ind AS 37?',
+                    'What are the components of Cost of Production?',
+                    'Explain the materiality concept in accounting.',
+                    'What is a Letter of Credit in trade finance?',
+                    'What are the types of Audit Opinions?',
+                    'Explain Section 73 and 74 of CGST Act.',
+                    'What is the difference between Standard Costing and Budgetary Control?',
+                    'How is Value Added Tax different from GST?',
+                    'What is the nature of Share Application Money?',
+                    'Explain Related Party Transactions under Ind AS 24.',
+                    'What are the duties of a Company Auditor under Companies Act 2013?',
+                    'What is the difference between capital and revenue expenditure?',
+                    'Explain zero-based budgeting and its advantages.',
+                  ]}
+                  isActive={input.trim() === '' && !isLoading}
+                />
 
                 <textarea
                   ref={textareaRef}
@@ -750,9 +786,9 @@ const ChatBotPage = () => {
                   onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
                   onPaste={handlePaste}
-                  placeholder="Type your question or paste an image here..."
                   disabled={isLoading}
                   rows={1}
+                  style={{ background: 'transparent', position: 'relative', zIndex: 2 }}
                 />
               
                 <button 
