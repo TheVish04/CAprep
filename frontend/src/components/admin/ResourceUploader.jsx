@@ -570,18 +570,14 @@ const ResourceUploader = () => {
     const token = apiUtils.getAuthToken();
     try {
       if (token) {
-        const response = await api.get(`/resources/${resource._id}/download-url`);
-        const { viewUrl, downloadUrl } = response.data;
-        if (viewUrl || downloadUrl) {
-          window.open(viewUrl || downloadUrl, '_blank');
-        } else {
-          window.open(resource.fileUrl, '_blank');
-        }
+        // Simplest and most reliable method: open the proxy URL which sets attachment headers
+        const downloadUrl = `${apiUtils.getApiBaseUrl()}/resources/${resource._id}/download?token=${token}`;
+        window.open(downloadUrl, '_blank');
       } else {
         window.open(resource.fileUrl, '_blank');
       }
     } catch (error) {
-      console.error('Failed to get formatted view URL:', error);
+      console.error('Failed to open download URL:', error);
       window.open(resource.fileUrl, '_blank');
     }
 

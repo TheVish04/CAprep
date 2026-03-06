@@ -216,36 +216,9 @@ const Dashboard = () => {
       const token = apiUtils.getAuthToken();
       if (!token) return;
 
-      try {
-        // Fetch a properly formatted URL (e.g., Cloudinary URL with .pdf extension)
-        const response = await api.get(`/resources/${resourceId}/download-url`);
-        const { downloadUrl, viewUrl } = response.data;
-
-        // Prefer downloadUrl for triggering a download, fallback to viewUrl, or direct URL
-        if (downloadUrl || viewUrl) {
-          window.open(downloadUrl || viewUrl, '_blank');
-          return;
-        }
-      } catch (urlError) {
-        console.error('Failed to get download URL, falling back:', urlError);
-      }
-
-      // Fallback behavior
-      try {
-        await api.post(`/resources/${resourceId}/download`, {});
-      } catch (countError) {
-        console.error('Failed to increment download count:', countError);
-      }
-
-      // Get the resource data to fallback
-      const response = await api.get(`/resources/${resourceId}`);
-
-      if (response.data && response.data.fileUrl) {
-        // Open the PDF in a new tab (browser's native PDF viewer)
-        window.open(response.data.fileUrl, '_blank');
-      } else {
-        alert('Could not download the resource. Please try again later.');
-      }
+      // Simplest and most reliable method: open the proxy URL which sets attachment headers
+      const downloadUrl = `${apiUtils.getApiBaseUrl()}/resources/${resourceId}/download?token=${token}`;
+      window.open(downloadUrl, '_blank');
     } catch (err) {
       console.error('Error downloading resource:', err);
       alert('Failed to download the resource. Please try the Details option instead.');
