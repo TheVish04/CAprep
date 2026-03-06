@@ -353,7 +353,43 @@ export const generateQuestionsPDF = async (questions, filters, includeAnswers, i
   };
 
   // Use string mode — avoids html2canvas blank-page issue with off-screen elements
-  await html2pdf().set(options).from(htmlContent, 'string').save();
+  // After rendering, stamp a diagonal watermark on every page via jsPDF
+  await html2pdf()
+    .set(options)
+    .from(htmlContent, 'string')
+    .toPdf()
+    .get('pdf')
+    .then((pdf) => {
+      const totalPages = pdf.internal.getNumberOfPages();
+      const pageWidth  = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(200);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(180, 180, 180);
+
+        // Calculate parallel diagonal offsets to cover the page evenly
+        // We step from top-left to bottom-right along the perpendicular axis
+        const d = 85; 
+        const positions = [
+          { x: pageWidth / 2 - (d * 1.5), y: pageHeight / 2 - (d * 1.5) },
+          { x: pageWidth / 2 - (d * 0.5), y: pageHeight / 2 - (d * 0.5) },
+          { x: pageWidth / 2 + (d * 0.5), y: pageHeight / 2 + (d * 0.5) },
+          { x: pageWidth / 2 + (d * 1.5), y: pageHeight / 2 + (d * 1.5) }
+        ];
+
+        positions.forEach((pos) => {
+          pdf.setGState(pdf.GState({ opacity: 0.12 }));
+          pdf.text('CAprep', pos.x, pos.y, { align: 'center', angle: 45 });
+        });
+
+        // Reset opacity
+        pdf.setGState(pdf.GState({ opacity: 1 }));
+      }
+    })
+    .save();
 };
 
 export const savePDF = async (questions, filters, includeAnswers, individualAnswers) => {
