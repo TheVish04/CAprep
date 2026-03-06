@@ -216,6 +216,36 @@
   padding-right: 12px;
 }
 
+/* Search submit button — sits as a sibling in .filters row */
+.search-submit-btn {
+  flex-shrink: 0;
+  margin-top: 29px;
+  margin-left: 10px;
+  height: 40px;
+  padding: 0 18px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: background 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.search-submit-btn:hover:not(:disabled) {
+  background: #0277bd;
+  transform: translateY(-1px);
+}
+
+.search-submit-btn:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
 .filter-group-bookmark {
   display: inline-flex !important;
   align-items: center;

@@ -73,6 +73,11 @@ const Questions = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   // Streaming animation state: { full: string, displayed: number } | null
   const [streamingAiText, setStreamingAiText] = useState(null);
+  // Local search input (not committed to filters until Search is clicked)
+  const [searchInput, setSearchInput] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('search') || '';
+  });
 
   // Streaming animation constants (chars per tick, tick interval ms)
   const AI_STREAM_CHARS = 5;
@@ -172,27 +177,26 @@ const Questions = () => {
   }, [location.search]);
 
   // --- Handle AI Explanation Fetching ---
+  // Triggered only when filters.search is committed (via Search button/Enter), NOT on every keystroke
   useEffect(() => {
-    // Only fetch explanation if the search term is meaningful
     const searchTerm = filters.search?.trim();
-    if (!searchTerm || searchTerm.length < 2) {
+    // Only fetch if 2–30 characters (user-requested limit)
+    if (!searchTerm || searchTerm.length < 2 || searchTerm.length > 30) {
       setAiExplanation(null);
       setIsAiLoading(false);
+      setStreamingAiText(null);
       return;
     }
 
-    // Immediately start loading animation so the box doesn't vanish while typing
+    // No debounce needed anymore — this only fires on committed search (button click / Enter)
     setIsAiLoading(true);
     let ignore = false;
 
-    // Debounce the API call
-    const debounceTimer = setTimeout(async () => {
-      // Don't clear previous explanation here, let it be replaced or shimmer
+    const fetchExplanation = async () => {
       try {
         const response = await api.post('/ai-quiz/search-explanation', { searchTerm });
         if (!ignore) {
           if (response.data?.explanation) {
-            // Start streaming animation instead of setting text directly
             setAiExplanation(null);
             setStreamingAiText({ full: response.data.explanation, displayed: 0 });
           } else {
@@ -207,16 +211,13 @@ const Questions = () => {
           setStreamingAiText(null);
         }
       } finally {
-        if (!ignore) {
-          setIsAiLoading(false);
-        }
+        if (!ignore) setIsAiLoading(false);
       }
-    }, 800); // 800ms debounce
-
-    return () => {
-      ignore = true;
-      clearTimeout(debounceTimer);
     };
+
+    fetchExplanation();
+
+    return () => { ignore = true; };
   }, [filters.search]);
 
   // --- Streaming animation for AI explanation ---
@@ -251,10 +252,13 @@ const Questions = () => {
     return uniqueQuestionNumbers.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   };
 
-  // --- Handle Filter Input Change --- 
+  // --- Handle Filter Input Change (dropdowns & checkbox only, not search) --- 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
+
+    // Search box is handled separately via searchInput state + Search button
+    if (name === 'search') return;
 
     setFilters(prevFilters => {
       const updatedFilters = { ...prevFilters, [name]: newValue };
@@ -271,6 +275,21 @@ const Questions = () => {
 
       return updatedFilters;
     });
+  };
+
+  // --- Commit the search input into filters (triggers question fetch + AI) ---
+  const handleSearch = () => {
+    const trimmed = searchInput.trim();
+    setAiExplanation(null);
+    setStreamingAiText(null);
+    setIsAiLoading(false);
+    setCurrentPage(1);
+    setFilters(prev => ({ ...prev, search: trimmed }));
+  };
+
+  // Allow pressing Enter in search box to trigger search
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearch();
   };
 
   // --- Handle Bookmark Toggle (direct add/remove, no folder) --- 
@@ -474,12 +493,21 @@ const Questions = () => {
               <input
                 type="text"
                 name="search"
-                value={filters.search}
-                onChange={handleFilterChange}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 placeholder="Enter keywords"
                 className="search-input"
+                maxLength={200}
               />
             </div>
+            <button
+              className="search-submit-btn"
+              onClick={handleSearch}
+              disabled={loading}
+            >
+              Search
+            </button>
             <div className="filter-group filter-group-bookmark">
               <label htmlFor="bookmarkedFilter" className="bookmark-filter-label">
                 <input
@@ -496,8 +524,8 @@ const Questions = () => {
             </div>
           </div>
 
-          {/* AI Explanation Box */}
-          {filters.search?.trim().length >= 2 && (isAiLoading || streamingAiText || aiExplanation) ? (
+          {/* AI Explanation Box — only shown when search is committed and ≤30 chars */}
+          {filters.search?.trim().length >= 2 && filters.search?.trim().length <= 30 && (isAiLoading || streamingAiText || aiExplanation) ? (
             <div className="ai-explanation-container">
               <div className="ai-explanation-header">
                 <AiIcon /> AI Assistant explains "{filters.search.trim()}"
