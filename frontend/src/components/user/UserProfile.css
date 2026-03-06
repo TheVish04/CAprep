@@ -26,6 +26,76 @@
     font-weight: 700;
 }
 
+.profile-cont.change-photo-title {
+    margin-top: 0;
+    margin-bottom: 24px;
+    color: #03a9f4;
+    font-size: 1.25rem;
+    text-align: center;
+}
+
+.change-photo-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.change-photo-action {
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    text-align: center;
+}
+
+.change-photo-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.change-photo-upload {
+    background: #03a9f4;
+    color: #fff;
+}
+
+.change-photo-upload:hover:not(:disabled) {
+    background: #0288d1;
+}
+
+.change-photo-remove {
+    background: transparent;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+}
+
+.change-photo-remove:hover:not(:disabled) {
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.change-photo-cancel {
+    color: #aaa;
+}
+
+.change-photo-cancel:hover:not(:disabled) {
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* Quick actions */
 .profile-quick-actions h2 {
     margin-bottom: 15px;
@@ -192,6 +262,37 @@
     object-fit: cover;
     border: 3px solid #03a9f4;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.profile-picture-container.clickable {
+    cursor: pointer;
+    position: relative;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.profile-picture-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.profile-picture-container.clickable:hover .profile-picture-overlay {
+    opacity: 1;
+}
+
+.profile-picture-overlay .edit-icon {
+    font-size: 2rem;
+    color: white;
 }
 
 .change-picture-btn {
@@ -390,7 +491,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8); /* Darker overlay */
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
     display: flex;
     justify-content: center;
     align-items: center;

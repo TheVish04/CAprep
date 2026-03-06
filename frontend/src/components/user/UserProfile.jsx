@@ -21,6 +21,10 @@ const UserProfile = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deletePassword, setDeletePassword] = useState('');
     const [deleteError, setDeleteError] = useState(null);
+    const [showChangePhotoModal, setShowChangePhotoModal] = useState(false);
+    const [photoActionLoading, setPhotoActionLoading] = useState(false);
+    const [banner, setBanner] = useState(null);
+    const fileInputRef = React.useRef(null);
 
     useEffect(() => {
         const token = apiUtils.getAuthToken();
@@ -57,6 +61,14 @@ const UserProfile = () => {
         fetchProfileAndStats();
     }, [navigate]);
 
+    const showBanner = (type, message) => {
+        setBanner({ type, message });
+        setError(null);
+        if (type === 'success') {
+            setTimeout(() => setBanner(null), 4000);
+        }
+    };
+
     const handleLogout = () => {
         apiUtils.clearAuthToken();
         navigate('/login', { state: { message: 'You have been logged out.', alertType: 'info' } });
@@ -75,6 +87,51 @@ const UserProfile = () => {
             navigate('/login', { state: { message: 'Your account has been successfully deleted' } });
         } catch (err) {
             setDeleteError(err.response?.data?.error || 'Failed to delete account. Please try again.');
+        }
+    };
+
+    const handleFileChange = async (e) => {
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) return;
+        setPhotoActionLoading(true);
+        setError(null);
+        setBanner(null);
+        try {
+            const fd = new FormData();
+            fd.append('profileImage', selectedFile);
+            const res = await api.post('/users/me/profile-image', fd);
+            const newUrl = res.data?.profilePicture || defaultAvatar;
+            setUserData(prev => ({ ...prev, profilePicture: newUrl }));
+            setShowChangePhotoModal(false);
+            showBanner('success', 'Profile photo updated successfully.');
+        } catch (err) {
+            const msg = err.response?.data?.error || 'Failed to upload photo.';
+            setBanner({ type: 'error', message: msg });
+        } finally {
+            setPhotoActionLoading(false);
+        }
+        e.target.value = '';
+    };
+
+    const handleUploadPhoto = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleRemovePhoto = async () => {
+        setPhotoActionLoading(true);
+        setError(null);
+        setBanner(null);
+        try {
+            const res = await api.delete('/users/me/profile-image');
+            const url = res.data.profilePicture || defaultAvatar;
+            setUserData(prev => ({ ...prev, profilePicture: url }));
+            setShowChangePhotoModal(false);
+            showBanner('success', 'Profile photo removed.');
+        } catch (err) {
+            const msg = err.response?.data?.error || 'Failed to remove photo.';
+            setBanner({ type: 'error', message: msg });
+        } finally {
+            setPhotoActionLoading(false);
         }
     };
 
@@ -131,8 +188,17 @@ const UserProfile = () => {
                 </div>
 
                 <div className="profile-details card">
+                    {banner && (
+                        <div className={`edit-profile-banner edit-profile-banner-${banner.type}`} role="alert" style={{ marginBottom: '15px' }}>
+                            {banner.message}
+                        </div>
+                    )}
                     <div className="profile-header">
-                        <div className="profile-picture-container">
+                        <div 
+                            className="profile-picture-container clickable" 
+                            onClick={() => setShowChangePhotoModal(true)}
+                            title="Click to change profile photo"
+                        >
                             {hasCustomProfileImage(userData.profilePicture) ? (
                                 <img
                                     src={userData.profilePicture}
@@ -142,6 +208,9 @@ const UserProfile = () => {
                             ) : (
                                 <ProfilePlaceholder className="profile-picture-placeholder" />
                             )}
+                            <div className="profile-picture-overlay">
+                                <span className="edit-icon">📷</span>
+                            </div>
                         </div>
                         <div className="profile-info">
                             <h2>Account Information</h2>
@@ -255,6 +324,56 @@ const UserProfile = () => {
                     </div>
                 </AnimatedModal>
             </div>
+
+            {/* Hidden file input for file selection */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                id="profilePicture"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+                aria-hidden="true"
+            />
+
+            {showChangePhotoModal && (
+                <div
+                    className="modal-overlay"
+                    onClick={() => !photoActionLoading && setShowChangePhotoModal(false)}
+                    role="dialog"
+                    aria-labelledby="change-photo-title"
+                >
+                    <div className="change-photo-dialog" onClick={e => e.stopPropagation()}>
+                        <h3 id="change-photo-title" className="change-photo-title">Change profile photo</h3>
+                        <div className="change-photo-actions">
+                            <button
+                                type="button"
+                                className="change-photo-action change-photo-upload"
+                                onClick={handleUploadPhoto}
+                                disabled={photoActionLoading}
+                            >
+                                Upload photo
+                            </button>
+                            <button
+                                type="button"
+                                className="change-photo-action change-photo-remove"
+                                onClick={handleRemovePhoto}
+                                disabled={photoActionLoading}
+                            >
+                                Remove current photo
+                            </button>
+                            <button
+                                type="button"
+                                className="change-photo-action change-photo-cancel"
+                                onClick={() => !photoActionLoading && setShowChangePhotoModal(false)}
+                                disabled={photoActionLoading}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

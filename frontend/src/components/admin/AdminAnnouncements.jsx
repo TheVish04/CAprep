@@ -297,22 +297,7 @@ const AdminAnnouncements = () => {
         
         {error && <div className="error-message">{error}</div>}
         
-        <h2 className="section-title">Manage Announcements</h2>
-        
-        <div className="announcement-actions">
-          <button 
-            className="toggle-form-btn"
-            onClick={() => {
-              if (showForm && editingId) {
-                resetForm();
-              }
-              setShowForm(!showForm);
-            }}
-          >
-            {showForm ? 'Cancel' : 'Add New Announcement'}
-          </button>
-        </div>
-        
+
         {showForm && (
           <div className="announcement-form-container">
             <h2>{editingId ? 'Edit Announcement' : 'Create New Announcement'}</h2>
@@ -415,7 +400,20 @@ const AdminAnnouncements = () => {
         )}
         
         <div className="announcements-list">
-          <h2>Current Announcements</h2>
+          <div className="list-header-flex">
+            <h2>Current Announcements</h2>
+            <button 
+              className="toggle-form-btn"
+              onClick={() => {
+                if (showForm && editingId) {
+                  resetForm();
+                }
+                setShowForm(!showForm);
+              }}
+            >
+              {showForm ? 'Cancel' : 'Add New Announcement'}
+            </button>
+          </div>
           
           {announcements.length === 0 ? (
             <div className="no-announcements">

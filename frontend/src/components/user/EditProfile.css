@@ -15,14 +15,14 @@
     display: flex;
     align-items: center;
     justify-content: center; /* Center the title */
-    padding: 1.5rem 1rem 1rem;
+    padding: 1rem 0rem 0;
     position: relative;
     flex-shrink: 0;
 }
 
 .edit-profile-header h2 {
     margin: 0;
-    font-size: 3rem !important;
+    font-size: 2.5rem !important;
     font-weight: 700 !important;
     /* color: var(--success-color) !important; */
     letter-spacing: -0.01em;
@@ -34,7 +34,7 @@
 .edit-profile-scroll-area {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem 2rem 2rem;
+    padding: 0 2rem 2rem;
     scrollbar-width: thin;
     scrollbar-color: #333 transparent;
 }
@@ -55,76 +55,6 @@
     width: 100%;
 }
 
-/* Avatar Section */
-.edit-profile-photo-centered {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
-}
-
-.edit-profile-avatar-container {
-    position: relative;
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    background: #1a1d23;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.edit-profile-avatar {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.edit-profile-placeholder {
-    width: 100%;
-    height: 100%;
-    opacity: 0.9;
-}
-
-.edit-profile-avatar-edit-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-
-.edit-profile-avatar-container:hover .edit-profile-avatar-edit-overlay {
-    opacity: 1;
-}
-
-.edit-icon {
-    font-size: 1.5rem;
-    margin-bottom: 4px;
-}
-
-.edit-text {
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-/* Section Dividers */
-.edit-profile-section-divider {
-    text-align: center;
-    margin: 1.5rem 0 1rem;
-    color: #555;
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    position: relative;
-}
-
 /* Field Groups */
 .edit-profile-field-group {
     display: flex;
@@ -132,10 +62,11 @@
     gap: 1.25rem;
 }
 
-.form-group {
+.edit-profile-field-group .form-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-bottom: 0;
 }
 
 .form-group label {
@@ -144,7 +75,10 @@
     font-weight: 500;
 }
 
-.form-group input {
+.form-group input,
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"] {
     background: #111419;
     border: 1px solid #222;
     border-radius: 8px;
@@ -152,9 +86,15 @@
     color: #fff;
     font-size: 1.25rem;
     transition: all 0.2s;
+    line-height: normal; /* Fix height differences */
+    box-sizing: border-box; /* Ensure padding doesn't affect width/height */
+    height: auto;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="password"]:focus {
     outline: none;
     border-color: #4fc3f7; /* Matching the header blue but without glow */
 }
@@ -253,84 +193,6 @@
 /* Hidden elements */
 .edit-profile-hidden-file-input {
     display: none;
-}
-
-/* Change Photo Popup (Action Sheet Style) */
-.change-photo-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1100;
-    animation: fadeIn 0.2s ease-out;
-}
-
-.change-photo-dialog {
-    background: #1a1d23;
-    width: 90%;
-    max-width: 320px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.change-photo-title {
-    margin: 0;
-    padding: 1.25rem 1rem;
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #fff;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.change-photo-actions {
-    display: flex;
-    flex-direction: column;
-}
-
-.change-photo-action {
-    padding: 1rem;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    color: #4fc3f7;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.change-photo-action:last-child {
-    border-bottom: none;
-}
-
-.change-photo-action:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.change-photo-remove {
-    color: #f44336;
-}
-
-.change-photo-cancel {
-    color: #999;
-}
-
-.change-photo-action:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 @keyframes scaleIn {
