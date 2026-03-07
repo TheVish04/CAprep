@@ -500,7 +500,7 @@ Ensure "subQuestions" is an empty array if there are none. If it's an objective-
         messages: [{ role: "user", content: structurePrompt }],
         model: GROQ_MODEL, // openai/gpt-oss-120b
         temperature: 0.0, // Maximum deterministic output
-        max_tokens: 8192,
+        max_tokens: 32768,
         response_format: { type: "json_object" }
       });
 
