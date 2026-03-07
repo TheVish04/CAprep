@@ -71,6 +71,12 @@ const QuestionSchema = new Schema({
     type: [SubQuestionSchema],
     default: []
   },
+  // Associate question with a PDF resource
+  pdfResourceId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Resource',
+    default: null
+  },
   // Add difficulty level field for better filtering
   difficulty: {
     type: String,
@@ -98,27 +104,27 @@ const QuestionSchema = new Schema({
 });
 
 // Add virtual for calculating success rate
-QuestionSchema.virtual('successRate').get(function() {
+QuestionSchema.virtual('successRate').get(function () {
   if (this.attemptCount === 0) return 0;
   return (this.correctCount / this.attemptCount) * 100;
 });
 
 // Improved compound index for common filter combinations
-QuestionSchema.index({ 
-  examStage: 1, 
+QuestionSchema.index({
+  examStage: 1,
   subject: 1
 });
 
-QuestionSchema.index({ 
-  examStage: 1, 
-  subject: 1, 
+QuestionSchema.index({
+  examStage: 1,
+  subject: 1,
   paperType: 1
 });
 
-QuestionSchema.index({ 
-  examStage: 1, 
-  subject: 1, 
-  paperType: 1, 
+QuestionSchema.index({
+  examStage: 1,
+  subject: 1,
+  paperType: 1,
   year: 1
 });
 
@@ -129,7 +135,7 @@ QuestionSchema.index({ difficulty: 1 });
 QuestionSchema.index({ viewCount: -1, subject: 1 });
 
 // Add text index for searching question text with weights
-QuestionSchema.index({ 
+QuestionSchema.index({
   questionText: 'text',
   'subQuestions.subQuestionText': 'text'
 }, {
@@ -141,27 +147,27 @@ QuestionSchema.index({
 });
 
 // Static method for finding popular questions
-QuestionSchema.statics.findPopular = function(subject, limit = 10) {
+QuestionSchema.statics.findPopular = function (subject, limit = 10) {
   return this.find({ subject })
     .sort({ viewCount: -1, createdAt: -1 })
     .limit(limit);
 };
 
 // Static method for finding questions by difficulty
-QuestionSchema.statics.findByDifficulty = function(subject, difficulty, limit = 10) {
+QuestionSchema.statics.findByDifficulty = function (subject, difficulty, limit = 10) {
   return this.find({ subject, difficulty })
     .sort({ createdAt: -1 })
     .limit(limit);
 };
 
 // Method to increment view count
-QuestionSchema.methods.incrementViewCount = function() {
+QuestionSchema.methods.incrementViewCount = function () {
   this.viewCount += 1;
   return this.save();
 };
 
 // Method to track attempt
-QuestionSchema.methods.trackAttempt = function(isCorrect) {
+QuestionSchema.methods.trackAttempt = function (isCorrect) {
   this.attemptCount += 1;
   if (isCorrect) {
     this.correctCount += 1;

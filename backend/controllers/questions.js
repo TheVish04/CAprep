@@ -163,8 +163,8 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
 
     const [questions, total] = await Promise.all([
       isAllMode
-        ? Question.find(filter)
-        : Question.find(filter).skip(skip).limit(limitNum),
+        ? Question.find(filter).populate('pdfResourceId')
+        : Question.find(filter).skip(skip).limit(limitNum).populate('pdfResourceId'),
       Question.countDocuments(filter)
     ]);
 

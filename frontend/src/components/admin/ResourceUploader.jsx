@@ -647,7 +647,20 @@ const ResourceUploader = () => {
             </button>
           </div>
 
-          <h2>{isEditMode ? 'Edit Resource' : 'Upload PDF Resource'}</h2>
+          <div className="form-mode-indicator">
+            <h2>{isEditMode ? 'Edit Resource' : 'Upload PDF Resource'}</h2>
+            {isEditMode && (
+              <p className="edit-mode-note">You are currently editing resource ID: {editingResourceId}</p>
+            )}
+            <button
+              type="button"
+              className="clear-cache-btn"
+              onClick={resetFormAndCache}
+              title="Clear form and cached selections"
+            >
+              Reset All
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="resource-form">
             <div className="form-group">
@@ -833,13 +846,6 @@ const ResourceUploader = () => {
                 </button>
               )}
 
-              <button
-                type="button"
-                className="reset-btn"
-                onClick={resetFormAndCache}
-              >
-                Reset All
-              </button>
             </div>
           </form>
 

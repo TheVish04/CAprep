@@ -39,7 +39,7 @@ const cloudinary = require('../config/cloudinary');
 // GET all resources with optional filtering and pagination
 router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
   try {
-    const { subject, paperType, examStage, year, month, search, bookmarked, page, limit } = req.query;
+    const { subject, paperType, examStage, year, month, search, bookmarked, page, limit, fileType, resourceType } = req.query;
     const filters = {};
 
     if (subject) filters.subject = subject;
@@ -47,6 +47,8 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     if (examStage) filters.examStage = examStage;
     if (year) filters.year = year;
     if (month) filters.month = month;
+    if (fileType) filters.fileType = fileType;
+    if (resourceType) filters.resourceType = resourceType;
 
     if (search) {
       const safeSearch = escapeRegex(search);

@@ -10,6 +10,7 @@ import ResourceUploader from './ResourceUploader';
 import authUtils from '../../utils/authUtils';
 import apiUtils from '../../utils/apiUtils';
 import ImageExtractor from './ImageExtractor';
+import PointPdfModal from './PointPdfModal';
 import './AdminPanel.css';
 
 const AdminPanel = () => {
@@ -43,7 +44,11 @@ const AdminPanel = () => {
     questionText: '',
     answerText: '',
     subQuestions: [],
+    pdfResourceId: null,
   });
+
+  const [showPointPdfModal, setShowPointPdfModal] = useState(false);
+  const [selectedPdfName, setSelectedPdfName] = useState('');
 
   const [errors, setErrors] = useState({});
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -439,8 +444,10 @@ const AdminPanel = () => {
       questionText: '',
       answerText: '',
       subQuestions: [],
+      pdfResourceId: null,
     });
     setErrors({});
+    setSelectedPdfName('');
     setQuestionType('objective-subjective'); // Reset question type
 
     // Try to load cached selections
@@ -475,8 +482,10 @@ const AdminPanel = () => {
       questionText: '',
       answerText: '',
       subQuestions: [],
+      pdfResourceId: null,
     });
     setErrors({});
+    setSelectedPdfName('');
     alert('Form cache cleared');
   };
 
@@ -694,7 +703,9 @@ const AdminPanel = () => {
       questionText: question.questionText || '',
       answerText: question.answerText || '',
       subQuestions: formattedSubQuestions,
+      pdfResourceId: question.pdfResourceId || null,
     });
+    setSelectedPdfName(question.pdfResourceId ? 'Linked PDF' : '');
 
     // Scroll to the top of the form
     window.scrollTo(0, 0);
@@ -798,6 +809,22 @@ const AdminPanel = () => {
             <ImageExtractor
               onExtract={handleImageExtract}
               disabled={!!editingQuestionId}
+            />
+
+            <PointPdfModal
+              isOpen={showPointPdfModal}
+              onClose={() => setShowPointPdfModal(false)}
+              onSelect={(pdfId, pdfName) => {
+                setFormData(prev => ({ ...prev, pdfResourceId: pdfId }));
+                setSelectedPdfName(pdfName);
+              }}
+              filters={{
+                examStage: formData.examStage,
+                subject: formData.subject,
+                paperType: formData.paperType,
+                year: formData.year,
+                month: formData.month
+              }}
             />
 
             <form
@@ -954,6 +981,48 @@ const AdminPanel = () => {
                     </select>
                     {errors.month && <p className="error-message">{errors.month}</p>}
                   </div>
+
+                  <div className="form-group point-pdf-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label>PDF Association:</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPointPdfModal(true)}
+                      className="point-pdf-btn"
+                      style={{
+                        padding: '10px 15px',
+                        backgroundColor: 'var(--primary-color)',
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        width: 'fit-content'
+                      }}
+                    >
+                      Point PDF
+                    </button>
+                    {selectedPdfName && (
+                      <div className="selected-pdf-badge" style={{ fontSize: '0.85rem', color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        {selectedPdfName}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, pdfResourceId: null }));
+                            setSelectedPdfName('');
+                          }}
+                          style={{
+                            background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'pointer', marginLeft: 'auto', padding: '0 5px'
+                          }}
+                          title="Remove PDF association"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               </div>
 

@@ -520,8 +520,9 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Discuss Button Styling - Matches Chat link in Navbar */
-.discuss-btn {
+/* Action Buttons Styling (Discuss and View Paper) */
+.discuss-btn,
+.view-paper-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -539,14 +540,16 @@
   font-family: inherit;
 }
 
-.discuss-btn:hover {
+.discuss-btn:hover,
+.view-paper-btn:hover {
   color: #fff !important;
   background: #03a9f4;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(3, 169, 244, 0.2);
 }
 
-.discuss-btn:active {
+.discuss-btn:active,
+.view-paper-btn:active {
   transform: translateY(0);
 }
 
@@ -932,7 +935,8 @@
     white-space: normal;
   }
 
-  .discuss-btn {
+  .discuss-btn,
+  .view-paper-btn {
     font-size: 0.75rem;
     padding: 0 10px;
     height: 30px;
