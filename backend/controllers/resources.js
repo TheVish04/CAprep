@@ -36,6 +36,26 @@ const upload = multer({
 // Import cloudinary configuration
 const cloudinary = require('../config/cloudinary');
 
+// GET /api/resources/filter-options - returns distinct years for filter dropdowns
+router.get('/filter-options', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
+  try {
+    const { subject, paperType, examStage, month } = req.query;
+    const filter = {};
+    if (subject) filter.subject = subject;
+    if (paperType) filter.paperType = paperType;
+    if (examStage) filter.examStage = examStage;
+    if (month) filter.month = month;
+
+    const years = await Resource.distinct('year', filter);
+
+    res.json({
+      years: years.sort((a, b) => b - a),
+    });
+  } catch (error) {
+    sendErrorResponse(res, 500, { message: 'Failed to fetch filter options', error });
+  }
+});
+
 // GET all resources with optional filtering and pagination
 router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
   try {

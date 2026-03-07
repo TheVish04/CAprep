@@ -130,6 +130,30 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
   }
 });
 
+// GET /api/questions/filter-options - returns distinct years and questionNumbers for filter dropdowns
+router.get('/filter-options', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
+  try {
+    const { subject, paperType, month, examStage } = req.query;
+    const filter = {};
+    if (subject) filter.subject = subject;
+    if (paperType) filter.paperType = paperType;
+    if (month) filter.month = month;
+    if (examStage) filter.examStage = examStage;
+
+    const [years, questionNumbers] = await Promise.all([
+      Question.distinct('year', filter),
+      Question.distinct('questionNumber', filter),
+    ]);
+
+    res.json({
+      years: years.sort((a, b) => b - a),
+      questionNumbers: questionNumbers.sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    });
+  } catch (error) {
+    sendErrorResponse(res, 500, { message: 'Failed to fetch filter options', error });
+  }
+});
+
 router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
   try {
     const { subject, year, questionNumber, paperType, month, examStage, search, bookmarked, page, limit, sortBy, sortOrder } = req.query;

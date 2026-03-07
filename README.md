@@ -68,6 +68,8 @@ CAprep addresses these by providing a single platform for questions, resources, 
   - Pagination (default 20, max 100 per page).
   - Admin: create, update, delete questions (Joi validation).
   - Question model supports main question, sub-questions, and sub-options (MCQs).
+  - **View Paper button:** Questions linked to a PDF resource show a "View Paper" button that opens the associated PDF inline in a new browser tab via the authenticated backend proxy (same behaviour as the Resources page "View PDF" button).
+  - **Dynamic filter dropdowns:** The Year and Question No. dropdowns query a dedicated `/api/questions/filter-options` endpoint using `Model.distinct()` and always reflect the full database — not just the questions on the current visible page.
 
 - **Resources (PDFs)**
   - List/filter by subject, paper type, exam stage, year, month, search, bookmarked.
@@ -75,6 +77,7 @@ CAprep addresses these by providing a single platform for questions, resources, 
   - Pagination; single resource by ID.
   - Admin: upload PDF (multer → Cloudinary, 20MB limit), update metadata, delete (Cloudinary asset removed).
   - Download: authenticated; backend can proxy Cloudinary PDF or return download URL; download count incremented.
+  - **Dynamic filter dropdowns:** The Year dropdown queries `/api/resources/filter-options` using `Model.distinct()`, showing all years in the database regardless of the current page.
 
 - **Quizzes**
   - **Bank quiz:** MCQ questions from DB by exam stage and subject (random sample via MongoDB `$sample` aggregation).
@@ -92,7 +95,6 @@ CAprep addresses these by providing a single platform for questions, resources, 
 
 - **OCR: Image-to-Question Extraction (Admin)**
   - Admins can upload a photo or scan of a question paper in `ResourceUploader`. A two-stage AI pipeline runs: Stage 1 (Llama-4-Maverick vision) extracts raw verbatim text from the image; Stage 2 (`openai/gpt-oss-120b`) structures that text into clean JSON — with HTML tables, sub-questions, and MCQ options pre-filled. The result populates the question creation form automatically, so admins don't have to type out long questions manually.
-
 
 - **Discussions & Notifications**
   - One discussion thread per item (question or resource); messages with optional parent; like; edit/delete.
@@ -719,8 +721,8 @@ CAPrep/
     │   └── ContactSubmissionModel.js # ContactSubmission: type (feature|issue), name, email, subject/featureTitle, category, description, status
     ├── controllers/             # Express Router modules; mounted via routes/index.js
     │   ├── auth.js              # send-otp, verify-otp, login, register, me, refresh-token, forgot-password, verify-reset-otp, reset-password
-    │   ├── questions.js         # CRUD (admin), list (filter, pagination), count, quiz (MCQ sample), available-subjects, all-subjects, batch
-    │   ├── resources.js         # List, count, get by id, create (admin upload), update/delete (admin), download (proxy/URL), download count increment
+    │   ├── questions.js         # CRUD (admin, pdfResourceId now persisted on update), list (filter, pagination), count, quiz (MCQ sample), filter-options (distinct years + questionNumbers for dropdowns), available-subjects, all-subjects, batch
+    │   ├── resources.js         # List, count, filter-options (distinct years for dropdowns), get by id, create (admin upload), update/delete (admin), download (proxy with inline Content-Disposition so PDF opens in tab), download count increment
     │   ├── users.js             # me (profile, bookmarks), bookmarks CRUD, quiz-history CRUD, profile update, profile image upload, delete account, bookmark folders CRUD
     │   ├── admin.js             # users list, analytics, announcements CRUD, audit log, contact/feature-requests, contact/report-issues
     │   ├── dashboard.js         # GET dashboard data, study-session, resource-engagement, question-view, resource-view, announcements
@@ -758,8 +760,8 @@ CAPrep/
 | Prefix | Auth | Description |
 |--------|------|-------------|
 | `/api/auth` | Mixed | send-otp, verify-otp, login, register (public); me, refresh-token (Bearer); forgot-password, verify-reset-otp, reset-password (public) |
-| `/api/questions` | Mixed | GET / (auth, cache), GET /count (cache), GET /quiz, /available-subjects, /all-subjects (auth), POST /batch (auth); POST/PUT/DELETE (admin) |
-| `/api/resources` | Mixed | GET /, GET /count, GET /:id (auth where required); POST / (admin, multipart); PUT/DELETE /:id (admin); GET/POST /:id/download, GET /:id/download-url (auth for download) |
+| `/api/questions` | Mixed | GET / (auth, cache), GET /count (cache), GET /filter-options (auth, cache — distinct years and questionNumbers for dropdowns), GET /quiz, /available-subjects, /all-subjects (auth), POST /batch (auth); POST/PUT/DELETE (admin) |
+| `/api/resources` | Mixed | GET /, GET /count, GET /filter-options (auth, cache — distinct years for dropdowns), GET /:id (auth where required); POST / (admin, multipart); PUT/DELETE /:id (admin); GET/POST /:id/download, GET /:id/download-url (auth for download) |
 | `/api/users` | Auth | Profile, bookmarks, quiz history, profile image, bookmark folders |
 | `/api/admin` | Auth + Admin | users, analytics, announcements CRUD, audit, contact/feature-requests, contact/report-issues, clear-cache (POST) |
 | `/api/ai` | Auth | POST /generate (AI MCQs), POST /ask (chat + optional image), POST /search-explanation (inline term explanation), POST /extract-question-image (OCR pipeline — admin) |

@@ -67,6 +67,7 @@ const Resources = () => {
   const resourcesPerPage = 10;
   const [currentDiscussionResource, setCurrentDiscussionResource] = useState(null);
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({ years: [] });
 
   // Download a resource and increment download count
   const handleDownload = useCallback(async (resource) => {
@@ -110,6 +111,27 @@ const Resources = () => {
       }
     } catch (err) {
       console.error('Error fetching resource bookmark IDs:', err);
+    }
+  }, [apiUtils.getApiBaseUrl()]);
+
+  // --- Fetch distinct years from the full database for filter dropdowns ---
+  const fetchFilterOptions = useCallback(async (currentFilters) => {
+    try {
+      const token = apiUtils.getAuthToken();
+      if (!token) return;
+      const params = new URLSearchParams();
+      if (currentFilters.examStage) params.append('examStage', currentFilters.examStage);
+      if (currentFilters.subject) params.append('subject', currentFilters.subject);
+      if (currentFilters.paperType) params.append('paperType', currentFilters.paperType);
+      if (currentFilters.month) params.append('month', currentFilters.month);
+      const response = await axios.get(`${apiUtils.getApiBaseUrl()}/resources/filter-options?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.data) {
+        setFilterOptions(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching resource filter options:', err);
     }
   }, [apiUtils.getApiBaseUrl()]);
 
@@ -159,11 +181,13 @@ const Resources = () => {
         search: params.get('search') || '',
       };
       setFilters(prev => {
+        const next = { ...prev, ...fromUrl };
+        fetchFilterOptions(next);
         if (prev.examStage === fromUrl.examStage && prev.subject === fromUrl.subject &&
           prev.bookmarked === fromUrl.bookmarked && prev.search === fromUrl.search) {
           return prev;
         }
-        return { ...prev, ...fromUrl };
+        return next;
       });
     }
   }, [navigate, location.search, location.state, fetchBookmarkIds]);
@@ -173,15 +197,13 @@ const Resources = () => {
     const token = apiUtils.getAuthToken();
     if (token) {
       fetchResources(token, filters, currentPage);
+      fetchFilterOptions(filters);
     }
   }, [filters, currentPage]);
 
 
-  // Get unique years for filtering
-  const getUniqueYears = () => {
-    const uniqueYears = [...new Set(resources.map((r) => r.year))];
-    return uniqueYears.sort((a, b) => b - a); // Sort descending
-  };
+  // Get unique years for filtering (from full DB via filterOptions)
+  const getUniqueYears = () => filterOptions.years;
 
   // --- Handle Filter Input Change --- 
   const handleFilterChange = (e) => {
