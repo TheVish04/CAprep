@@ -137,7 +137,7 @@ CAprep addresses these by providing a single platform for questions, resources, 
 
 | Category | Technology |
 |----------|------------|
-| **Frontend** | React 19, React Router 7, Vite 6, Tailwind CSS 4, Axios, Framer Motion, AOS, Chart.js (react-chartjs-2), html2pdf.js/jsPDF, DOMPurify, CountUp, react-error-boundary, @vercel/analytics; custom UI primitives: `SplitText`, `RotatingText`, `Magnet`, `SpotlightCard` |
+| **Frontend** | React 19, React Router 7, Vite 6, Axios, Framer Motion, AOS, Chart.js (react-chartjs-2), html2pdf.js/jsPDF, DOMPurify, CountUp, react-error-boundary, @vercel/analytics; custom UI primitives: `SplitText`, `RotatingText`, `Magnet`, `SpotlightCard` |
 | **Backend** | Node.js, Express 4, Mongoose 8 |
 | **Database** | MongoDB (no separate ORM; Mongoose as ODM) |
 | **Auth** | JWT (access token, optional refresh via `/auth/refresh-token`), bcrypt for passwords |
