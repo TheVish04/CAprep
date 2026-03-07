@@ -763,6 +763,7 @@ const ResourceUploader = () => {
                   <option value="RTP">RTP</option>
                   <option value="PYQS">PYQS</option>
                   <option value="Model TP">Model TP</option>
+                  <option value="Textbooks">Textbooks</option>
                 </select>
                 {errors.paperType && <div className="error-message">{errors.paperType}</div>}
               </div>
@@ -935,6 +936,7 @@ const ResourceUploader = () => {
                   <option value="RTP">RTP</option>
                   <option value="PYQS">PYQS</option>
                   <option value="Model TP">Model TP</option>
+                  <option value="Textbooks">Textbooks</option>
                 </select>
               </div>
 
