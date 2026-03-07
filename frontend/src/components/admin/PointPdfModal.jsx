@@ -67,9 +67,7 @@ const PointPdfModal = ({ isOpen, onClose, onSelect, filters }) => {
                 </div>
 
                 <div className="point-pdf-list-container">
-                    {loading ? (
-                        <div className="loading-spinner">Loading PDFs...</div>
-                    ) : error ? (
+                    {loading ? null : error ? (
                         <div className="error-message">{error}</div>
                     ) : pdfs.length === 0 ? (
                         <div className="no-pdfs-message">No PDFs found matching these details.</div>
