@@ -412,11 +412,22 @@ router.post('/extract-question-image', authMiddleware, async (req, res) => {
     logger.info(`Extract Question Request: processing ${images.length} image(s) via Groq Vision.`);
 
     const visionPrompt = `CRITICAL INSTRUCTION: Your ONLY job is to transcribe EVERY SINGLE character, word, number, symbol, and table from this image with ZERO omissions.
-DO NOT skip any word. DO NOT skip any line. DO NOT summarize. DO NOT rephrase. DO NOT add anything. EVERY piece of text visible in the image — including headings, sub-headings, table titles, row labels, and cell values — MUST appear in your output.
-If you are unsure of a word, make your best effort to transcribe it rather than skipping it.
+DO NOT summarize. DO NOT rephrase. DO NOT add anything. DO NOT invent words.
+EVERY piece of text visible in the image — including headings, sub-headings, table titles, row labels, and cell values — MUST appear in your output verbatim.
+
 TABLE TITLES ARE MANDATORY: Any text appearing above or below a table that acts as its title or caption (such as "Raw Material A/c", "Creditors A/c", "Manufacturing A/c") MUST be transcribed immediately before that table's content.
-For tables, transcribe EVERY row and EVERY cell. Do NOT abbreviate multi-line tables. Output the raw text in the exact order it appears in the image, top to bottom, left to right.
-UNDERLINES: Wherever there is an underline under any text or number in the image, you MUST wrap that specific text or number in HTML <u> tags (e.g., <u>text</u>).`;
+
+STRICT TABULAR DATA EXTRACTION (CRITICAL RULES):
+For tables (especially Financial Statements like Balance Sheets and Ledgers), you MUST preserve the EXACT columnar structure using pipe (|) characters to separate every single distinct visual column.
+1. COUNT THE VISUAL COLUMNS FIRST: Before extracting a table, scan across its widest row and count how many distinct physical columns exist. For Balance Sheets, there are almost always exactly 6 VISUAL COLUMNS: (1) Liabilities Name, (2) Liabilities Inner Amount, (3) Liabilities Outer Amount, (4) Assets Name, (5) Assets Inner Amount, (6) Assets Outer Amount.
+2. ENFORCE COLUMNS WITH PIPES: Every single row you extract MUST have the exact same number of columns separated by pipes (|), even if some cells are completely blank.
+3. HANDLE EMPTY SPACE STRICTLY: If a cell is visually empty in the image (like an empty inner amount column or empty outer amount column), you MUST output an empty space between pipes (e.g., "|  |"). 
+   - Example 1: If a row only has a label "Capital Accounts" on the left and nothing else, you must output: "Capital Accounts | | | | | |"
+   - Example 2: If a row has label "X" and an inner amount "6,000", but no outer amount, you must output: "X | 6,000 | | | | |"
+   - Example 3: If a row has label "Creditors" and an outer amount "5,000", but no inner amount, you MUST output an empty slot for the inner amount: "Creditors | | 5,000 | | | |"
+4. NEVER COLLAPSE COLUMNS: Do NOT collapse empty columns. NEVER let an outer total slide left into an inner column's space. This is absolutely critical to prevent numbers from being misaligned.
+
+UNDERLINES: Wherever there is an underline under any text or number in the image, you MUST wrap that specific text or number in HTML <u> tags (e.g., <u>Total</u>).`;
 
     const messageContent = [
       { type: "text", text: visionPrompt }
@@ -468,7 +479,12 @@ CRITICAL INSTRUCTIONS:
    f) For financial ledger accounts, the column count varies. ALWAYS determine the actual number of columns from the visual image — never assume. Treat every column as fully independent and never merge them.
    g) TOTALS UNDERLINING: You MUST underline the total numbers in the very last row of a table (if they represent a total or sum) by wrapping the number in HTML <u> tags (e.g., <u>1000</u>).
    h) MERGING SPLIT TABLES: If a table is split across multiple images or pages (e.g., the header and first few rows in one image, and the remaining rows in the next image), DO NOT render them as two separate <table> elements. You MUST merge them into ONE continuous <table> element in your final output.
-   i) NESTED / INNER COLUMNS (FINANCIAL STATEMENTS): This is a critical rule for Balance Sheets and Ledgers. Often there is a "Liabilities" text column, an inner "amount" column (sub-totals), an outer "₹" amount column, an "Assets" text column, an inner "amount" column, and an outer "₹" column. This means there are 6 VISUAL COLUMNS IN TOTAL. You MUST determine the MAXIMUM number of distinct columns across ANY row. Your entire <table> MUST have THAT EXACT NUMBER of <td> elements for EVERY SINGLE ROW. If the header only has 4 words but the data below it spans 6 columns, you MUST pad the header row with empty <td> tags so it also has exactly 6 <td> tags. DO NOT output 4 columns in one row and 6 in another. EVERY <tr> MUST HAVE THE EXACT SAME NUMBER OF <td> TAGS. The numbers MUST be placed in their exact, correct visual column. If a row has an outer total but no inner sub-total, insert an empty <td></td> for the missing inner column. NEVER shift data leftward into the wrong column.
+   i) NESTED / INNER COLUMNS (FINANCIAL STATEMENTS): This is a critical rule for Balance Sheets and Ledgers. There are exactly 6 VISUAL COLUMNS. Column 1: Liabilities names. Column 2: Liabilities inner amounts (₹). Column 3: Liabilities outer amounts (₹). Column 4: Assets names. Column 5: Assets inner amounts (₹). Column 6: Assets outer amounts (₹). Your entire <table> MUST have EXACTLY 6 <td> elements for EVERY SINGLE ROW.
+     - IF a row only has a label in Col 1, you MUST output empty <td> tags for Cols 2-6.
+     - IF a row has a label (like "X") in Col 1 and an inner amount (like "6,00,000"), you MUST output the label in Col 1, the amount in Col 2, and empty <td> tags for Cols 3-6. DO NOT put the inner amount in Col 1.
+     - IF a row has a label in Col 1 and an outer amount (like "Trade Creditors 54,800"), you MUST output the label in Col 1, an EMPTY <td> in Col 2, the amount in Col 3, and empty <td> tags for Cols 4-6. 
+     - You MUST apply this exact same logic to the Assets side (Cols 4-6).
+     - NEVER output fewer than 6 <td> elements in a row. NEVER use colspan. NEVER shift an amount leftward into the wrong visual column.
 5. UNDERLINED TEXT PRESERVATION: If the raw text contains <u> tags representing text that was underlined in the original image, you MUST preserve these <u> tags around the exact same words or numbers in your final HTML output.
 6. QUESTION AND ANSWER DELINEATION ACROSS MULTIPLE IMAGES: When multiple images are provided, the first part of the images will always be the question and the second part will be the answer.
    a) If there are multiple images, the first image will guaranteed have the question number and the start of the question. Subsequent images might be the continuation of the question.
