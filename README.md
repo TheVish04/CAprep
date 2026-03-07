@@ -949,7 +949,7 @@ CAPrep/
 
 ---
 
-## 14. Future Features Ideas
+## 14. Future Feature Ideas
 
 Ideas for features that can be added to CAprep to extend functionality and value for CA students and admins:
 
