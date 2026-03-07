@@ -247,15 +247,18 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     // Delete the file from Cloudinary if it's a Cloudinary URL
     if (resource.fileUrl && resource.fileUrl.includes('cloudinary')) {
       try {
-        // Extract public_id from Cloudinary URL
-        const urlParts = resource.fileUrl.split('/');
-        const publicIdWithExt = urlParts[urlParts.length - 1];
-        const publicId = publicIdWithExt.split('.')[0];
+        const urlParts = resource.fileUrl.split('/upload/');
 
-        if (publicId) {
-          await cloudinary.uploader.destroy(`ca-exam-platform/resources/${publicId}`, {
-            resource_type: 'auto'
-          });
+        if (urlParts.length === 2) {
+          const fullPath = urlParts[1];
+          // Remove version string (e.g. v1234/) and file extension (.pdf)
+          const cleanPath = fullPath.replace(/^v\d+\//, '').replace(/\.[^/.]+$/, '');
+
+          if (cleanPath) {
+            await cloudinary.uploader.destroy(cleanPath, {
+              resource_type: 'raw' // Important: PDFs are uploaded as 'raw' resource_type
+            });
+          }
         }
       } catch (cloudinaryError) {
         logger.error(`Error deleting file from Cloudinary: ${cloudinaryError.message}`);

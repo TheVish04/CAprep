@@ -72,6 +72,8 @@ const Questions = () => {
       paperNo: '',
       search: params.get('search') || '',
       bookmarked: params.get('bookmarked') === 'true',
+      sortBy: params.get('sortBy') || '',
+      sortOrder: params.get('sortOrder') || 'asc',
     };
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -186,17 +188,23 @@ const Questions = () => {
     const subjectParam = params.get('subject') || '';
     const bookmarkedParam = params.get('bookmarked') === 'true';
     const searchParam = params.get('search') || '';
+    const sortByParam = params.get('sortBy') || '';
+    const sortOrderParam = params.get('sortOrder') || 'asc';
 
     setFilters(prevFilters => {
       const examStage = examStageParam || prevFilters.examStage;
       const subject = subjectParam || prevFilters.subject;
       const bookmarked = bookmarkedParam;
       const search = searchParam || prevFilters.search;
+      const sortBy = sortByParam || prevFilters.sortBy;
+      const sortOrder = sortOrderParam || prevFilters.sortOrder;
+
       if (examStage === prevFilters.examStage && subject === prevFilters.subject &&
-        bookmarked === prevFilters.bookmarked && search === prevFilters.search) {
+        bookmarked === prevFilters.bookmarked && search === prevFilters.search &&
+        sortBy === prevFilters.sortBy && sortOrder === prevFilters.sortOrder) {
         return prevFilters;
       }
-      return { ...prevFilters, examStage, subject, bookmarked, search };
+      return { ...prevFilters, examStage, subject, bookmarked, search, sortBy, sortOrder };
     });
   }, [location.search]);
 
@@ -515,6 +523,25 @@ const Questions = () => {
                     {qn}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div className="filter-group filter-group-sort">
+              <label>Sort By:</label>
+              <select name="sortBy" value={filters.sortBy} onChange={handleFilterChange} disabled={loading}>
+                <option value="">None</option>
+                <option value="examStage">Exam Stage</option>
+                <option value="subject">Subject</option>
+                <option value="paperType">Paper Type</option>
+                <option value="year">Year</option>
+                <option value="month">Month</option>
+                <option value="questionNumber">Question No.</option>
+              </select>
+            </div>
+            <div className="filter-group filter-group-sort">
+              <label>Order:</label>
+              <select name="sortOrder" value={filters.sortOrder} onChange={handleFilterChange} disabled={loading || !filters.sortBy}>
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
               </select>
             </div>
             <div className="filter-group filter-group-search">

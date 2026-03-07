@@ -130,7 +130,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
 router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
   try {
-    const { subject, year, questionNumber, paperType, month, examStage, search, bookmarked, page, limit } = req.query;
+    const { subject, year, questionNumber, paperType, month, examStage, search, bookmarked, page, limit, sortBy, sortOrder } = req.query;
     const filter = {};
     if (subject) filter.subject = subject;
     if (year) filter.year = year;
@@ -161,10 +161,17 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     const pageNum = isAllMode ? 1 : Math.max(parseInt(page, 10) || 1, 1);
     const skip = isAllMode ? 0 : (pageNum - 1) * limitNum;
 
+    const sortOptions = {};
+    if (sortBy) {
+      sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    } else {
+      sortOptions.createdAt = -1; // Default to natural/recent sort
+    }
+
     const [questions, total] = await Promise.all([
       isAllMode
-        ? Question.find(filter).populate('pdfResourceId')
-        : Question.find(filter).skip(skip).limit(limitNum).populate('pdfResourceId'),
+        ? Question.find(filter).collation({ locale: 'en', numericOrdering: true }).sort(sortOptions).populate('pdfResourceId')
+        : Question.find(filter).collation({ locale: 'en', numericOrdering: true }).sort(sortOptions).skip(skip).limit(limitNum).populate('pdfResourceId'),
       Question.countDocuments(filter)
     ]);
 
