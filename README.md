@@ -215,6 +215,12 @@ flowchart TB
     Admin -.->|views| Track
 ```
 
+### 5.1 High-level
+
+- **Style:** Monolith — one frontend app and one backend API.
+- **Frontend:** SPA (React) served as static files; all data via REST API.
+- **Backend:** Express app; middleware chain (security → body parser → CORS → optional request logging → routes); DB and admin bootstrap on startup; then mount routes and start HTTP server.
+
 In one sentence: **CAprep is a CA exam prep web app where students study past questions and PDFs, take bank or AI-generated quizzes, chat with an AI tutor (including by uploading images of question papers), discuss and bookmark content, and track their progress on a dashboard — while admins manage content using an AI-assisted OCR tool to extract questions from scanned images.**
 
 ### Complete user journey (traced in code)
@@ -353,6 +359,24 @@ flowchart LR
     Backend --> Groq
 ```
 
+### 5.2 Component-level
+
+- **Frontend:**  
+  - `main.jsx`: mounts App, registers service worker in production.  
+  - `App.jsx`: Router, ErrorBoundary, route definitions, ProtectedRoute / RedirectIfLoggedIn, AuthRedirectSetup (axios 401 → navigate to login).  
+  - **Components** are grouped by feature under `components/`: `auth/` (Login, Register, ForgotPassword, ResetPassword), `admin/` (AdminPanel, ResourceUploader, AdminAnnouncements, etc.), `layout/` (Navbar, Footer), `shared/` (ErrorBoundary, Skeleton, ProfilePlaceholder, NotificationsDropdown, MoreMenu, BookmarkFolderSelector, PreviewPanel), `user/` (UserProfile, EditProfile, BookmarksPage), `content/` (Questions, Quiz, Resources, Dashboard, QuizHistory, DiscussionModal).  
+  - Pages live in `pages/`; they and components call API via `axios` instance (from `axiosConfig.js`) or `apiUtils` (get/post, token refresh, error handling).  
+  - Frontend `utils/logger.js`: no-op in production, forwards to console in development (e.g. API request log in axiosConfig).  
+  - Auth state: JWT and optional expiry in `localStorage` (`auth` object; fallback `token` key).
+
+- **Backend:**  
+  - **Entry:** `server.js` — connect DB, run admin bootstrap, mount routes from `routes/index.js`, then start listen.  
+  - **Routes:** Mounted under `/api/*` via `routes/index.js`, which imports controller modules (auth, questions, resources, users, admin, ai-quiz, discussions, dashboard, announcements, notifications, contact).  
+  - **Layers:** Route handlers use models and services directly (no separate service/repository folders); validators (Joi for questions, contact, announcements) and middleware (auth, admin, cache) are used per route.  
+  - **Error responses:** A shared `sendErrorResponse(res, statusCode, { message, error })` logs server-side and returns generic message in production; in development optional `details` (error.message) may be included.  
+  - **Search:** User search input is escaped via `escapeRegex()` before use in MongoDB `$regex` to avoid injection and unstable behavior.
+
+
 ### Request–response flow diagram (detailed)
 
 ```mermaid
@@ -461,6 +485,23 @@ sequenceDiagram
 ```
 
 </div>
+
+### 5.3 Request–response lifecycle
+
+1. Client sends request (e.g. `GET /api/questions?subject=...`) with optional `Authorization: Bearer <token>`.
+2. Global rate limiter (e.g. 200 req/15 min per IP) and CORS run first.
+3. Route-specific middleware: e.g. `authMiddleware` (verify JWT, attach `req.user`), `adminMiddleware` (require `req.user.role === 'admin'`), `cacheMiddleware(duration)` (GET only; cache key by user id + URL; skip if `x-skip-cache: true`).
+4. Handler reads DB (Mongoose), optionally clears cache on mutations, returns JSON.
+5. On server errors, route handlers use a shared error-response helper: the error is logged server-side; the client receives a generic message in production (no stack or internal error text); in development optional details may be included.
+6. Global error handler and 404 handler at the end of the chain return 500/404 JSON when no response was sent.
+
+### 5.4 Data flow (typical)
+
+- **Login:** POST `/api/auth/login` → validate email/password, bcrypt compare, JWT sign → response with token and expiry; frontend stores in `localStorage` and uses in `Authorization` header.
+- **Refresh:** On 401 (or when expiry is near), frontend calls POST `/api/auth/refresh-token` with current token; backend issues new token; frontend updates storage and retries request.
+- **Protected GET:** Axios interceptor adds Bearer token; backend authMiddleware validates JWT and loads user; cache middleware may return cached body for same user+URL.
+- **Admin mutation:** authMiddleware + adminMiddleware; handler updates DB; `clearCache(...)` for affected keys; response returned.
+
 
 ### Component diagram (backend layers, detailed)
 
@@ -597,47 +638,6 @@ flowchart TB
     Models --> database
     otpService --> SendGrid
 ```
-
-*Diagrams use [Mermaid](https://mermaid.js.org/); they render on GitHub and in editors that support Mermaid.*
-
-### 5.1 High-level
-
-- **Style:** Monolith — one frontend app and one backend API.
-- **Frontend:** SPA (React) served as static files; all data via REST API.
-- **Backend:** Express app; middleware chain (security → body parser → CORS → optional request logging → routes); DB and admin bootstrap on startup; then mount routes and start HTTP server.
-
-### 5.2 Component-level
-
-- **Frontend:**  
-  - `main.jsx`: mounts App, registers service worker in production.  
-  - `App.jsx`: Router, ErrorBoundary, route definitions, ProtectedRoute / RedirectIfLoggedIn, AuthRedirectSetup (axios 401 → navigate to login).  
-  - **Components** are grouped by feature under `components/`: `auth/` (Login, Register, ForgotPassword, ResetPassword), `admin/` (AdminPanel, ResourceUploader, AdminAnnouncements, etc.), `layout/` (Navbar, Footer), `shared/` (ErrorBoundary, Skeleton, ProfilePlaceholder, NotificationsDropdown, MoreMenu, BookmarkFolderSelector, PreviewPanel), `user/` (UserProfile, EditProfile, BookmarksPage), `content/` (Questions, Quiz, Resources, Dashboard, QuizHistory, DiscussionModal).  
-  - Pages live in `pages/`; they and components call API via `axios` instance (from `axiosConfig.js`) or `apiUtils` (get/post, token refresh, error handling).  
-  - Frontend `utils/logger.js`: no-op in production, forwards to console in development (e.g. API request log in axiosConfig).  
-  - Auth state: JWT and optional expiry in `localStorage` (`auth` object; fallback `token` key).
-
-- **Backend:**  
-  - **Entry:** `server.js` — connect DB, run admin bootstrap, mount routes from `routes/index.js`, then start listen.  
-  - **Routes:** Mounted under `/api/*` via `routes/index.js`, which imports controller modules (auth, questions, resources, users, admin, ai-quiz, discussions, dashboard, announcements, notifications, contact).  
-  - **Layers:** Route handlers use models and services directly (no separate service/repository folders); validators (Joi for questions, contact, announcements) and middleware (auth, admin, cache) are used per route.  
-  - **Error responses:** A shared `sendErrorResponse(res, statusCode, { message, error })` logs server-side and returns generic message in production; in development optional `details` (error.message) may be included.  
-  - **Search:** User search input is escaped via `escapeRegex()` before use in MongoDB `$regex` to avoid injection and unstable behavior.
-
-### 5.3 Request–response lifecycle
-
-1. Client sends request (e.g. `GET /api/questions?subject=...`) with optional `Authorization: Bearer <token>`.
-2. Global rate limiter (e.g. 200 req/15 min per IP) and CORS run first.
-3. Route-specific middleware: e.g. `authMiddleware` (verify JWT, attach `req.user`), `adminMiddleware` (require `req.user.role === 'admin'`), `cacheMiddleware(duration)` (GET only; cache key by user id + URL; skip if `x-skip-cache: true`).
-4. Handler reads DB (Mongoose), optionally clears cache on mutations, returns JSON.
-5. On server errors, route handlers use a shared error-response helper: the error is logged server-side; the client receives a generic message in production (no stack or internal error text); in development optional details may be included.
-6. Global error handler and 404 handler at the end of the chain return 500/404 JSON when no response was sent.
-
-### 5.4 Data flow (typical)
-
-- **Login:** POST `/api/auth/login` → validate email/password, bcrypt compare, JWT sign → response with token and expiry; frontend stores in `localStorage` and uses in `Authorization` header.
-- **Refresh:** On 401 (or when expiry is near), frontend calls POST `/api/auth/refresh-token` with current token; backend issues new token; frontend updates storage and retries request.
-- **Protected GET:** Axios interceptor adds Bearer token; backend authMiddleware validates JWT and loads user; cache middleware may return cached body for same user+URL.
-- **Admin mutation:** authMiddleware + adminMiddleware; handler updates DB; `clearCache(...)` for affected keys; response returned.
 
 ### 5.5 Authentication & authorization architecture
 
