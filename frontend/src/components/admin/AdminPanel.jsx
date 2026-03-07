@@ -412,11 +412,7 @@ const AdminPanel = () => {
           year: parsedSelections.year || '',
           month: parsedSelections.month || '',
           examStage: parsedSelections.examStage || '',
-          pdfResourceId: parsedSelections.pdfResourceId || null,
         }));
-        if (parsedSelections.selectedPdfName) {
-          setSelectedPdfName(parsedSelections.selectedPdfName);
-        }
       } catch (e) {
         console.error('Error parsing cached form selections:', e);
       }
@@ -424,15 +420,13 @@ const AdminPanel = () => {
   }, []);
 
   // Add function to cache current selections
-  const cacheFormSelections = (customSelections = null) => {
-    const selectionsToCache = customSelections || {
+  const cacheFormSelections = () => {
+    const selectionsToCache = {
       subject: formData.subject,
       paperType: formData.paperType,
       year: formData.year,
       month: formData.month,
       examStage: formData.examStage,
-      pdfResourceId: formData.pdfResourceId,
-      selectedPdfName,
     };
     localStorage.setItem('adminFormSelections', JSON.stringify(selectionsToCache));
   };
@@ -460,7 +454,7 @@ const AdminPanel = () => {
     const cachedSelections = localStorage.getItem('adminFormSelections');
     if (cachedSelections) {
       try {
-        const { subject, paperType, year, month, examStage, pdfResourceId, selectedPdfName: cachedPdfName } = JSON.parse(cachedSelections);
+        const { subject, paperType, year, month, examStage } = JSON.parse(cachedSelections);
         setFormData(prev => ({
           ...prev,
           subject: subject || '',
@@ -468,11 +462,7 @@ const AdminPanel = () => {
           year: year || '',
           month: month || '',
           examStage: examStage || '',
-          pdfResourceId: pdfResourceId || null,
         }));
-        if (cachedPdfName) {
-          setSelectedPdfName(cachedPdfName);
-        }
       } catch (error) {
         console.error('Error loading cached form selections:', error);
       }
@@ -827,18 +817,6 @@ const AdminPanel = () => {
               onSelect={(pdfId, pdfName) => {
                 setFormData(prev => ({ ...prev, pdfResourceId: pdfId }));
                 setSelectedPdfName(pdfName);
-
-                // Immediately cache when selected
-                const cached = localStorage.getItem('adminFormSelections');
-                let parsed = {};
-                if (cached) {
-                  try {
-                    parsed = JSON.parse(cached);
-                  } catch (e) { }
-                }
-                parsed.pdfResourceId = pdfId;
-                parsed.selectedPdfName = pdfName;
-                cacheFormSelections(parsed);
               }}
               filters={{
                 examStage: formData.examStage,
@@ -951,7 +929,6 @@ const AdminPanel = () => {
                       <option value="RTP">RTP</option>
                       <option value="PYQS">PYQS</option>
                       <option value="Model TP">Model TP</option>
-                      <option value="Textbooks">Textbooks</option>
                     </select>
                     {errors.paperType && <p className="error-message">{errors.paperType}</p>}
                   </div>
@@ -1034,17 +1011,6 @@ const AdminPanel = () => {
                           onClick={() => {
                             setFormData(prev => ({ ...prev, pdfResourceId: null }));
                             setSelectedPdfName('');
-
-                            // Immediately remove from cache
-                            const cached = localStorage.getItem('adminFormSelections');
-                            if (cached) {
-                              try {
-                                const parsed = JSON.parse(cached);
-                                parsed.pdfResourceId = null;
-                                parsed.selectedPdfName = '';
-                                localStorage.setItem('adminFormSelections', JSON.stringify(parsed));
-                              } catch (e) { }
-                            }
                           }}
                           style={{
                             background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'pointer', marginLeft: 'auto', padding: '0 5px'
@@ -1374,8 +1340,6 @@ const AdminPanel = () => {
                     <option value="MTP">MTP</option>
                     <option value="RTP">RTP</option>
                     <option value="PYQS">PYQS</option>
-                    <option value="Model TP">Model TP</option>
-                    <option value="Textbooks">Textbooks</option>
                   </select>
                 </div>
                 <div className="form-group">

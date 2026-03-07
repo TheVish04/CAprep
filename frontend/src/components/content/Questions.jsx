@@ -89,7 +89,6 @@ const Questions = () => {
   const [showDiscussionModal, setShowDiscussionModal] = useState(false);
   const [aiExplanation, setAiExplanation] = useState(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [filterOptions, setFilterOptions] = useState({ years: [], questionNumbers: [] });
   // Streaming animation state: { full: string, displayed: number } | null
   const [streamingAiText, setStreamingAiText] = useState(null);
   // Local search input (not committed to filters until Search is clicked)
@@ -111,23 +110,6 @@ const Questions = () => {
       }
     } catch (err) {
       console.error('Error fetching bookmark IDs:', err);
-    }
-  }, []);
-
-  // --- Fetch distinct filter option values (years, questionNumbers) from the full database ---
-  const fetchFilterOptions = useCallback(async (currentFilters) => {
-    try {
-      const params = new URLSearchParams();
-      if (currentFilters.examStage) params.append('examStage', currentFilters.examStage);
-      if (currentFilters.subject) params.append('subject', currentFilters.subject);
-      if (currentFilters.paperType) params.append('paperType', currentFilters.paperType);
-      if (currentFilters.month) params.append('month', currentFilters.month);
-      const response = await api.get(`/questions/filter-options?${params.toString()}`);
-      if (response.data) {
-        setFilterOptions(response.data);
-      }
-    } catch (err) {
-      console.error('Error fetching filter options:', err);
     }
   }, []);
 
@@ -171,7 +153,6 @@ const Questions = () => {
       navigate('/login');
     } else {
       fetchBookmarkIds();
-      fetchFilterOptions(filters);
     }
   }, [navigate]);
 
@@ -197,8 +178,6 @@ const Questions = () => {
       } else {
         fetchQuestions(filters); // fetch all with current filters
       }
-      // Refresh filter options when relevant context filters change
-      fetchFilterOptions(filters);
     }
   }, [filters, isAllMode, fetchQuestions]);
 
@@ -292,11 +271,18 @@ const Questions = () => {
     return () => clearInterval(timer);
   }, [streamingAiText]);
 
-  // --- Get unique years for filtering (from full DB via filterOptions) --- 
-  const getUniqueYears = () => filterOptions.years;
+  // --- Get unique years for filtering --- 
+  const getUniqueYears = () => {
+    const uniqueYears = [...new Set(questions.map((q) => q.year))];
+    return uniqueYears.sort((a, b) => b - a);
+  };
 
-  // --- Get unique question numbers for filtering (from full DB via filterOptions) --- 
-  const getUniqueQuestionNumbers = () => filterOptions.questionNumbers;
+  // --- Get unique question numbers for filtering --- 
+  const getUniqueQuestionNumbers = () => {
+    const subjectFiltered = questions.filter((q) => !filters.subject || q.subject === filters.subject);
+    const uniqueQuestionNumbers = [...new Set(subjectFiltered.map((q) => q.questionNumber))];
+    return uniqueQuestionNumbers.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  };
 
   // --- Handle Filter Input Change (dropdowns & checkbox only, not search) --- 
   const handleFilterChange = (e) => {

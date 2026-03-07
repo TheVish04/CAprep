@@ -46,46 +46,22 @@ const ImageExtractor = ({ onExtract, disabled }) => {
   }, [expandedImage]);
 
   const processFiles = (files) => {
-    let validFiles = Array.from(files).filter((file) => {
+    Array.from(files).forEach((file) => {
       if (!file.type.startsWith('image/')) {
         setError('Only image files are supported.');
-        return false;
+        return;
       }
       if (file.size > 5 * 1024 * 1024) {
         setError('Image must be less than 5MB.');
-        return false;
-      }
-      return true;
-    });
-
-    setImages(prev => {
-      const slotsRemaining = 5 - prev.length;
-      if (slotsRemaining <= 0) {
-        setError('Maximum of 5 images allowed.');
-        return prev;
+        return;
       }
 
-      if (validFiles.length > slotsRemaining) {
-        setError(`Only ${slotsRemaining} more image(s) can be added. Maximum is 5.`);
-        validFiles = validFiles.slice(0, slotsRemaining);
-      } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImages((prev) => [...prev, e.target.result]);
         setError(null);
-      }
-
-      // We read the filtered files
-      validFiles.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImages(currentImages => {
-            // Check again inside async onload just in case
-            if (currentImages.length >= 5) return currentImages;
-            return [...currentImages, e.target.result];
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-
-      return prev; // Let the async onload handle updates
+      };
+      reader.readAsDataURL(file);
     });
   };
 
@@ -149,7 +125,8 @@ const ImageExtractor = ({ onExtract, disabled }) => {
   return (
     <div className="image-extractor-container">
       <div className="extractor-header">
-        <h3>Auto-Fill via Image (AI)</h3>
+        <h3>✨ Auto-Fill via Image (AI)</h3>
+        <p>Instantly extract questions, options, answers, and tables from images.</p>
       </div>
 
       <div
@@ -197,11 +174,9 @@ const ImageExtractor = ({ onExtract, disabled }) => {
                   <button type="button" className="remove-img-btn" onClick={(e) => { e.stopPropagation(); removeImage(idx); }}>&times;</button>
                 </div>
               ))}
-              {images.length < 5 && (
-                <div className="add-more-card" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
-                  <span>+</span> Add More
-                </div>
-              )}
+              <div className="add-more-card" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                <span>+</span> Add More
+              </div>
             </div>
           </div>
         )}
