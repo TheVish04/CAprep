@@ -83,6 +83,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
       questionText,
       answerText,
       subQuestions,
+      pdfResourceId,
     } = req.body;
 
     const question = await Question.findById(id);
@@ -116,6 +117,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
       questionText: dataToValidate.questionText,
       answerText: dataToValidate.answerText,
       subQuestions: dataToValidate.subQuestions,
+      pdfResourceId: pdfResourceId !== undefined ? pdfResourceId : question.pdfResourceId,
     };
 
     await Question.findByIdAndUpdate(id, updatedData, { new: true });
