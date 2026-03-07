@@ -470,6 +470,25 @@ CRITICAL INSTRUCTIONS:
    - Wrap paragraphs in <p> tags. 
    - Use <br> tags for single line breaks where necessary to preserve formatting.
    - PRETTY-PRINT HTML: The HTML code MUST be beautifully formatted, with proper line breaks (\\n) and indentation. Do NOT output a single minified line of HTML. It must be highly readable code.
+   3a. ══════ ABSOLUTE NO-STYLE RULE — THIS IS NON-NEGOTIABLE ══════
+       You MUST NOT add any inline CSS or style attributes to ANY tag under any circumstances.
+       FORBIDDEN — never output any of these:
+         • style="..." on any element
+         • color="..." attribute on any element
+         • <font ...> tags
+         • <h1> or <h5> or <h6> heading tags — these are BANNED
+         • Any CSS property (font-size, font-weight, text-align, margin, padding) embedded inside tags
+         • <span style="..."> or styled <div>
+       ALLOWED TAGS (nothing else):
+         <p>, <br>, <h2>, <h3>, <h4>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <u>, <strong>, <em>, <ul>, <ol>, <li>
+       RULES FOR HEADING TAGS:
+         • <h2> — use for a main question title or the main heading of a section (e.g. "Question 3 (a)").
+         • <h3> — use for sub-section headings, table titles/captions, or any important standalone line that acts as a heading.
+         • <h4> — use for smaller labels or sub-headings within a section.
+         • <strong> — use ONLY when the text is explicitly printed in bold ink in the original image (not for headings you decide on your own).
+         • <u> — use ONLY for text underlined in the original image, or for table totals as per rule 4g.
+         • ALL normal paragraph text must be wrapped in <p>. The app's own CSS controls all visual appearance — font color, exact size, spacing.
+       ══════════════════════════════════════════════════════
 4. STRICT TABLE EXTRACTION: If tabular data exists, convert it strictly to clean HTML <table> tags. Follow these rules EXACTLY:
    a) TABLE TITLES ARE MANDATORY: If any text appears immediately above or below a table as its title or caption, it MUST be rendered as an <h3> tag directly before the <table> tag. NEVER drop a table caption.
    b) COUNT the number of visible columns in the image FIRST before writing any HTML. The number of <td> elements per row MUST match the exact number of visible columns.
