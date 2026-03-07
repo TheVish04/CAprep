@@ -467,6 +467,7 @@ CRITICAL INSTRUCTIONS:
    e) NEVER use colspan or rowspan. Every single row MUST have an identical number of <td> elements.
    f) For financial ledger accounts, the column count varies. ALWAYS determine the actual number of columns from the visual image — never assume. Treat every column as fully independent and never merge them.
    g) TOTALS UNDERLINING: You MUST underline the total numbers in the very last row of a table (if they represent a total or sum) by wrapping the number in HTML <u> tags (e.g., <u>1000</u>).
+   h) MERGING SPLIT TABLES: If a table is split across multiple images or pages (e.g., the header and first few rows in one image, and the remaining rows in the next image), DO NOT render them as two separate <table> elements. You MUST merge them into ONE continuous <table> element in your final output.
 5. UNDERLINED TEXT PRESERVATION: If the raw text contains <u> tags representing text that was underlined in the original image, you MUST preserve these <u> tags around the exact same words or numbers in your final HTML output.
 6. QUESTION AND ANSWER DELINEATION ACROSS MULTIPLE IMAGES: When multiple images are provided, the first part of the images will always be the question and the second part will be the answer.
    a) If there are multiple images, the first image will guaranteed have the question number and the start of the question. Subsequent images might be the continuation of the question.
