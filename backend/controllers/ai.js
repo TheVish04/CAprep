@@ -415,7 +415,8 @@ router.post('/extract-question-image', authMiddleware, async (req, res) => {
 DO NOT skip any word. DO NOT skip any line. DO NOT summarize. DO NOT rephrase. DO NOT add anything. EVERY piece of text visible in the image — including headings, sub-headings, table titles, row labels, and cell values — MUST appear in your output.
 If you are unsure of a word, make your best effort to transcribe it rather than skipping it.
 TABLE TITLES ARE MANDATORY: Any text appearing above or below a table that acts as its title or caption (such as "Raw Material A/c", "Creditors A/c", "Manufacturing A/c") MUST be transcribed immediately before that table's content.
-For tables, transcribe EVERY row and EVERY cell. Do NOT abbreviate multi-line tables. Output the raw text in the exact order it appears in the image, top to bottom, left to right.`;
+For tables, transcribe EVERY row and EVERY cell. Do NOT abbreviate multi-line tables. Output the raw text in the exact order it appears in the image, top to bottom, left to right.
+UNDERLINES: Wherever there is an underline under any text or number in the image, you MUST wrap that specific text or number in HTML <u> tags (e.g., <u>text</u>).`;
 
     const messageContent = [
       { type: "text", text: visionPrompt }
@@ -436,13 +437,13 @@ For tables, transcribe EVERY row and EVERY cell. Do NOT abbreviate multi-line ta
       });
 
       const rawExtractedText = visionCompletion.choices[0]?.message?.content || "";
-      
+
       if (!rawExtractedText) {
         throw new Error("Vision model returned empty text.");
       }
-      
+
       logger.info('Stage 2: Structuring raw text into JSON using 120b model...');
-      
+
       const structurePrompt = `You are an expert OCR formatting and data extraction AI specializing in the CA curriculum. 
 I have raw text extracted from an image of a CA exam question. Your task is to structure it into a strict JSON format.
 
@@ -452,7 +453,7 @@ ${rawExtractedText}
 """
 
 CRITICAL INSTRUCTIONS:
-1. STRICT VERBATIM COPY WITH ZERO OMISSIONS: You must copy the text DITTO TO DITTO from the raw text. DO NOT summarize, DO NOT rephrase, DO NOT change ANY words, lines, or numbers. DO NOT drop or skip any word \u2014 every word from the raw text MUST appear in your output. If a sentence spans multiple lines in the raw text, include all lines fully.
+1. STRICT VERBATIM COPY WITH ZERO OMISSIONS: You must copy the text DITTO TO DITTO from the raw text. DO NOT summarize, DO NOT rephrase, DO NOT change ANY words, lines, or numbers. DO NOT drop or skip any word \u2014 every word from the raw text MUST appear in your output. If a sentence spans multiple lines in the raw text, include all lines fully. DO NOT generate new words other than the text strictly and DO NOT change the words on your own.
 2. QUESTION NUMBER ISOLATION: Extract the question number (e.g. "3", "3a", "Q.2") and place it ONLY in the "questionNumber" field. DO NOT include the question number label at the beginning of "questionText" or "answerText". For example, if the image starts with "3. (a) Following are...", the questionText should start with "Following are..." — NOT "3. (a) Following are..."
 3. ENFORCE FULL HTML FORMATTING: Your entire output for text fields ("questionText", "answerText", "subQuestionText") MUST be pure HTML. 
    - Wrap paragraphs in <p> tags. 
@@ -465,8 +466,14 @@ CRITICAL INSTRUCTIONS:
    d) If a cell is visually EMPTY in the image, output an empty <td></td>. NEVER skip empty cells or shift adjacent data sideways to fill gaps.
    e) NEVER use colspan or rowspan. Every single row MUST have an identical number of <td> elements.
    f) For financial ledger accounts, the column count varies. ALWAYS determine the actual number of columns from the visual image — never assume. Treat every column as fully independent and never merge them.
-5. Identify the Question Type strictly as one of: "objective-only", "subjective-only", or "objective-subjective".
-6. Do NOT include markdown blocks like \`\`\`json outside the JSON output. Return pure JSON.
+   g) TOTALS UNDERLINING: You MUST underline the total numbers in the very last row of a table (if they represent a total or sum) by wrapping the number in HTML <u> tags (e.g., <u>1000</u>).
+5. UNDERLINED TEXT PRESERVATION: If the raw text contains <u> tags representing text that was underlined in the original image, you MUST preserve these <u> tags around the exact same words or numbers in your final HTML output.
+6. QUESTION AND ANSWER DELINEATION ACROSS MULTIPLE IMAGES: When multiple images are provided, the first part of the images will always be the question and the second part will be the answer.
+   a) If there are multiple images, the first image will guaranteed have the question number and the start of the question. Subsequent images might be the continuation of the question.
+   b) If you notice a question number REPEATS later in the text (e.g., you see "Q.2" again in the third or fourth image after already processing "Q.2" earlier), you MUST understand that this indicates the start of the ANSWER for that specific question.
+   c) Everything before the repeated question number belongs in "questionText", and everything from the repeated question number onwards belongs in "answerText".
+7. Identify the Question Type strictly as one of: "objective-only", "subjective-only", or "objective-subjective".
+8. Do NOT include markdown blocks like \`\`\`json outside the JSON output. Return pure JSON.
 
 JSON SCHEMA:
 {
@@ -497,7 +504,7 @@ Ensure "subQuestions" is an empty array if there are none. If it's an objective-
 
       const structuredJsonText = structCompletion.choices[0]?.message?.content || "";
       let parsedData;
-      
+
       try {
         parsedData = JSON.parse(structuredJsonText.trim().replace(/^```json|```$/g, ''));
       } catch (e) {
