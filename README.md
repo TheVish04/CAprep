@@ -656,8 +656,8 @@ CAPrep/
 ├── README.md
 ├── frontend/
 │   ├── index.html              # Single HTML entry; root div; loads main.jsx
-│   ├── package.json            # React, Vite, Tailwind, axios, chart, etc.
-│   ├── vite.config.js           # Vite + React + Tailwind plugins; publicDir: public
+│   ├── package.json            # React, Vite, axios, chart, etc.
+│   ├── vite.config.js           # Vite + React plugins; publicDir: public
 │   ├── .env.example             # VITE_API_URL (backend API base URL including /api)
 │   ├── vercel.json              # SPA rewrite, buildCommand, installCommand (--legacy-peer-deps), outputDirectory, headers
 │   ├── public/
@@ -666,7 +666,7 @@ CAPrep/
 │   ├── src/
 │   │   ├── main.jsx             # React root; service worker registration (prod)
 │   │   ├── App.jsx               # Router, routes, protected/auth redirect, ErrorBoundary
-│   │   ├── index.css             # Global styles (Tailwind entry)
+│   │   ├── index.css             # Global styles (Vanilla CSS entry)
 │   │   ├── utils/
 │   │   │   ├── axiosConfig.js    # Axios instance (baseURL from apiUtils), interceptors (token, 401 refresh/redirect)
 │   │   │   ├── apiUtils.js       # getApiBaseUrl, get/set/clear auth token, refreshToken, get/post, handleError
