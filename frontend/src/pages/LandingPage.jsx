@@ -133,7 +133,9 @@ const LandingPage = () => {
           <p>Access organized question papers, practice strategically, and excel in your CA examinations with our comprehensive preparation platform.</p>
           <div className="cta-buttons">
             {!isLoggedIn && (
-              <Link to="/register" className="cta-btn primary-btn">Get Started</Link>
+              <Magnet>
+                <Link to="/register" className="cta-btn primary-btn">Get Started</Link>
+              </Magnet>
             )}
             <Magnet>
               <Link to="/about" className="cta-btn secondary-btn">Learn More</Link>
