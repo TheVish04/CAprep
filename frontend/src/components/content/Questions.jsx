@@ -208,7 +208,7 @@ const Questions = () => {
 
     const fetchExplanation = async () => {
       try {
-        const response = await api.post('/ai-quiz/search-explanation', { searchTerm });
+        const response = await api.post('/ai/search-explanation', { searchTerm });
         if (!ignore) {
           if (response.data?.explanation) {
             setAiExplanation(null);

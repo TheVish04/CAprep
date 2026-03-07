@@ -12,7 +12,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 // Fast and versatile model for standard queries
 const GROQ_MODEL = 'openai/gpt-oss-120b';
 
-// POST /api/ai-quiz/generate - Generate questions using AI
+// POST /api/ai/generate - Generate questions using AI
 router.post('/generate', authMiddleware, async (req, res) => {
   try {
     const { subject, examStage, count = 5 } = req.body; // Default to 5 questions
@@ -175,7 +175,7 @@ Generate ${count} new, unique MCQs suitable for the CA ${examStage} level, focus
   }
 });
 
-// POST /api/ai-quiz/suggest-title - Generate a short title for chat from user's first message (auth required)
+// POST /api/ai/suggest-title - Generate a short title for chat from user's first message (auth required)
 router.post('/suggest-title', authMiddleware, async (req, res) => {
   try {
     const { question } = req.body;
@@ -207,7 +207,7 @@ Title:`;
   }
 });
 
-// POST /api/ai-quiz/ask - Answer CA-related questions using AI (auth required)
+// POST /api/ai/ask - Answer CA-related questions using AI (auth required)
 router.post('/ask', authMiddleware, async (req, res) => {
   try {
     const { question, examStage, subject, conversationHistory = [], image = null } = req.body;
@@ -316,7 +316,7 @@ router.post('/ask', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/ai-quiz/search-explanation - Provide a short explanation for CA-related search terms 
+// POST /api/ai/search-explanation - Provide a short explanation for CA-related search terms 
 router.post('/search-explanation', authMiddleware, async (req, res) => {
   try {
     const { searchTerm } = req.body;
@@ -400,7 +400,7 @@ router.post('/search-explanation', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/ai-quiz/extract-question-image - Extract structured question data from uploaded images
+// POST /api/ai/extract-question-image - Extract structured question data from uploaded images
 router.post('/extract-question-image', authMiddleware, async (req, res) => {
   try {
     const { images } = req.body;

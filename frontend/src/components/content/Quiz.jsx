@@ -9,7 +9,7 @@ import apiUtils from '../../utils/apiUtils';
 const Quiz = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // State for quiz setup
   const [step, setStep] = useState('setup'); // setup, quiz, result
   const [examStage, setExamStage] = useState('');
@@ -22,7 +22,7 @@ const Quiz = () => {
   const [availableSubjects, setAvailableSubjects] = useState([]); // State for available subjects
   const [loadingSubjects, setLoadingSubjects] = useState(false); // Loading state for subjects
   const [quizMode, setQuizMode] = useState('standard'); // New state for quiz mode: 'standard' or 'ai'
-  
+
   // State for quiz questions and results
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -33,10 +33,10 @@ const Quiz = () => {
   const [timerInterval, setTimerInterval] = useState(null);
   const [quizCompleted, setQuizCompleted] = useState(false); // Track if results have been calculated
   const [lastQuizAttempt, setLastQuizAttempt] = useState(null); // Store the details of the last attempt for review
-  
+
   // Maximum questions allowed based on quiz mode
   const getMaxQuestions = () => quizMode === 'ai' ? 40 : 1000; // No practical limit for standard quiz
-  
+
   // Handle quiz mode change - adjust question count if needed
   const handleQuizModeChange = (mode) => {
     setQuizMode(mode);
@@ -48,7 +48,7 @@ const Quiz = () => {
       setWarning(null);
     }
   };
-  
+
   useEffect(() => {
     // Check if user is logged in
     const token = apiUtils.getAuthToken();
@@ -56,30 +56,30 @@ const Quiz = () => {
       navigate('/login');
     }
   }, [navigate]);
-  
+
   // Fetch available subjects when exam stage changes
   useEffect(() => {
     if (!examStage) {
       setAvailableSubjects([]);
       return;
     }
-    
+
     const fetchAvailableSubjects = async () => {
       setLoadingSubjects(true);
       setError(null);
       setWarning(null);
       try {
         const token = apiUtils.getAuthToken();
-        
+
         // For AI quizzes, fetch all subjects even if they don't have MCQs
         const endpoint = quizMode === 'ai'
           ? `/questions/all-subjects?examStage=${encodeURIComponent(examStage)}`
           : `/questions/available-subjects?examStage=${encodeURIComponent(examStage)}`;
         const response = await api.get(endpoint);
-        
+
         const data = response.data;
         setAvailableSubjects(data);
-        
+
         if (data.length === 0) {
           const message = quizMode === 'ai'
             ? `No subjects configured for ${examStage} exam stage.`
@@ -96,10 +96,10 @@ const Quiz = () => {
         setLoadingSubjects(false);
       }
     };
-    
+
     fetchAvailableSubjects();
   }, [examStage, quizMode]);
-  
+
   // Save Quiz History
   const saveQuizHistory = useCallback(async (quizResult) => {
     const token = apiUtils.getAuthToken();
@@ -112,7 +112,7 @@ const Quiz = () => {
       console.error('Error saving quiz history:', error);
     }
   }, []);
-  
+
   // Calculate Score and Prepare Review Data
   const calculateAndFinalizeQuiz = useCallback(() => {
     if (quizCompleted) return;
@@ -124,44 +124,44 @@ const Quiz = () => {
       const subQuestion = question.subQuestions[subQuestionIndex];
       const questionKey = `${question._id}_${subQuestionIndex}`;
       const selectedOptionIndex = selectedOptions[questionKey]; // Might be undefined
-      
+
       const correctOptionIndex = subQuestion.subOptions.findIndex(opt => opt.isCorrect);
       let isCorrect = false;
-      
+
       if (selectedOptionIndex !== undefined) {
-          const selectedOption = subQuestion.subOptions[selectedOptionIndex];
-          if (selectedOption && selectedOption.isCorrect) {
-              correctAnswers++;
-              isCorrect = true;
-          }
+        const selectedOption = subQuestion.subOptions[selectedOptionIndex];
+        if (selectedOption && selectedOption.isCorrect) {
+          correctAnswers++;
+          isCorrect = true;
+        }
       }
-      
+
       // Check if this is an AI-generated question (ID starts with 'ai-question-')
       const isAiQuestion = question._id.toString().startsWith('ai-question-');
-      
+
       // Store option texts for better review displays
       const optionTexts = subQuestion.subOptions.map(opt => opt.optionText);
-      
+
       return {
-          // For AI questions, use a placeholder ObjectId compatible with MongoDB
-          questionId: isAiQuestion ? "000000000000000000000000" : question._id,
-          subQuestionIndex,
-          selectedOptionIndex, // Can be undefined
-          correctOptionIndex,
-          isCorrect,
-          // For AI questions, store the full question text since we can't look it up later
-          questionText: isAiQuestion ? question.questionText : undefined,
-          optionTexts: isAiQuestion ? optionTexts : undefined,
-          explanation: isAiQuestion ? question.explanation : undefined,
-          isAiGenerated: isAiQuestion
+        // For AI questions, use a placeholder ObjectId compatible with MongoDB
+        questionId: isAiQuestion ? "000000000000000000000000" : question._id,
+        subQuestionIndex,
+        selectedOptionIndex, // Can be undefined
+        correctOptionIndex,
+        isCorrect,
+        // For AI questions, store the full question text since we can't look it up later
+        questionText: isAiQuestion ? question.questionText : undefined,
+        optionTexts: isAiQuestion ? optionTexts : undefined,
+        explanation: isAiQuestion ? question.explanation : undefined,
+        isAiGenerated: isAiQuestion
       };
     });
-    
+
     const finalScore = correctAnswers;
     setScore(finalScore);
     setQuizCompleted(true);
     setShowResults(true);
-    
+
     const quizResultPayload = {
       subject: subject,
       score: finalScore,
@@ -169,20 +169,20 @@ const Quiz = () => {
       questionsAttempted: attemptedQuestionsData,
       isAiQuiz: quizMode === 'ai'
     };
-    
+
     // Save attempt locally for immediate review button
-    setLastQuizAttempt({ 
-      ...quizResultPayload, 
+    setLastQuizAttempt({
+      ...quizResultPayload,
       questions: questions // Include the full questions for review 
-    }); 
-    
+    });
+
     // Save to backend
     if (questions.length > 0) {
       saveQuizHistory(quizResultPayload);
     }
 
   }, [questions, selectedOptions, quizCompleted, saveQuizHistory, subject, quizMode]);
-  
+
   // Timer effect
   useEffect(() => {
     let intervalId = null;
@@ -208,7 +208,7 @@ const Quiz = () => {
     };
     // Ensure subject is in dependency array if used inside calculateAndFinalizeQuiz indirectly
   }, [step, timeRemaining, quizCompleted, calculateAndFinalizeQuiz]);
-  
+
   // Start quiz - modified to handle both standard and AI quiz modes
   const handleStartQuiz = async () => {
     // Validate selections
@@ -216,25 +216,25 @@ const Quiz = () => {
       setError('Please select both exam stage and subject');
       return;
     }
-    
+
     if (questionCount < 1 || questionCount > getMaxQuestions()) {
       setError(`Please enter a valid number of questions (1-${getMaxQuestions()})`);
       return;
     }
-    
+
     if (timeLimit < 1 || timeLimit > 180) {
       setError('Please enter a valid time limit (1-180 minutes)');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     setWarning(null);
     setQuizCompleted(false);
-    
+
     try {
       let data;
-      
+
       if (quizMode === 'standard') {
         // Standard quiz - fetch questions from database
         const response = await api.get(
@@ -243,12 +243,12 @@ const Quiz = () => {
         data = response.data;
       } else {
         // AI-generated quiz
-        const response = await api.post('/ai-quiz/generate', {
+        const response = await api.post('/ai/generate', {
           examStage,
           subject,
           count: questionCount
         });
-        
+
         // Transform AI response to match the format expected by the quiz component
         data = response.data.map((aiQuestion, index) => {
           return {
@@ -268,15 +268,15 @@ const Quiz = () => {
           };
         });
       }
-      
+
       if (!Array.isArray(data) || data.length === 0) {
         throw new Error(`No ${quizMode === 'ai' ? 'AI-generated' : 'MCQ'} questions available for the selected criteria`);
       }
-      
+
       if (quizMode === 'standard' && data.length < questionCount) {
         setWarning(`Only ${data.length} questions are available for this subject. Quiz will proceed with these.`);
       }
-      
+
       setQuestions(data);
       setCurrentQuestionIndex(0);
       setSelectedOptions({});
@@ -291,7 +291,7 @@ const Quiz = () => {
       setLoading(false);
     }
   };
-  
+
   const handleOptionSelect = (questionId, subQuestionIndex, optionIndex) => {
     if (quizCompleted) return;
     setSelectedOptions(prev => ({
@@ -299,7 +299,7 @@ const Quiz = () => {
       [`${questionId}_${subQuestionIndex}`]: optionIndex
     }));
   };
-  
+
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
@@ -309,13 +309,13 @@ const Quiz = () => {
       setStep('result');
     }
   };
-  
+
   const handlePreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
     }
   };
-  
+
   const handleRetakeQuiz = () => {
     setCurrentQuestionIndex(0);
     setSelectedOptions({});
@@ -325,7 +325,7 @@ const Quiz = () => {
     setTimeRemaining(timeLimit * 60);
     setStep('quiz');
   };
-  
+
   const handleSetupNewQuiz = () => {
     setStep('setup');
     setExamStage('');
@@ -333,7 +333,7 @@ const Quiz = () => {
     setQuestions([]);
     setQuizCompleted(false);
   };
-  
+
   // Format time from seconds to MM:SS and determine timer class
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -346,26 +346,26 @@ const Quiz = () => {
     if (timeLimit <= 0) return 'quiz-timer';
     const totalSeconds = timeLimit * 60;
     const percentage = (timeRemaining / totalSeconds) * 100;
-    
+
     if (percentage <= 10) return 'quiz-timer danger';
     if (percentage <= 25) return 'quiz-timer warning';
     return 'quiz-timer';
   };
-  
+
   // Function to navigate to Quiz Review page (we'll create this page later)
   const handleViewReview = () => {
     if (lastQuizAttempt) {
       // Pass the quiz attempt details to the review page via state
       // Include 'from' information to help navigate back correctly
-      navigate('/quiz-review', { 
-        state: { 
+      navigate('/quiz-review', {
+        state: {
           quizAttempt: lastQuizAttempt,
           from: 'quiz-results'
-        } 
+        }
       });
     }
   };
-  
+
   // Check for returned state from QuizReview when coming back
   useEffect(() => {
     // If we have state from navigation and showResults is true, we came back from Review
@@ -376,28 +376,28 @@ const Quiz = () => {
       setStep('result'); // Show results
     }
   }, [location]);
-  
+
   // Modified quiz setup rendering to include the quiz mode toggle
   const renderQuizSetup = () => (
     <div className="quiz-setup">
       <h1>Start a New Quiz</h1>
       <p>Select your preferences and start testing your knowledge.</p>
-      
+
       <div className="setup-form">
         {error && <div className="error-message">{error}</div>}
         {warning && <div className="warning-message">{warning}</div>}
-        
+
         {/* Quiz Mode Selection */}
         <div className="form-group quiz-mode-selector">
           <label>Quiz Mode</label>
           <div className="mode-toggle-container">
-            <button 
+            <button
               className={`mode-toggle-btn ${quizMode === 'standard' ? 'active' : ''}`}
               onClick={() => handleQuizModeChange('standard')}
             >
               Standard Quiz
             </button>
-            <button 
+            <button
               className={`mode-toggle-btn ${quizMode === 'ai' ? 'active' : ''}`}
               onClick={() => handleQuizModeChange('ai')}
             >
@@ -415,7 +415,7 @@ const Quiz = () => {
             )}
           </div>
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="examStage">Exam Stage</label>
           <select
@@ -430,7 +430,7 @@ const Quiz = () => {
             <option value="Final">Final</option>
           </select>
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="subject">Subject</label>
           <select
@@ -448,7 +448,7 @@ const Quiz = () => {
           </select>
           {loadingSubjects && <div className="loading-message">Loading subjects...</div>}
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="questionCount">Number of Questions (1-{getMaxQuestions()})</label>
           <input
@@ -476,7 +476,7 @@ const Quiz = () => {
             disabled={loading}
           />
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="timeLimit">Time Limit (minutes)</label>
           <input
@@ -504,7 +504,7 @@ const Quiz = () => {
             disabled={loading}
           />
         </div>
-        
+
         <button
           className="start-quiz-btn"
           onClick={handleStartQuiz}
@@ -521,13 +521,13 @@ const Quiz = () => {
       </div>
     </div>
   );
-  
+
   const renderQuiz = () => {
     if (questions.length === 0) return null;
-    
+
     const currentQuestion = questions[currentQuestionIndex];
     const questionNumber = currentQuestionIndex + 1;
-    
+
     return (
       <div className="quiz-container">
         {warning && <div className="warning-message">{warning}</div>}
@@ -535,23 +535,23 @@ const Quiz = () => {
           <h2>Question {questionNumber} of {questions.length}</h2>
           <div className={getTimerClass()}>Time Remaining: {formatTime(timeRemaining)}</div>
           <div className="quiz-progress">
-            <div 
-              className="progress-bar" 
+            <div
+              className="progress-bar"
               style={{ width: `${(questionNumber / questions.length) * 100}%` }}
             ></div>
           </div>
         </div>
-        
+
         <div className="quiz-question">
           <div className="question-text question-content-wrapper" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentQuestion.questionText) }}></div>
-          
+
           {currentQuestion.subQuestions.map((subQuestion, subIndex) => (
             <div key={subIndex} className="sub-question">
               <h3>{subQuestion.subQuestionText}</h3>
-              
+
               <div className="options-list">
                 {subQuestion.subOptions.map((option, optIndex) => (
-                  <div 
+                  <div
                     key={optIndex}
                     className={`option ${selectedOptions[`${currentQuestion._id}_${subIndex}`] === optIndex ? 'selected' : ''}`}
                     onClick={() => handleOptionSelect(currentQuestion._id, subIndex, optIndex)}
@@ -564,17 +564,17 @@ const Quiz = () => {
             </div>
           ))}
         </div>
-        
+
         <div className="quiz-navigation">
-          <button 
+          <button
             className="prev-btn"
             onClick={handlePreviousQuestion}
             disabled={currentQuestionIndex === 0}
           >
             Previous
           </button>
-          
-          <button 
+
+          <button
             className="next-btn"
             onClick={handleNextQuestion}
           >
@@ -584,16 +584,16 @@ const Quiz = () => {
       </div>
     );
   };
-  
+
   const renderResults = () => {
     const totalQs = lastQuizAttempt?.totalQuestions || questions.length;
     const finalScore = lastQuizAttempt?.score ?? score; // Use score from lastAttempt if available
     const percentage = totalQs > 0 ? Math.round((finalScore / totalQs) * 100) : 0;
-    
+
     return (
       <div className="quiz-results">
         <h1>Quiz Results</h1>
-        
+
         <div className="score-card">
           <div className="score-header">
             <h2>Your Score</h2>
@@ -607,13 +607,13 @@ const Quiz = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="result-actions">
-          {/* Add Review Button */} 
+          {/* Add Review Button */}
           {lastQuizAttempt && (
-             <button className="review-btn" onClick={handleViewReview}>
-                Review Answers
-             </button>
+            <button className="review-btn" onClick={handleViewReview}>
+              Review Answers
+            </button>
           )}
           <button className="retake-btn" onClick={handleRetakeQuiz}>
             Retake This Quiz
@@ -628,7 +628,7 @@ const Quiz = () => {
       </div>
     );
   };
-  
+
   return (
     <div className="quiz-page">
       <Navbar />

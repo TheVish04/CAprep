@@ -357,7 +357,7 @@ const ChatBotPage = () => {
         const dialogueContext = `User: ${firstUserMessage.content || '[Image uploaded]'}\nAI: ${firstBotMessage.content}`;
 
         api
-          .post('/ai-quiz/suggest-title', { question: dialogueContext })
+          .post('/ai/suggest-title', { question: dialogueContext })
           .then(res => {
             const aiTitle = res.data?.title?.trim();
             if (aiTitle && aiTitle.length > 0) {
@@ -439,7 +439,7 @@ const ChatBotPage = () => {
         requestData.subject = selectedSubject;
       }
 
-      const response = await api.post('/ai-quiz/ask', requestData, config);
+      const response = await api.post('/ai/ask', requestData, config);
 
       const content = sanitizeResponse(response.data.answer);
 

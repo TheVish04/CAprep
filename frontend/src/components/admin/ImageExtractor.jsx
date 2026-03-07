@@ -13,7 +13,7 @@ const ImageExtractor = ({ onExtract, disabled }) => {
   useEffect(() => {
     const handlePaste = (e) => {
       if (disabled || isExtracting) return;
-      
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -94,8 +94,8 @@ const ImageExtractor = ({ onExtract, disabled }) => {
 
     try {
       const token = apiUtils.getAuthToken();
-      
-      const response = await fetch(`${apiUtils.getApiBaseUrl()}/ai-quiz/extract-question-image`, {
+
+      const response = await fetch(`${apiUtils.getApiBaseUrl()}/ai/extract-question-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,22 +128,22 @@ const ImageExtractor = ({ onExtract, disabled }) => {
         <h3>✨ Auto-Fill via Image (AI)</h3>
         <p>Instantly extract questions, options, answers, and tables from images.</p>
       </div>
-      
-      <div 
+
+      <div
         className={`dropzone ${images.length > 0 ? 'has-images' : ''}`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onClick={() => images.length === 0 && fileInputRef.current?.click()}
       >
-        <input 
-          type="file" 
-          multiple 
-          accept="image/*" 
-          className="hidden-file-input" 
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          className="hidden-file-input"
           ref={fileInputRef}
           onChange={handleFileChange}
         />
-        
+
         {images.length === 0 ? (
           <div className="empty-dropzone">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -164,13 +164,13 @@ const ImageExtractor = ({ onExtract, disabled }) => {
           <div className="image-preview-area">
             <div className="image-list">
               {images.map((img, idx) => (
-                <div 
-                  key={idx} 
-                  className="image-thumbnail" 
+                <div
+                  key={idx}
+                  className="image-thumbnail"
                   onClick={() => setExpandedImage(img)}
                   title="Click to view full image"
                 >
-                  <img src={img} alt={`Upload ${idx+1}`} />
+                  <img src={img} alt={`Upload ${idx + 1}`} />
                   <button type="button" className="remove-img-btn" onClick={(e) => { e.stopPropagation(); removeImage(idx); }}>&times;</button>
                 </div>
               ))}
@@ -186,8 +186,8 @@ const ImageExtractor = ({ onExtract, disabled }) => {
 
       {images.length > 0 && (
         <div className="extractor-actions">
-          <button 
-            type="button" 
+          <button
+            type="button"
             className={`extract-btn ${isExtracting ? 'extracting' : ''}`}
             onClick={handleExtract}
             disabled={isExtracting}
@@ -200,10 +200,10 @@ const ImageExtractor = ({ onExtract, disabled }) => {
               '🪄 Extract Content'
             )}
           </button>
-          
-          <button 
-            type="button" 
-            className="clear-images-btn" 
+
+          <button
+            type="button"
+            className="clear-images-btn"
             onClick={() => setImages([])}
             disabled={isExtracting}
           >

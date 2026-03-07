@@ -5,7 +5,7 @@ const resourceRoutes = require('../controllers/resources');
 const userRoutes = require('../controllers/users');
 const adminRoutes = require('../controllers/admin');
 const discussionRoutes = require('../controllers/discussions');
-const aiQuizRoutes = require('../controllers/aiQuiz');
+const aiRoutes = require('../controllers/ai');
 const dashboardRoutes = require('../controllers/dashboard');
 const announcementRoutes = require('../controllers/announcements');
 const notificationRoutes = require('../controllers/notifications');
@@ -22,7 +22,7 @@ const mountRoutes = (app) => {
   app.use('/api/resources', resourceRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/admin', adminRoutes);
-  app.use('/api/ai-quiz', aiQuizRoutes);
+  app.use('/api/ai', aiRoutes);
   app.use('/api/discussions', discussionRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/announcements', authMiddleware, announcementRoutes);

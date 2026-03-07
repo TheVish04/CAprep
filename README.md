@@ -178,7 +178,7 @@ flowchart TB
         end
         subgraph Practice["Practice & assess"]
             QuizBank["Quiz from question bank<br/>MCQ by subject and stage<br/>Configurable count & timer (1-180 min)<br/>Score and review answers"]
-            AIQuiz["AI-generated quiz<br/>Groq creates new MCQs seeded from real DB questions<br/>Instant practice with explanations"]
+            AIFeatures["AI-generated quiz<br/>Groq creates new MCQs seeded from real DB questions<br/>Instant practice with explanations"]
         end
         subgraph Help["Get help"]
             AIChat["CA Prep Assistant<br/>Chat with AI tutor<br/>Supports image uploads (OCR via Llama vision)<br/>CA syllabus only, no code or off-topic"]
@@ -395,7 +395,7 @@ flowchart TB
             C1["POST feature, issue (auth)"]
             C1 --> ContactSubmissionModel
         end
-        subgraph AiQuizRoutes["aiQuiz.js"]
+        subgraph AiQuizRoutes["ai.js"]
             AI1["generate (AI MCQs)<br/>ask (chat + image input)<br/>suggest-title (chat title)<br/>search-explanation<br/>extract-question-image (OCR)"]
             AI1 --> QuestionModel
             AI1 --> Groq
@@ -724,7 +724,7 @@ CAPrep/
     │   ├── users.js             # me (profile, bookmarks), bookmarks CRUD, quiz-history CRUD, profile update, profile image upload, delete account, bookmark folders CRUD
     │   ├── admin.js             # users list, analytics, announcements CRUD, audit log, contact/feature-requests, contact/report-issues
     │   ├── dashboard.js         # GET dashboard data, study-session, resource-engagement, question-view, resource-view, announcements
-    │   ├── aiQuiz.js            # POST /generate (AI MCQs seeded with real DB questions), POST /ask (chat with image input — Llama-4-Maverick vision + GPT-OSS-120b), POST /search-explanation (AI term explanation for search bar), POST /extract-question-image (two-stage OCR: vision extracts → GPT structures into JSON)
+    │   ├── ai.js            # POST /generate (AI MCQs seeded with real DB questions), POST /ask (chat with image input — Llama-4-Maverick vision + GPT-OSS-120b), POST /search-explanation (AI term explanation for search bar), POST /extract-question-image (two-stage OCR: vision extracts → GPT structures into JSON)
     │   ├── discussions.js       # user/me, get by itemType+itemId, post message, like, edit, delete message
     │   ├── announcements.js     # GET active announcements (mounted with authMiddleware)
     │   ├── notifications.js     # GET list, PATCH read-all, PATCH :id/read
@@ -762,7 +762,7 @@ CAPrep/
 | `/api/resources` | Mixed | GET /, GET /count, GET /:id (auth where required); POST / (admin, multipart); PUT/DELETE /:id (admin); GET/POST /:id/download, GET /:id/download-url (auth for download) |
 | `/api/users` | Auth | Profile, bookmarks, quiz history, profile image, bookmark folders |
 | `/api/admin` | Auth + Admin | users, analytics, announcements CRUD, audit, contact/feature-requests, contact/report-issues, clear-cache (POST) |
-| `/api/ai-quiz` | Auth | POST /generate (AI MCQs), POST /ask (chat + optional image), POST /search-explanation (inline term explanation), POST /extract-question-image (OCR pipeline — admin) |
+| `/api/ai` | Auth | POST /generate (AI MCQs), POST /ask (chat + optional image), POST /search-explanation (inline term explanation), POST /extract-question-image (OCR pipeline — admin) |
 | `/api/discussions` | Auth | user/me, :itemType/:itemId, message, like, edit, delete |
 | `/api/dashboard` | Auth | GET /, study-session, resource-engagement, question-view, resource-view, announcements |
 | `/api/announcements` | Auth (mount) | GET / (active announcements) |
@@ -788,20 +788,20 @@ CAPrep/
   Response: `201` — `{ "id", ...questionData }`; `400` on validation error.
 
 - **AI chat with image**  
-  `POST /api/ai-quiz/ask`  
+  `POST /api/ai/ask`  
   Headers: `Authorization: Bearer <token>`  
   Body: `{ "message": "Solve this", "imageBase64": "data:image/jpeg;base64,...", "history": [...] }`  
   The backend first runs the image through Llama-4-Maverick to extract text, then passes that as context to GPT-OSS-120b for the answer.  
   Response: `200` — `{ "reply": "...", "suggestedTitle": "..." }`
 
 - **AI search explanation**  
-  `POST /api/ai-quiz/search-explanation`  
+  `POST /api/ai/search-explanation`  
   Headers: `Authorization: Bearer <token>`  
   Body: `{ "term": "amalgamation" }`  
   Response: `200` — `{ "explanation": "Amalgamation refers to..." }` (100–150 words); `400` if term is trivial/stop word.
 
 - **OCR: extract question from image (admin)**  
-  `POST /api/ai-quiz/extract-question-image`  
+  `POST /api/ai/extract-question-image`  
   Headers: `Authorization: Bearer <admin-token>`  
   Body: `multipart/form-data` with `image` file  
   Response: `200` — `{ "questionText": "...", "answerText": "...", "subQuestions": [...] }` — structured JSON ready to populate the question form.
