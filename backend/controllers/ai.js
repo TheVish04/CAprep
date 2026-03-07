@@ -411,12 +411,36 @@ router.post('/extract-question-image', authMiddleware, async (req, res) => {
 
     logger.info(`Extract Question Request: processing ${images.length} image(s) via Groq Vision.`);
 
-    const visionPrompt = `CRITICAL INSTRUCTION: Your ONLY job is to transcribe EVERY SINGLE character, word, number, symbol, and table from this image with ZERO omissions.
-DO NOT skip any word. DO NOT skip any line. DO NOT summarize. DO NOT rephrase. DO NOT add anything. EVERY piece of text visible in the image — including headings, sub-headings, table titles, row labels, and cell values — MUST appear in your output.
-If you are unsure of a word, make your best effort to transcribe it rather than skipping it.
-TABLE TITLES ARE MANDATORY: Any text appearing above or below a table that acts as its title or caption (such as "Raw Material A/c", "Creditors A/c", "Manufacturing A/c") MUST be transcribed immediately before that table's content.
-For tables, transcribe EVERY row and EVERY cell. Do NOT abbreviate multi-line tables. Output the raw text in the exact order it appears in the image, top to bottom, left to right.
-UNDERLINES: Wherever there is an underline under any text or number in the image, you MUST wrap that specific text or number in HTML <u> tags (e.g., <u>text</u>).`;
+    const visionPrompt = `CRITICAL SYSTEM INSTRUCTION: You are a high-precision OCR engine specializing in Indian CA exam papers. Your objective is verbatim transcription with absolute spatial mapping. DO NOT summarize, rephrase, or invent words.
+
+1. REGULAR TEXT: Transcribe paragraph text exactly as it appears.
+2. TABULAR DATA (COORDINATE MAPPING): When you encounter ANY table, ledger, balance sheet, or columnar data, you MUST NOT use Markdown or plain text. You MUST output a JSON array of cell objects wrapped in <table_data> tags.
+3. THE GRID RULE (CRITICAL):
+   - First, identify the MAXIMUM number of visual columns in the table (e.g., a standard Balance Sheet has 4 columns: Liabilities, Amount, Assets, Amount).
+   - For EVERY single cell in that grid, you must create a JSON object with "row", "col", and "text" keys.
+   - If a cell is visually blank or empty in the image, you MUST set the text to an empty string: "text": "". DO NOT skip the cell.
+   - Every row MUST have an object for every column. (e.g., If max columns is 4, row 2 must have objects for col 1, 2, 3, and 4).
+
+EXAMPLE FORMAT:
+<table_data>
+[
+  {"row": 1, "col": 1, "text": "Liabilities"},
+  {"row": 1, "col": 2, "text": "₹"},
+  {"row": 1, "col": 3, "text": "Assets"},
+  {"row": 1, "col": 4, "text": "₹"},
+  {"row": 2, "col": 1, "text": "X Capital"},
+  {"row": 2, "col": 2, "text": "6,00,000"},
+  {"row": 2, "col": 3, "text": "Land & Buildings"},
+  {"row": 2, "col": 4, "text": "5,32,000"},
+  {"row": 3, "col": 1, "text": ""},
+  {"row": 3, "col": 2, "text": ""},
+  {"row": 3, "col": 3, "text": "Less: Depreciation"},
+  {"row": 3, "col": 4, "text": "25,500"}
+]
+</table_data>
+
+4. UNDERLINES & TOTALS: If text or a final total is underlined in the image, wrap it in HTML <u> tags inside the JSON "text" value (e.g., "text": "<u>13,28,862</u>").
+5. TABLE TITLES: Transcribe table titles (e.g., "Balance sheet of Alpha and Associates...") as normal text immediately BEFORE the <table_data> block.`;
 
     const messageContent = [
       { type: "text", text: visionPrompt }
@@ -444,57 +468,48 @@ UNDERLINES: Wherever there is an underline under any text or number in the image
 
       logger.info('Stage 2: Structuring raw text into JSON using 120b model...');
 
-      const structurePrompt = `You are an expert OCR formatting and data extraction AI specializing in the CA curriculum. 
-I have raw text extracted from an image of a CA exam question. Your task is to structure it into a strict JSON format.
+      const structurePrompt = `CRITICAL SYSTEM INSTRUCTION: You are a deterministic HTML/JSON compiler. Your input is OCR text from a CA exam that contains regular text and strict coordinate-based tables. Your output MUST be strict, valid JSON containing pure, semantic HTML.
 
 RAW TEXT FROM IMAGE:
 """
-${rawExtractedText}
+\${rawExtractedText}
 """
 
-CRITICAL INSTRUCTIONS:
-1. STRICT VERBATIM COPY WITH ZERO OMISSIONS: You must copy the text DITTO TO DITTO from the raw text. DO NOT summarize, DO NOT rephrase, DO NOT change ANY words, lines, or numbers. DO NOT drop or skip any word \u2014 every word from the raw text MUST appear in your output. If a sentence spans multiple lines in the raw text, include all lines fully. DO NOT generate new words other than the text strictly and DO NOT change the words on your own.
-2. QUESTION NUMBER ISOLATION: Extract the question number (e.g. "3", "3a", "Q.2") and place it ONLY in the "questionNumber" field. DO NOT include the question number label at the beginning of "questionText" or "answerText". For example, if the image starts with "3. (a) Following are...", the questionText should start with "Following are..." — NOT "3. (a) Following are..."
-3. ENFORCE FULL HTML FORMATTING: Your entire output for text fields ("questionText", "answerText", "subQuestionText") MUST be pure HTML. 
-   - Wrap paragraphs in <p> tags. 
-   - Use <br> tags for single line breaks where necessary to preserve formatting.
-   - PRETTY-PRINT HTML: The HTML code MUST be beautifully formatted, with proper line breaks (\\n) and indentation. Do NOT output a single minified line of HTML. It must be highly readable code.
-4. STRICT TABLE EXTRACTION: If tabular data exists, convert it strictly to clean HTML <table> tags. Follow these rules EXACTLY:
-   a) TABLE TITLES ARE MANDATORY: If any text appears immediately above or below a table as its title or caption, it MUST be rendered as an <h3> tag directly before the <table> tag. NEVER drop a table caption.
-   b) COUNT the number of visible columns in the image FIRST before writing any HTML. The number of <td> elements per row MUST match the exact number of visible columns.
-   c) COLUMN ACCURACY IS ABSOLUTE: Every piece of data MUST land in the EXACT <td> that corresponds to its visual column. Placing data in the wrong column is a critical failure.
-   d) If a cell is visually EMPTY in the image, output an empty <td></td>. NEVER skip empty cells or shift adjacent data sideways to fill gaps.
-   e) NEVER use colspan or rowspan. Every single row MUST have an identical number of <td> elements.
-   f) For financial ledger accounts, the column count varies. ALWAYS determine the actual number of columns from the visual image — never assume. Treat every column as fully independent and never merge them.
-   g) TOTALS UNDERLINING: You MUST underline the total numbers in the very last row of a table (if they represent a total or sum) by wrapping the number in HTML <u> tags (e.g., <u>1000</u>).
-   h) MERGING SPLIT TABLES: If a table is split across multiple images or pages (e.g., the header and first few rows in one image, and the remaining rows in the next image), DO NOT render them as two separate <table> elements. You MUST merge them into ONE continuous <table> element in your final output.
-   i) NESTED / INNER COLUMNS (FINANCIAL STATEMENTS): This is a critical rule for Balance Sheets and Ledgers. Often there is a "Liabilities" text column, an inner "amount" column (sub-totals), an outer "₹" amount column, an "Assets" text column, an inner "amount" column, and an outer "₹" column. This means there are 6 VISUAL COLUMNS IN TOTAL. You MUST determine the MAXIMUM number of distinct columns across ANY row. Your entire <table> MUST have THAT EXACT NUMBER of <td> elements for EVERY SINGLE ROW. If the header only has 4 words but the data below it spans 6 columns, you MUST pad the header row with empty <td> tags so it also has exactly 6 <td> tags. DO NOT output 4 columns in one row and 6 in another. EVERY <tr> MUST HAVE THE EXACT SAME NUMBER OF <td> TAGS. The numbers MUST be placed in their exact, correct visual column. If a row has an outer total but no inner sub-total, insert an empty <td></td> for the missing inner column. NEVER shift data leftward into the wrong column.
-5. UNDERLINED TEXT PRESERVATION: If the raw text contains <u> tags representing text that was underlined in the original image, you MUST preserve these <u> tags around the exact same words or numbers in your final HTML output.
-6. QUESTION AND ANSWER DELINEATION ACROSS MULTIPLE IMAGES: When multiple images are provided, the first part of the images will always be the question and the second part will be the answer.
-   a) If there are multiple images, the first image will guaranteed have the question number and the start of the question. Subsequent images might be the continuation of the question.
-   b) If you notice a question number REPEATS later in the text (e.g., you see "Q.2" again in the third or fourth image after already processing "Q.2" earlier), you MUST understand that this indicates the start of the ANSWER for that specific question.
-   c) Everything before the repeated question number belongs in "questionText", and everything from the repeated question number onwards belongs in "answerText".
-7. Identify the Question Type strictly as one of: "objective-only", "subjective-only", or "objective-subjective".
-8. Do NOT include markdown blocks like \`\`\`json outside the JSON output. Return pure JSON.
+ABSOLUTE CONSTRAINTS (FAILURE IS NOT AN OPTION):
+1. ZERO TEXT ALTERATION: You must copy the text verbatim. DO NOT fix typos, DO NOT recalculate math, DO NOT summarize. Every word must survive exactly as provided.
+2. STRICT TABLE COMPILATION (FROM COORDINATES):
+   - Locate any JSON arrays wrapped inside <table_data> tags.
+   - You MUST convert these explicit coordinates into perfectly structured HTML <table> tags.
+   - Group the objects by their "row" integer to create <tr> tags.
+   - Order the objects within that row by their "col" integer to create <td> tags.
+   - If the "text" value is "" (empty string), output exactly <td></td>.
+   - BANNED: You MUST NOT use colspan or rowspan under any circumstances.
+   - Because you have explicit row and column integers, follow the coordinates exactly to build the grid. Remove the <table_data> tags and JSON array from your final output; only leave the compiled HTML table.
+3. ABSOLUTE NO-STYLE RULE:
+   - BANNED: style="...", color="...", width="...", height="...", <font>, <b>, <i>.
+   - ALLOWED TAGS ONLY: <p>, <br>, <h2>, <h3>, <h4>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <u>, <strong>, <em>, <ul>, <ol>, <li>.
+   - Wrap standard paragraph text in <p>. Use <h3> for table titles.
+4. QUESTION ISOLATION: Extract the question number (e.g., "3", "Q.2(a)") EXCLUSIVELY into the "questionNumber" field. Do not include it at the start of the "questionText" or "answerText".
+5. MULTIPLE IMAGES/PAGINATION: A repeating question number later in the raw text signifies the transition from the question to the answer. Everything before the repetition belongs in "questionText", and everything from the repetition onwards belongs in "answerText". 
+6. QUESTION TYPE: Must be exactly one of: "objective-subjective", "objective-only", or "subjective-only".
 
-JSON SCHEMA:
+JSON SCHEMA (RETURN PURE JSON ONLY. DO NOT WRAP IN \`\`\`json):
 {
-  "questionNumber": "Extracted question number (e.g. '1', '2a', etc) or empty string if none",
+  "questionNumber": "Extracted question number or empty string",
   "questionType": "objective-subjective" | "objective-only" | "subjective-only",
-  "questionText": "Main question text or HTML table (if any)...",
-  "answerText": "Detailed answer text or HTML table (if any)...",
+  "questionText": "Pure HTML string containing the question and compiled tables...",
+  "answerText": "Pure HTML string containing the answer and compiled tables (if any)...",
   "subQuestions": [
     {
-      "subQuestionText": "Sub-question text...",
+      "subQuestionText": "Pure HTML string...",
       "subOptions": [
-        { "optionText": "Option A text...", "isCorrect": false },
-        { "optionText": "Option B text...", "isCorrect": true }
+        { "optionText": "Pure HTML string...", "isCorrect": false }
       ]
     }
   ]
 }
 
-Ensure "subQuestions" is an empty array if there are none. If it's an objective-only question, "answerText" should be empty. Return ONLY valid JSON and nothing else.`;
+Ensure "subQuestions" is an empty array if there are none. If it is an objective-only question, "answerText" should be empty. Return ONLY valid JSON and nothing else.`;
 
       const structCompletion = await groq.chat.completions.create({
         messages: [{ role: "user", content: structurePrompt }],
