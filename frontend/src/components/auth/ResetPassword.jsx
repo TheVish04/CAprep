@@ -17,10 +17,10 @@ const ResetPassword = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Check for email in query params (from ForgotPassword component)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -33,7 +33,7 @@ const ResetPassword = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     // For OTP, automatically remove spaces and non-numeric characters
     if (name === 'otp') {
       // Remove non-numeric characters
@@ -58,20 +58,20 @@ const ResetPassword = () => {
 
       // Clean and format the OTP - remove any spaces and ensure it's a string
       const cleanOtp = formData.otp.toString().trim();
-      
-      console.log('Verifying OTP:', { 
-        email: formData.email.trim(), 
+
+      console.log('Verifying OTP:', {
+        email: formData.email.trim(),
         otp: cleanOtp,
         originalOtp: formData.otp
       });
-      
+
       const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/verify-reset-otp`, {
         email: formData.email.trim(),
         otp: cleanOtp
       });
 
       console.log('OTP verification response:', response.data);
-      
+
       if (response.data.success) {
         setOtpVerified(true);
         setError('');
@@ -103,15 +103,15 @@ const ResetPassword = () => {
         setIsLoading(false);
         return;
       }
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#_])[A-Za-z\d@$!%*?&#_]{8,}$/;
       if (!passwordRegex.test(formData.newPassword)) {
-        setError('Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)');
+        setError('Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&#_)');
         setIsLoading(false);
         return;
       }
 
       console.log('Resetting password for:', { email: formData.email });
-      
+
       const response = await axios.post(`${apiUtils.getApiBaseUrl()}/auth/reset-password`, {
         email: formData.email,
         otp: formData.otp,
@@ -140,9 +140,9 @@ const ResetPassword = () => {
       <div className="auth-container">
         <div className="auth-form">
           <h2>Reset Password</h2>
-          
+
           {error && <p className="error">{error}</p>}
-          
+
           {success ? (
             <div className="success-message">
               <p>Your password has been reset successfully!</p>
@@ -171,8 +171,8 @@ const ResetPassword = () => {
                     disabled={isLoading}
                   />
                 </div>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isLoading}
                   className={isLoading ? 'loading' : ''}
                 >
@@ -194,8 +194,8 @@ const ResetPassword = () => {
                       minLength="8"
                       autoComplete="new-password"
                     />
-                    <span 
-                      className="toggle-password" 
+                    <span
+                      className="toggle-password"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? 'Hide' : 'Show'}
@@ -216,8 +216,8 @@ const ResetPassword = () => {
                     />
                   </div>
                 </div>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isLoading}
                   className={isLoading ? 'loading' : ''}
                 >
@@ -226,7 +226,7 @@ const ResetPassword = () => {
               </form>
             )
           )}
-          
+
           <p className="auth-link">
             <Link to="/login">Back to Login</Link>
           </p>

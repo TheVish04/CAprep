@@ -23,10 +23,10 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-                           .select('-password -quizHistory') // Exclude password and potentially large history
-                           .populate('bookmarkedQuestions', 'subject questionNumber paperType year month') // Populate needed fields
-                           .populate('bookmarkedResources', 'title subject paperType year month fileUrl'); // Populate needed fields
-                           
+      .select('-password -quizHistory') // Exclude password and potentially large history
+      .populate('bookmarkedQuestions', 'subject questionNumber paperType year month') // Populate needed fields
+      .populate('bookmarkedResources', 'title subject paperType year month fileUrl'); // Populate needed fields
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -78,17 +78,17 @@ router.get('/me/stats', authMiddleware, async (req, res) => {
 
 // GET user's bookmarked question IDs
 router.get('/me/bookmarks/ids', authMiddleware, async (req, res) => {
-    try {
-      const user = await User.findById(req.user.id).select('bookmarkedQuestions');
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      res.json({ bookmarkedQuestionIds: user.bookmarkedQuestions });
-    } catch (error) {
-      logger.error('Error fetching bookmarked question IDs: ' + (error && error.message));
-      res.status(500).json({ error: 'Failed to fetch bookmarked question IDs' });
+  try {
+    const user = await User.findById(req.user.id).select('bookmarkedQuestions');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
+    res.json({ bookmarkedQuestionIds: user.bookmarkedQuestions });
+  } catch (error) {
+    logger.error('Error fetching bookmarked question IDs: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to fetch bookmarked question IDs' });
+  }
+});
 
 // POST Add a question to bookmarks
 router.post('/me/bookmarks/:questionId', authMiddleware, async (req, res) => {
@@ -148,7 +148,7 @@ router.delete('/me/bookmarks/:questionId', authMiddleware, async (req, res) => {
   } catch (error) {
     logger.error('Error removing bookmark: ' + (error && error.message));
     if (error.name === 'CastError' && error.kind === 'ObjectId') {
-        return res.status(400).json({ error: 'Invalid ID format' });
+      return res.status(400).json({ error: 'Invalid ID format' });
     }
     res.status(500).json({ error: 'Failed to remove bookmark' });
   }
@@ -158,17 +158,17 @@ router.delete('/me/bookmarks/:questionId', authMiddleware, async (req, res) => {
 
 // GET user's bookmarked resource IDs
 router.get('/me/bookmarks/resources/ids', authMiddleware, async (req, res) => {
-    try {
-      const user = await User.findById(req.user.id).select('bookmarkedResources');
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      res.json({ bookmarkedResourceIds: user.bookmarkedResources });
-    } catch (error) {
-      logger.error('Error fetching bookmarked resource IDs: ' + (error && error.message));
-      res.status(500).json({ error: 'Failed to fetch bookmarked resource IDs' });
+  try {
+    const user = await User.findById(req.user.id).select('bookmarkedResources');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
+    res.json({ bookmarkedResourceIds: user.bookmarkedResources });
+  } catch (error) {
+    logger.error('Error fetching bookmarked resource IDs: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to fetch bookmarked resource IDs' });
+  }
+});
 
 // POST Add a resource to bookmarks
 router.post('/me/bookmarks/resource/:resourceId', authMiddleware, async (req, res) => {
@@ -231,358 +231,358 @@ router.delete('/me/bookmarks/resource/:resourceId', authMiddleware, async (req, 
 
 // POST Add a quiz result to history
 router.post('/me/quiz-history', authMiddleware, async (req, res) => {
-    // Destructure expected fields, including the new questionsAttempted array
-    const { subject, score, totalQuestions, questionsAttempted, isAiQuiz } = req.body;
+  // Destructure expected fields, including the new questionsAttempted array
+  const { subject, score, totalQuestions, questionsAttempted, isAiQuiz } = req.body;
 
-    // Basic validation for core fields
-    if (typeof subject !== 'string' || subject.trim() === '') {
-        return res.status(400).json({ error: 'Subject is required and must be a string.' });
-    }
-    if (typeof score !== 'number' || !Number.isInteger(score) || score < 0) {
-        return res.status(400).json({ error: 'Score is required and must be a non-negative integer.' });
-    }
-    if (typeof totalQuestions !== 'number' || !Number.isInteger(totalQuestions) || totalQuestions <= 0) {
-        return res.status(400).json({ error: 'Total questions is required and must be a positive integer.' });
-    }
-    if (score > totalQuestions) {
-        return res.status(400).json({ error: 'Score cannot be greater than total questions.' });
-    }
+  // Basic validation for core fields
+  if (typeof subject !== 'string' || subject.trim() === '') {
+    return res.status(400).json({ error: 'Subject is required and must be a string.' });
+  }
+  if (typeof score !== 'number' || !Number.isInteger(score) || score < 0) {
+    return res.status(400).json({ error: 'Score is required and must be a non-negative integer.' });
+  }
+  if (typeof totalQuestions !== 'number' || !Number.isInteger(totalQuestions) || totalQuestions <= 0) {
+    return res.status(400).json({ error: 'Total questions is required and must be a positive integer.' });
+  }
+  if (score > totalQuestions) {
+    return res.status(400).json({ error: 'Score cannot be greater than total questions.' });
+  }
 
-    // Validate questionsAttempted array
-    if (!Array.isArray(questionsAttempted)) {
-        return res.status(400).json({ error: 'questionsAttempted must be an array.' });
-    }
-    
-    try {
-        // Calculate percentage server-side for consistency
-        const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-        
-        const newHistoryEntry = {
-            subject,
-            score,
-            totalQuestions,
-            percentage,
-            questionsAttempted, // Include the detailed attempts
-            date: new Date(),
-            isAiQuiz: isAiQuiz || false // Track if this was an AI-generated quiz
-        };
+  // Validate questionsAttempted array
+  if (!Array.isArray(questionsAttempted)) {
+    return res.status(400).json({ error: 'questionsAttempted must be an array.' });
+  }
 
-        // Add the new entry
-        const user = await User.findByIdAndUpdate(
-            req.user.id,
-            {
-                $push: {
-                    quizHistory: {
-                        $each: [newHistoryEntry],
-                        $position: 0
-                    }
-                }
-            },
-            { new: true }
-        ).select('quizHistory');
+  try {
+    // Calculate percentage server-side for consistency
+    const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+    const newHistoryEntry = {
+      subject,
+      score,
+      totalQuestions,
+      percentage,
+      questionsAttempted, // Include the detailed attempts
+      date: new Date(),
+      isAiQuiz: isAiQuiz || false // Track if this was an AI-generated quiz
+    };
+
+    // Add the new entry
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        $push: {
+          quizHistory: {
+            $each: [newHistoryEntry],
+            $position: 0
+          }
         }
+      },
+      { new: true }
+    ).select('quizHistory');
 
-        // Update subject strengths from quiz history (last 30 attempts per subject, average percentage)
-        const bySubject = {};
-        const maxPerSubject = 30;
-        (user.quizHistory || []).forEach((entry) => {
-            if (!entry.subject) return;
-            if (!bySubject[entry.subject]) bySubject[entry.subject] = [];
-            if (bySubject[entry.subject].length < maxPerSubject) {
-                bySubject[entry.subject].push(entry.percentage != null ? entry.percentage : 0);
-            }
-        });
-        const subjectStrengths = Object.entries(bySubject).map(([subject, percentages]) => {
-            const sum = percentages.reduce((a, b) => a + b, 0);
-            const strengthScore = Math.round(sum / percentages.length);
-            return { subject, strengthScore: Math.min(100, Math.max(0, strengthScore)), lastUpdated: new Date() };
-        });
-        if (subjectStrengths.length > 0) {
-            await User.findByIdAndUpdate(req.user.id, { $set: { subjectStrengths } });
-        }
-
-        res.status(201).json(user.quizHistory[0]);
-
-    } catch (error) {
-        sendErrorResponse(res, 500, { message: 'Failed to save quiz history', error });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
+
+    // Update subject strengths from quiz history (last 30 attempts per subject, average percentage)
+    const bySubject = {};
+    const maxPerSubject = 30;
+    (user.quizHistory || []).forEach((entry) => {
+      if (!entry.subject) return;
+      if (!bySubject[entry.subject]) bySubject[entry.subject] = [];
+      if (bySubject[entry.subject].length < maxPerSubject) {
+        bySubject[entry.subject].push(entry.percentage != null ? entry.percentage : 0);
+      }
+    });
+    const subjectStrengths = Object.entries(bySubject).map(([subject, percentages]) => {
+      const sum = percentages.reduce((a, b) => a + b, 0);
+      const strengthScore = Math.round(sum / percentages.length);
+      return { subject, strengthScore: Math.min(100, Math.max(0, strengthScore)), lastUpdated: new Date() };
+    });
+    if (subjectStrengths.length > 0) {
+      await User.findByIdAndUpdate(req.user.id, { $set: { subjectStrengths } });
+    }
+
+    res.status(201).json(user.quizHistory[0]);
+
+  } catch (error) {
+    sendErrorResponse(res, 500, { message: 'Failed to save quiz history', error });
+  }
 });
 
 // GET User's Quiz History
 router.get('/me/quiz-history', authMiddleware, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('quizHistory');
-        
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+  try {
+    const user = await User.findById(req.user.id).select('quizHistory');
 
-        // The history is already sorted newest first due to $position: 0 on push
-        res.json(user.quizHistory || []);
-
-    } catch (error) {
-        logger.error('Error fetching quiz history: ' + (error && error.message));
-        res.status(500).json({ error: 'Failed to fetch quiz history' });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
+
+    // The history is already sorted newest first due to $position: 0 on push
+    res.json(user.quizHistory || []);
+
+  } catch (error) {
+    logger.error('Error fetching quiz history: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to fetch quiz history' });
+  }
 });
 
 // --- Profile Management ---
 
 // POST Send OTP to new email for email change (must be logged in)
 router.post('/me/send-email-change-otp', authMiddleware, async (req, res) => {
-    try {
-        const { newEmail } = req.body;
-        const trimmed = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
-        if (!trimmed) {
-            return res.status(400).json({ error: 'New email is required' });
-        }
-        if (!/^\S+@\S+\.\S+$/.test(trimmed)) {
-            return res.status(400).json({ error: 'Please use a valid email address' });
-        }
-        const user = await User.findById(req.user.id).select('email');
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const currentEmail = (user.email || '').toLowerCase();
-        if (trimmed === currentEmail) {
-            return res.status(400).json({ error: 'New email is the same as your current email' });
-        }
-        const existing = await User.findOne({ email: trimmed });
-        if (existing) {
-            return res.status(400).json({ error: 'This email is already in use' });
-        }
-        let otp;
-        try {
-            otp = generateOTP(trimmed);
-        } catch (err) {
-            return res.status(429).json({ error: err.message || 'Rate limit exceeded. Try again later.' });
-        }
-        const emailResult = await sendOTPEmail(trimmed, otp);
-        if (!emailResult.success) {
-            if (emailResult.transportError === 'NO_SENDGRID_KEY' || emailResult.transportError === 'NO_CREDENTIALS') {
-                return res.status(500).json({ error: 'Email service is not configured. Please try again later.' });
-            }
-            return res.status(500).json({ error: emailResult.error || 'Failed to send OTP' });
-        }
-        res.json({ message: 'OTP sent to your new email. Check your inbox.' });
-    } catch (error) {
-        logger.error('Error sending email-change OTP: ' + (error && error.message));
-        res.status(500).json({ error: 'Failed to send OTP' });
+  try {
+    const { newEmail } = req.body;
+    const trimmed = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
+    if (!trimmed) {
+      return res.status(400).json({ error: 'New email is required' });
     }
+    if (!/^\S+@\S+\.\S+$/.test(trimmed)) {
+      return res.status(400).json({ error: 'Please use a valid email address' });
+    }
+    const user = await User.findById(req.user.id).select('email');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const currentEmail = (user.email || '').toLowerCase();
+    if (trimmed === currentEmail) {
+      return res.status(400).json({ error: 'New email is the same as your current email' });
+    }
+    const existing = await User.findOne({ email: trimmed });
+    if (existing) {
+      return res.status(400).json({ error: 'This email is already in use' });
+    }
+    let otp;
+    try {
+      otp = generateOTP(trimmed);
+    } catch (err) {
+      return res.status(429).json({ error: err.message || 'Rate limit exceeded. Try again later.' });
+    }
+    const emailResult = await sendOTPEmail(trimmed, otp);
+    if (!emailResult.success) {
+      if (emailResult.transportError === 'NO_SENDGRID_KEY' || emailResult.transportError === 'NO_CREDENTIALS') {
+        return res.status(500).json({ error: 'Email service is not configured. Please try again later.' });
+      }
+      return res.status(500).json({ error: emailResult.error || 'Failed to send OTP' });
+    }
+    res.json({ message: 'OTP sent to your new email. Check your inbox.' });
+  } catch (error) {
+    logger.error('Error sending email-change OTP: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to send OTP' });
+  }
 });
 
 // POST Verify OTP for email change (must be logged in)
 router.post('/me/verify-email-change-otp', authMiddleware, async (req, res) => {
-    try {
-        const { newEmail, otp } = req.body;
-        const trimmed = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
-        if (!trimmed || !otp) {
-            return res.status(400).json({ error: 'New email and OTP are required' });
-        }
-        const verification = verifyOTP(trimmed, String(otp).trim());
-        if (!verification.valid) {
-            return res.status(400).json({ error: verification.message });
-        }
-        setEmailChangeVerified(req.user.id, trimmed);
-        res.json({ success: true, message: 'Email verified. You can now save your profile to update your email.' });
-    } catch (error) {
-        logger.error('Error verifying email-change OTP: ' + (error && error.message));
-        res.status(500).json({ error: 'Verification failed' });
+  try {
+    const { newEmail, otp } = req.body;
+    const trimmed = typeof newEmail === 'string' ? newEmail.trim().toLowerCase() : '';
+    if (!trimmed || !otp) {
+      return res.status(400).json({ error: 'New email and OTP are required' });
     }
+    const verification = verifyOTP(trimmed, String(otp).trim());
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
+    setEmailChangeVerified(req.user.id, trimmed);
+    res.json({ success: true, message: 'Email verified. You can now save your profile to update your email.' });
+  } catch (error) {
+    logger.error('Error verifying email-change OTP: ' + (error && error.message));
+    res.status(500).json({ error: 'Verification failed' });
+  }
 });
 
 // PUT Update user profile (fullName, email; profile picture via separate endpoint)
 // Email change requires prior OTP verification via send-email-change-otp and verify-email-change-otp.
 router.put('/me', authMiddleware, async (req, res) => {
-    try {
-        const { fullName, email } = req.body;
-        const updateData = {};
+  try {
+    const { fullName, email } = req.body;
+    const updateData = {};
 
-        if (fullName !== undefined) {
-            if (typeof fullName !== 'string' || fullName.trim() === '') {
-                return res.status(400).json({ error: 'Full name must be a non-empty string' });
-            }
-            updateData.fullName = fullName.trim();
-        }
-
-        if (email !== undefined) {
-            const trimmed = typeof email === 'string' ? email.trim().toLowerCase() : '';
-            if (!trimmed) {
-                return res.status(400).json({ error: 'Email cannot be empty' });
-            }
-            if (!/^\S+@\S+\.\S+$/.test(trimmed)) {
-                return res.status(400).json({ error: 'Please use a valid email address' });
-            }
-            const user = await User.findById(req.user.id).select('email');
-            if (!user) return res.status(404).json({ error: 'User not found' });
-            const currentEmail = (user.email || '').toLowerCase();
-            if (trimmed !== currentEmail) {
-                const verifiedNewEmail = getEmailChangeVerified(req.user.id);
-                if (verifiedNewEmail !== trimmed) {
-                    return res.status(400).json({ error: 'Please verify your new email with OTP before saving. Use "Send OTP" and enter the code sent to your new email.' });
-                }
-                const existing = await User.findOne({ email: trimmed });
-                if (existing) {
-                    return res.status(400).json({ error: 'This email is already in use' });
-                }
-                updateData.email = trimmed;
-                clearEmailChangeVerified(req.user.id);
-            }
-        }
-
-        if (Object.keys(updateData).length === 0) {
-            return res.status(400).json({ error: 'No update data provided' });
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        ).select('-password -quizHistory');
-
-        if (!updatedUser) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        res.json(updatedUser);
-    } catch (error) {
-        logger.error('Error updating user profile: ' + (error && error.message));
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ error: error.message });
-        }
-        res.status(500).json({ error: 'Failed to update profile' });
+    if (fullName !== undefined) {
+      if (typeof fullName !== 'string' || fullName.trim() === '') {
+        return res.status(400).json({ error: 'Full name must be a non-empty string' });
+      }
+      updateData.fullName = fullName.trim();
     }
+
+    if (email !== undefined) {
+      const trimmed = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      if (!trimmed) {
+        return res.status(400).json({ error: 'Email cannot be empty' });
+      }
+      if (!/^\S+@\S+\.\S+$/.test(trimmed)) {
+        return res.status(400).json({ error: 'Please use a valid email address' });
+      }
+      const user = await User.findById(req.user.id).select('email');
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      const currentEmail = (user.email || '').toLowerCase();
+      if (trimmed !== currentEmail) {
+        const verifiedNewEmail = getEmailChangeVerified(req.user.id);
+        if (verifiedNewEmail !== trimmed) {
+          return res.status(400).json({ error: 'Please verify your new email with OTP before saving. Use "Send OTP" and enter the code sent to your new email.' });
+        }
+        const existing = await User.findOne({ email: trimmed });
+        if (existing) {
+          return res.status(400).json({ error: 'This email is already in use' });
+        }
+        updateData.email = trimmed;
+        clearEmailChangeVerified(req.user.id);
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No update data provided' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password -quizHistory');
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    logger.error('Error updating user profile: ' + (error && error.message));
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
 });
 
 // PUT Change password (requires current password)
 router.put('/me/password', authMiddleware, async (req, res) => {
-    try {
-        const { currentPassword, newPassword } = req.body;
-        if (!currentPassword || !newPassword) {
-            return res.status(400).json({ error: 'Current password and new password are required' });
-        }
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!passwordRegex.test(newPassword)) {
-            return res.status(400).json({
-                error: 'New password must be at least 8 characters and include one uppercase, one lowercase, one number, and one special character (@$!%*?&)'
-            });
-        }
-        const user = await User.findById(req.user.id).select('+password');
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Current password is incorrect' });
-        }
-        const salt = await bcrypt.genSalt(12);
-        user.password = await bcrypt.hash(newPassword, salt);
-        await user.save();
-        res.json({ message: 'Password updated successfully' });
-    } catch (error) {
-        logger.error('Error changing password: ' + (error && error.message));
-        res.status(500).json({ error: 'Failed to change password' });
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
     }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#_])[A-Za-z\d@$!%*?&#_]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        error: 'New password must be at least 8 characters and include one uppercase, one lowercase, one number, and one special character (@$!%*?&#_)'
+      });
+    }
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    const salt = await bcrypt.genSalt(12);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    logger.error('Error changing password: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to change password' });
+  }
 });
 
 // POST Upload profile picture using Cloudinary
 router.post('/me/profile-image', authMiddleware, upload.single('profileImage'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No profile image file uploaded' });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No profile image file uploaded' });
+    }
+
+    // Upload image to Cloudinary
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'caprep_profile_pictures', // Optional: specify a folder
+        public_id: `user_${req.user.id}_${Date.now()}`, // Unique public ID
+        transformation: [{ width: 150, height: 150, crop: "fill", gravity: "face" }] // Resize and crop
+      },
+      async (error, result) => {
+        if (error) {
+          logger.error('Cloudinary upload error: ' + (error && error.message));
+          return res.status(500).json({ error: 'Failed to upload profile picture' });
         }
 
-        // Upload image to Cloudinary
-        const uploadStream = cloudinary.uploader.upload_stream(
-            { 
-                folder: 'caprep_profile_pictures', // Optional: specify a folder
-                public_id: `user_${req.user.id}_${Date.now()}`, // Unique public ID
-                transformation: [{ width: 150, height: 150, crop: "fill", gravity: "face" }] // Resize and crop
-            },
-            async (error, result) => {
-                if (error) {
-                    logger.error('Cloudinary upload error: ' + (error && error.message));
-                    return res.status(500).json({ error: 'Failed to upload profile picture' });
-                }
+        // Update user's profilePicture URL in the database
+        const updatedUser = await User.findByIdAndUpdate(
+          req.user.id,
+          { $set: { profilePicture: result.secure_url } },
+          { new: true }
+        ).select('-password -quizHistory');
 
-                // Update user's profilePicture URL in the database
-                const updatedUser = await User.findByIdAndUpdate(
-                    req.user.id,
-                    { $set: { profilePicture: result.secure_url } },
-                    { new: true }
-                ).select('-password -quizHistory');
+        if (!updatedUser) {
+          // Attempt to delete the uploaded image if user update fails
+          await cloudinary.uploader.destroy(result.public_id);
+          return res.status(404).json({ error: 'User not found after upload' });
+        }
 
-                if (!updatedUser) {
-                    // Attempt to delete the uploaded image if user update fails
-                    await cloudinary.uploader.destroy(result.public_id);
-                    return res.status(404).json({ error: 'User not found after upload' });
-                }
+        res.json(updatedUser); // Return updated user profile
+      }
+    );
 
-                res.json(updatedUser); // Return updated user profile
-            }
-        );
+    // Pipe the buffer from multer memory storage to Cloudinary's upload stream
+    uploadStream.end(req.file.buffer);
 
-        // Pipe the buffer from multer memory storage to Cloudinary's upload stream
-        uploadStream.end(req.file.buffer);
-
-    } catch (error) {
-        logger.error('Error processing profile picture upload: ' + (error && error.message));
-        res.status(500).json({ error: 'Server error during profile picture upload' });
-    }
+  } catch (error) {
+    logger.error('Error processing profile picture upload: ' + (error && error.message));
+    res.status(500).json({ error: 'Server error during profile picture upload' });
+  }
 });
 
 const defaultProfilePicture = 'https://res.cloudinary.com/demo/image/upload/v1/samples/default-avatar.png';
 
 // DELETE Remove profile picture (reset to default)
 router.delete('/me/profile-image', authMiddleware, async (req, res) => {
-    try {
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            { $set: { profilePicture: defaultProfilePicture } },
-            { new: true }
-        ).select('-password -quizHistory');
-        if (!updatedUser) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        res.json(updatedUser);
-    } catch (error) {
-        logger.error('Error removing profile picture: ' + (error && error.message));
-        res.status(500).json({ error: 'Failed to remove profile picture' });
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: { profilePicture: defaultProfilePicture } },
+      { new: true }
+    ).select('-password -quizHistory');
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
     }
+    res.json(updatedUser);
+  } catch (error) {
+    logger.error('Error removing profile picture: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to remove profile picture' });
+  }
 });
 
 // DELETE User account
 router.delete('/me', authMiddleware, async (req, res) => {
-    try {
-        const { password } = req.body;
-        
-        if (!password) {
-            return res.status(400).json({ error: 'Password is required to delete account' });
-        }
-        
-        // Find user with password
-        const user = await User.findById(req.user.id).select('+password');
-        
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        // Verify password using bcrypt
-        const isMatch = await bcrypt.compare(password, user.password);
-        
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid password' });
-        }
-        
-        // Delete user
-        await User.findByIdAndDelete(req.user.id);
-        
-        res.json({ message: 'Account successfully deleted' });
-    } catch (error) {
-        logger.error('Error deleting user account: ' + (error && error.message));
-        res.status(500).json({ error: 'Failed to delete account' });
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required to delete account' });
     }
+
+    // Find user with password
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    // Delete user
+    await User.findByIdAndDelete(req.user.id);
+
+    res.json({ message: 'Account successfully deleted' });
+  } catch (error) {
+    logger.error('Error deleting user account: ' + (error && error.message));
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
 });
 
 // --- Bookmark Folders and Notes ---
@@ -652,15 +652,15 @@ router.delete('/me/bookmark-folders/:folderId', authMiddleware, async (req, res)
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    
+
     // Check if folder exists
     const folder = user.bookmarkFolders.id(folderId);
     if (!folder) return res.status(404).json({ error: 'Folder not found' });
-    
+
     // Use pull method instead of remove() which is deprecated
     user.bookmarkFolders.pull({ _id: folderId });
     await user.save();
-    
+
     res.json({ bookmarkFolders: user.bookmarkFolders });
   } catch (error) {
     logger.error('Error deleting bookmark folder: ' + (error && error.message));
