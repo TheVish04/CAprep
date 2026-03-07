@@ -113,38 +113,6 @@ router.get('/:id', [authMiddleware, cacheMiddleware(3600)], async (req, res) => 
   }
 });
 
-// POST - Rate a resource (auth required)
-router.post('/:id/rate', authMiddleware, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rating } = req.body;
-
-    if (rating == null || typeof rating !== 'number') {
-      return res.status(400).json({ error: 'Rating (1-5) is required' });
-    }
-
-    const resource = await Resource.findById(id);
-    if (!resource) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-
-    await resource.addRating(rating);
-    clearCache([`/api/resources/${id}`, '/api/resources']);
-
-    res.status(200).json({
-      success: true,
-      rating: {
-        average: resource.rating.average,
-        count: resource.rating.count,
-      },
-    });
-  } catch (error) {
-    if (error.message?.includes('Rating must be between 1 and 5')) {
-      return res.status(400).json({ error: error.message });
-    }
-    sendErrorResponse(res, 500, { message: 'Failed to rate resource', error });
-  }
-});
 
 // POST - Create a new resource (admin only)
 router.post('/', authMiddleware, adminMiddleware, upload.single('file'), async (req, res) => {

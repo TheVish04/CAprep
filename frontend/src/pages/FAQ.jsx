@@ -10,13 +10,13 @@ const FAQ = () => {
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
-    
+
     // Set the active section based on hash or default to first section
     const hash = window.location.hash;
     if (hash) {
       const section = hash.substring(1);
       setActiveSection(section);
-      
+
       // Scroll to section after a small delay to ensure rendering
       setTimeout(() => {
         const element = document.getElementById(section);
@@ -35,7 +35,7 @@ const FAQ = () => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
-      
+
       // Update URL hash without page reload
       window.history.pushState(null, null, `#${sectionId}`);
     }
@@ -50,7 +50,7 @@ const FAQ = () => {
           <h1>Frequently Asked Questions</h1>
           <p>Find answers to common questions about CAprep</p>
         </div>
-        
+
         <div className="faq-intro">
           <p>Welcome to our comprehensive FAQ section. We've compiled answers to the most common questions about using CAprep to help you get the most out of your CA exam preparation. If you can't find what you're looking for, please don't hesitate to reach out to our support team.</p>
         </div>
@@ -71,7 +71,7 @@ const FAQ = () => {
             <h3>What you can do on CAprep</h3>
             <ul>
               <li><strong>Past paper questions</strong> — Browse and filter questions by subject, paper type (MTP, RTP, PYQS, Model TP), year, month, and exam stage. Save questions to your bookmarks and add notes.</li>
-              <li><strong>Study resources (PDFs)</strong> — View and download study materials by subject, paper type, and exam stage. Rate resources and bookmark them for quick access.</li>
+              <li><strong>Study resources (PDFs)</strong> — View and download study materials by subject, paper type, and exam stage. Bookmark them for quick access.</li>
               <li><strong>Quizzes</strong> — Take quizzes from the question bank (by subject and exam stage) or generate new AI-powered quizzes. See your score, review answers with explanations, and track your quiz history.</li>
               <li><strong>CA Prep Assistant</strong> — Chat with an AI tutor focused on CA syllabus. Ask doubts, get explanations, and revise concepts without leaving the platform.</li>
               <li><strong>Discussions</strong> — Join discussions on any question or resource. Post replies, like others’ messages, and learn from the community.</li>
@@ -86,50 +86,56 @@ const FAQ = () => {
             <p>Create an account with your email, verify it using the one-time password (OTP) we send you, then log in. Once logged in, you can access Questions, Resources, Quiz, the CA Prep Assistant, Bookmarks, and your Dashboard from the navigation menu. No technical setup is required—just use the website in your browser.</p>
           </div>
         </section>
-        
+
         <div className="faq-navigation">
-          <button 
+          <button
             className={`faq-nav-button ${activeSection === 'general' ? 'active' : ''}`}
             onClick={() => scrollToSection('general')}
           >
             General
           </button>
-          <button 
+          <button
             className={`faq-nav-button ${activeSection === 'account' ? 'active' : ''}`}
             onClick={() => scrollToSection('account')}
           >
             Account & Registration
           </button>
-          <button 
+          <button
             className={`faq-nav-button ${activeSection === 'practice' ? 'active' : ''}`}
             onClick={() => scrollToSection('practice')}
           >
             Questions & Practice
           </button>
-          <button 
+          <button
             className={`faq-nav-button ${activeSection === 'quiz' ? 'active' : ''}`}
             onClick={() => scrollToSection('quiz')}
           >
             Quizzes & Exams
           </button>
-          <button 
+          <button
             className={`faq-nav-button ${activeSection === 'resources' ? 'active' : ''}`}
             onClick={() => scrollToSection('resources')}
           >
             Resources
           </button>
-          <button 
+          <button
+            className={`faq-nav-button ${activeSection === 'smart' ? 'active' : ''}`}
+            onClick={() => scrollToSection('smart')}
+          >
+            AI & Smart Features
+          </button>
+          <button
             className={`faq-nav-button ${activeSection === 'technical' ? 'active' : ''}`}
             onClick={() => scrollToSection('technical')}
           >
-            Technical Support
+            Technical & Offline
           </button>
         </div>
 
         <div className="faq-content">
           <div id="general" className="faq-category">
             <h2>General Questions</h2>
-            
+
             <div className="faq-item">
               <details>
                 <summary>What is CAprep?</summary>
@@ -178,15 +184,15 @@ const FAQ = () => {
                 <div className="faq-answer">
                   <p>CAprep provides comprehensive coverage for all three levels of the Chartered Accountancy course:</p>
                   <ul>
-                    <li><strong>Foundation Level:</strong> All eight subjects including Principles and Practices of Accounting, Business Mathematics, Business Economics, and more.</li>
-                    <li><strong>Intermediate Level:</strong> All subjects including Advanced Accounting, Corporate Laws, Cost and Management Accounting, Taxation, Auditing, and Financial Management.</li>
-                    <li><strong>Final Level:</strong> Complete coverage of subjects like Financial Reporting, Advanced Financial Management, Advanced Auditing, Direct and International Tax Laws, and more.</li>
+                    <li><strong>Foundation Level:</strong> All four subjects including 1 - Accounting, 2 - Business Laws, 3 - Quantitative Aptitude, and 4 - Business Economics.</li>
+                    <li><strong>Intermediate Level:</strong> All six subjects including 1 - Advanced Accounting, 2 - Corporate and Other Laws, 3 - Taxation, 4 - Cost and Management Accounting, 5 - Auditing and Ethics, and 6 - Financial Management and Strategic Management.</li>
+                    <li><strong>Final Level:</strong> All six subjects including 1 - Financial Reporting, 2 - Advanced Financial Management, 3 - Advanced Auditing, Assurance and Professional Ethics, 4 - Direct Tax Laws and International Taxation, 5 - Indirect Tax Laws, and 6 - Integrated Business Solutions (Multidisciplinary Case Study).</li>
                   </ul>
                   <p>We regularly update our content to reflect the latest syllabus changes and exam patterns.</p>
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How often is the content updated?</summary>
@@ -225,7 +231,7 @@ const FAQ = () => {
 
           <div id="account" className="faq-category">
             <h2>Account & Registration</h2>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How do I create an account?</summary>
@@ -242,7 +248,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>I forgot my password. How can I reset it?</summary>
@@ -260,7 +266,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Can I change my email address or other account details?</summary>
@@ -278,7 +284,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How can I delete my account?</summary>
@@ -320,10 +326,10 @@ const FAQ = () => {
               </details>
             </div>
           </div>
-          
+
           <div id="practice" className="faq-category">
             <h2>Questions & Practice</h2>
-            
+
             <div className="faq-item">
               <details>
                 <summary>What types of questions are available?</summary>
@@ -341,7 +347,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How are questions organized?</summary>
@@ -359,7 +365,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Can I bookmark questions for later review?</summary>
@@ -377,7 +383,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How do I report an incorrect question or answer?</summary>
@@ -406,17 +412,32 @@ const FAQ = () => {
 
             <div className="faq-item">
               <details>
-                <summary>Can I filter questions to show only my bookmarks?</summary>
+                <summary>How can I organize my bookmarked questions?</summary>
                 <div className="faq-answer">
-                  <p>Yes. On the Questions page, use the filters to narrow results by subject, paper type, year, month, and exam stage. There is also an option to show only bookmarked questions. Combine this with other filters to practice only the questions you have saved for revision.</p>
+                  <p>CAprep offers advanced bookmark organization:</p>
+                  <ul>
+                    <li><strong>Folders:</strong> Create custom folders for different subjects or revision priorities (e.g., "Hard Problems," "Tax Amendments").</li>
+                    <li><strong>Notes:</strong> Add personal study notes to any bookmarked question to explain why you saved it or what concept to remember.</li>
+                    <li><strong>Move & Organize:</strong> Easily move items between folders or rename folders as your study plan evolves.</li>
+                  </ul>
+                  <p>Access these tools by clicking on the folder icon next to any bookmarked item on the Bookmarks page.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Can I export my questions to PDF?</summary>
+                <div className="faq-answer">
+                  <p>Yes. On the Questions page, you can export your filtered list of questions into a clean, professional PDF document. This is perfect for offline revision or printing. The PDF includes a protective CAprep watermark and proper formatting for sub-questions and MCQ options.</p>
                 </div>
               </details>
             </div>
           </div>
-          
+
           <div id="quiz" className="faq-category">
             <h2>Quizzes & Exams</h2>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How do the quizzes work?</summary>
@@ -452,7 +473,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>What are AI-powered quizzes?</summary>
@@ -477,7 +498,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Can I track my quiz performance over time?</summary>
@@ -512,7 +533,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How can I simulate actual exam conditions?</summary>
@@ -549,17 +570,17 @@ const FAQ = () => {
 
             <div className="faq-item">
               <details>
-                <summary>Can I review my past quiz attempts?</summary>
+                <summary>What are 'Subject Strengths' on my dashboard?</summary>
                 <div className="faq-answer">
-                  <p>Yes. Go to Quiz History from the navigation menu (or your dashboard). You will see a list of your past quizzes with date, subject, score, and total questions. Click on a quiz to open its review page, where you can see each question, your answer, the correct answer, and the explanation. This helps you identify weak areas and revise effectively.</p>
+                  <p>Our system automatically calculates your "strength" score (0-100) for each subject based on your last 30 quiz attempts. This helps you visually identify which areas need more focus and which sections you have mastered. The score updates in real-time after every quiz you submit.</p>
                 </div>
               </details>
             </div>
           </div>
-          
+
           <div id="resources" className="faq-category">
             <h2>Resources & Study Materials</h2>
-            
+
             <div className="faq-item">
               <details>
                 <summary>What study materials are available?</summary>
@@ -578,7 +599,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Can I download resources for offline study?</summary>
@@ -600,7 +621,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>How do I find specific resources?</summary>
@@ -632,7 +653,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Are the study materials regularly updated?</summary>
@@ -656,28 +677,60 @@ const FAQ = () => {
               </details>
             </div>
 
+
             <div className="faq-item">
               <details>
-                <summary>Can I rate study resources?</summary>
+                <summary>How do I track my study hours?</summary>
                 <div className="faq-answer">
-                  <p>Yes. On each resource page you can give a rating (for example, 1 to 5 stars). Your rating helps other users see how useful the resource is and helps us improve our content. You can also bookmark resources and add them to folders for quick access later.</p>
+                  <p>You can log your study effort using the Study Tracker on the dashboard. Use the session timer (like a Pomodoro clock) while you study, and then save the session to record your hours. You can even categorize hours by subject to see a detailed breakdown of where your time is going.</p>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <div id="smart" className="faq-category">
+            <h2>AI & Smart Features</h2>
+
+            <div className="faq-item">
+              <details>
+                <summary>What is 'AI Search Explanation'?</summary>
+                <div className="faq-answer">
+                  <p>When you search for complex CA terms like "deferred tax" or "amalgamation" on the Questions page, our AI detects the concept and provides a concise 100-150 word summary below the search bar. This helps you refresh the theory behind a term without leaving your practice session.</p>
                 </div>
               </details>
             </div>
 
             <div className="faq-item">
               <details>
-                <summary>How do I use the CA Prep Assistant?</summary>
+                <summary>Can the AI tutor read images of questions?</summary>
                 <div className="faq-answer">
-                  <p>The CA Prep Assistant is an AI tutor focused on the CA syllabus. Open it from the navigation menu (Chat or CA Prep Assistant). Type your question or topic in the chat box and send; you will get an explanation or answer tailored to CA exam content. You can ask follow-up questions in the same conversation. It is meant for clarifying concepts, revising topics, and quick doubt-solving—not for general or non-CA topics. Use it whenever you need help understanding a concept while studying.</p>
+                  <p>Yes! In the CA Prep Assistant, you can click the image icon to upload a photo of a question from a book or paper. Our vision model extracts the text and uses it as context to solve the problem for you or explain the concepts involved. It supports both printed and clearly handwritten text.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>Is my AI chat history saved?</summary>
+                <div className="faq-answer">
+                  <p>Yes. Every chat session with the CA Prep Assistant is saved to your account. You can rename sessions, view them later, or start new conversations for different subjects. A separate AI model even suggests titles for your chats based on the topic discussed.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="faq-item">
+              <details>
+                <summary>How does the AI generate quizzes?</summary>
+                <div className="faq-answer">
+                  <p>The AI Quiz generator uses real past exam questions as a "style guide." It creates new, unique MCQs that follow the exact format and difficulty of ICAI exams, providing you with unlimited fresh practice material that isn't found in standard books.</p>
                 </div>
               </details>
             </div>
           </div>
-          
+
           <div id="technical" className="faq-category">
-            <h2>Technical Support & Troubleshooting</h2>
-            
+            <h2>Technical & Offline Support</h2>
+
             <div className="faq-item">
               <details>
                 <summary>How can I contact support?</summary>
@@ -693,7 +746,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Is my data secure on CAprep?</summary>
@@ -710,7 +763,7 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Which browsers and devices are supported?</summary>
@@ -734,13 +787,13 @@ const FAQ = () => {
                 </div>
               </details>
             </div>
-            
+
             <div className="faq-item">
               <details>
                 <summary>Common issues and troubleshooting</summary>
                 <div className="faq-answer">
                   <p>Here are solutions to some common issues users may encounter:</p>
-                  
+
                   <p><strong>Issue: Unable to log in</strong></p>
                   <ul>
                     <li>Verify that you're using the correct email address and password</li>
@@ -749,7 +802,7 @@ const FAQ = () => {
                     <li>Try resetting your password using the "Forgot Password" link</li>
                     <li>Ensure you've verified your email address during registration</li>
                   </ul>
-                  
+
                   <p><strong>Issue: Pages loading slowly</strong></p>
                   <ul>
                     <li>Check your internet connection speed</li>
@@ -758,7 +811,7 @@ const FAQ = () => {
                     <li>Try using a different browser</li>
                     <li>Disable browser extensions that might be interfering</li>
                   </ul>
-                  
+
                   <p><strong>Issue: Quiz doesn't submit properly</strong></p>
                   <ul>
                     <li>Ensure you have a stable internet connection</li>
@@ -767,7 +820,7 @@ const FAQ = () => {
                     <li>Clear browser cache and try again</li>
                     <li>Contact support if the problem persists</li>
                   </ul>
-                  
+
                   <p><strong>Issue: PDFs won't download</strong></p>
                   <ul>
                     <li>Check if you have a PDF reader installed</li>
@@ -776,7 +829,7 @@ const FAQ = () => {
                     <li>Try using a different browser</li>
                     <li>Disable any download-blocking extensions</li>
                   </ul>
-                  
+
                   <p>If you encounter any issues not covered here or if the suggested solutions don't resolve your problem, please <Link to="/contactus">contact our support team</Link> for assistance.</p>
                 </div>
               </details>
@@ -793,9 +846,9 @@ const FAQ = () => {
 
             <div className="faq-item">
               <details>
-                <summary>Can I use CAprep on my phone?</summary>
+                <summary>Does CAprep work offline?</summary>
                 <div className="faq-answer">
-                  <p>Yes. CAprep works on smartphones and tablets. Open the website in your mobile browser (Chrome, Safari, or another modern browser), log in, and you can browse questions, take quizzes, use the CA Prep Assistant, view resources, and check your dashboard. For reading long PDFs or taking long quizzes, a larger screen may be more comfortable, but all core features are available on mobile.</p>
+                  <p>Yes! CAprep is built as a Progressive Web App (PWA). Once you've visited the site, key sections like the Questions list, Resource list, and your Dashboard are cached on your device. You can browse these recently viewed items even if you temporarily lose your internet connection.</p>
                 </div>
               </details>
             </div>

@@ -71,19 +71,6 @@ const ResourceSchema = new Schema({
     maxlength: 500,
     default: ''
   },
-  // Add average rating for resources
-  rating: {
-    average: { 
-      type: Number, 
-      default: 0,
-      min: 0,
-      max: 5
-    },
-    count: { 
-      type: Number, 
-      default: 0 
-    }
-  },
   // Last time the file was updated (for versioning)
   lastUpdated: {
     type: Date,
@@ -96,26 +83,26 @@ const ResourceSchema = new Schema({
 });
 
 // Improved compound indexes for common filter combinations
-ResourceSchema.index({ 
-  examStage: 1, 
+ResourceSchema.index({
+  examStage: 1,
   subject: 1
 });
 
-ResourceSchema.index({ 
-  examStage: 1, 
-  subject: 1, 
+ResourceSchema.index({
+  examStage: 1,
+  subject: 1,
   paperType: 1
 });
 
-ResourceSchema.index({ 
-  examStage: 1, 
-  subject: 1, 
-  paperType: 1, 
+ResourceSchema.index({
+  examStage: 1,
+  subject: 1,
+  paperType: 1,
   year: 1
 });
 
 // Add text index for searching with weights
-ResourceSchema.index({ 
+ResourceSchema.index({
   title: 'text',
   description: 'text'
 }, {
@@ -127,44 +114,30 @@ ResourceSchema.index({
 });
 
 // Index for popularity based queries
-ResourceSchema.index({ 
-  downloadCount: -1, 
-  viewCount: -1,
-  'rating.average': -1 
+ResourceSchema.index({
+  downloadCount: -1,
+  viewCount: -1
 });
 
 // Add an index for creation date (already being used for sorting)
 ResourceSchema.index({ createdAt: -1 });
 
 // Static method for finding popular resources
-ResourceSchema.statics.findPopular = function(subject, limit = 10) {
+ResourceSchema.statics.findPopular = function (subject, limit = 10) {
   return this.find({ subject })
-    .sort({ downloadCount: -1, viewCount: -1, 'rating.average': -1 })
+    .sort({ downloadCount: -1, viewCount: -1 })
     .limit(limit);
 };
 
 // Method to increment download count
-ResourceSchema.methods.incrementDownloadCount = function() {
+ResourceSchema.methods.incrementDownloadCount = function () {
   this.downloadCount += 1;
   return this.save();
 };
 
 // Method to increment view count
-ResourceSchema.methods.incrementViewCount = function() {
+ResourceSchema.methods.incrementViewCount = function () {
   this.viewCount += 1;
-  return this.save();
-};
-
-// Method to add a rating
-ResourceSchema.methods.addRating = function(newRating) {
-  if (newRating < 1 || newRating > 5) {
-    throw new Error('Rating must be between 1 and 5');
-  }
-  
-  const totalRatingPoints = (this.rating.average * this.rating.count) + newRating;
-  this.rating.count += 1;
-  this.rating.average = totalRatingPoints / this.rating.count;
-  
   return this.save();
 };
 

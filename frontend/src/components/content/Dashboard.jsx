@@ -247,28 +247,28 @@ const Dashboard = () => {
     switch (stage) {
       case 'Foundation':
         return [
-          'Accounting',
-          'Business Laws',
-          'Quantitative Aptitude',
-          'Business Economics'
+          '1 - Accounting',
+          '2 - Business Laws',
+          '3 - Quantitative Aptitude',
+          '4 - Business Economics'
         ];
       case 'Intermediate':
         return [
-          'Advanced Accounting',
-          'Corporate Laws',
-          'Cost and Management Accounting',
-          'Taxation',
-          'Auditing and Code of Ethics',
-          'Financial and Strategic Management'
+          '1 - Advanced Accounting',
+          '2 - Corporate and Other Laws',
+          '3 - Taxation',
+          '4 - Cost and Management Accounting',
+          '5 - Auditing and Ethics',
+          '6 - Financial Management and Strategic Management'
         ];
       case 'Final':
         return [
-          'Financial Reporting',
-          'Advanced Financial Management',
-          'Advanced Auditing',
-          'Direct and International Tax Laws',
-          'Indirect Tax Laws',
-          'Integrated Business Solutions'
+          '1 - Financial Reporting',
+          '2 - Advanced Financial Management',
+          '3 - Advanced Auditing, Assurance and Professional Ethics',
+          '4 - Direct Tax Laws and International Taxation',
+          '5 - Indirect Tax Laws',
+          '6 - Integrated Business Solutions (Multidisciplinary Case Study)'
         ];
       default:
         return [];

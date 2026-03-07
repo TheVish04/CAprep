@@ -703,30 +703,30 @@ const ResourceUploader = () => {
                 {formData.examStage === 'Foundation' ? (
                   // Foundation subjects
                   <>
-                    <option value="Accounting">Accounting</option>
-                    <option value="Business Laws">Business Laws</option>
-                    <option value="Quantitative Aptitude">Quantitative Aptitude</option>
-                    <option value="Business Economics">Business Economics</option>
+                    <option value="1 - Accounting">1 - Accounting</option>
+                    <option value="2 - Business Laws">2 - Business Laws</option>
+                    <option value="3 - Quantitative Aptitude">3 - Quantitative Aptitude</option>
+                    <option value="4 - Business Economics">4 - Business Economics</option>
                   </>
                 ) : formData.examStage === 'Intermediate' ? (
                   // Intermediate subjects
                   <>
-                    <option value="Advanced Accounting">Advanced Accounting</option>
-                    <option value="Corporate Laws">Corporate Laws</option>
-                    <option value="Cost and Management Accounting">Cost and Management Accounting</option>
-                    <option value="Taxation">Taxation</option>
-                    <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
-                    <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                    <option value="1 - Advanced Accounting">1 - Advanced Accounting</option>
+                    <option value="2 - Corporate and Other Laws">2 - Corporate and Other Laws</option>
+                    <option value="3 - Taxation">3 - Taxation</option>
+                    <option value="4 - Cost and Management Accounting">4 - Cost and Management Accounting</option>
+                    <option value="5 - Auditing and Ethics">5 - Auditing and Ethics</option>
+                    <option value="6 - Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
                   </>
                 ) : formData.examStage === 'Final' ? (
                   // Final subjects
                   <>
-                    <option value="Financial Reporting">Financial Reporting</option>
-                    <option value="Advanced Financial Management">Advanced Financial Management</option>
-                    <option value="Advanced Auditing">Advanced Auditing</option>
-                    <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
-                    <option value="Indirect Tax Laws">Indirect Tax Laws</option>
-                    <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                    <option value="1 - Financial Reporting">1 - Financial Reporting</option>
+                    <option value="2 - Advanced Financial Management">2 - Advanced Financial Management</option>
+                    <option value="3 - Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
+                    <option value="4 - Direct Tax Laws and International Taxation">4 - Direct Tax Laws and International Taxation</option>
+                    <option value="5 - Indirect Tax Laws">5 - Indirect Tax Laws</option>
+                    <option value="6 - Integrated Business Solutions (Multidisciplinary Case Study)">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
                   </>
                 ) : (
                   <option value="">Please select an exam stage first</option>
@@ -870,50 +870,50 @@ const ResourceUploader = () => {
                   {filters.examStage === 'Foundation' ? (
                     // Foundation subjects
                     <>
-                      <option value="Accounting">Accounting</option>
-                      <option value="Business Laws">Business Laws</option>
-                      <option value="Quantitative Aptitude">Quantitative Aptitude</option>
-                      <option value="Business Economics">Business Economics</option>
+                      <option value="1 - Accounting">1 - Accounting</option>
+                      <option value="2 - Business Laws">2 - Business Laws</option>
+                      <option value="3 - Quantitative Aptitude">3 - Quantitative Aptitude</option>
+                      <option value="4 - Business Economics">4 - Business Economics</option>
                     </>
                   ) : filters.examStage === 'Intermediate' ? (
                     // Intermediate subjects
                     <>
-                      <option value="Advanced Accounting">Advanced Accounting</option>
-                      <option value="Corporate Laws">Corporate Laws</option>
-                      <option value="Cost and Management Accounting">Cost and Management Accounting</option>
-                      <option value="Taxation">Taxation</option>
-                      <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
-                      <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                      <option value="1 - Advanced Accounting">1 - Advanced Accounting</option>
+                      <option value="2 - Corporate and Other Laws">2 - Corporate and Other Laws</option>
+                      <option value="3 - Taxation">3 - Taxation</option>
+                      <option value="4 - Cost and Management Accounting">4 - Cost and Management Accounting</option>
+                      <option value="5 - Auditing and Ethics">5 - Auditing and Ethics</option>
+                      <option value="6 - Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
                     </>
                   ) : filters.examStage === 'Final' ? (
                     // Final subjects
                     <>
-                      <option value="Financial Reporting">Financial Reporting</option>
-                      <option value="Advanced Financial Management">Advanced Financial Management</option>
-                      <option value="Advanced Auditing">Advanced Auditing</option>
-                      <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
-                      <option value="Indirect Tax Laws">Indirect Tax Laws</option>
-                      <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                      <option value="1 - Financial Reporting">1 - Financial Reporting</option>
+                      <option value="2 - Advanced Financial Management">2 - Advanced Financial Management</option>
+                      <option value="3 - Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
+                      <option value="4 - Direct Tax Laws and International Taxation">4 - Direct Tax Laws and International Taxation</option>
+                      <option value="5 - Indirect Tax Laws">5 - Indirect Tax Laws</option>
+                      <option value="6 - Integrated Business Solutions (Multidisciplinary Case Study)">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
                     </>
                   ) : (
                     // Show all subjects when All Exam Stages is selected
                     <>
-                      <option value="Accounting">Accounting</option>
-                      <option value="Business Laws">Business Laws</option>
-                      <option value="Quantitative Aptitude">Quantitative Aptitude</option>
-                      <option value="Business Economics">Business Economics</option>
-                      <option value="Advanced Accounting">Advanced Accounting</option>
-                      <option value="Corporate Laws">Corporate Laws</option>
-                      <option value="Cost and Management Accounting">Cost and Management Accounting</option>
-                      <option value="Taxation">Taxation</option>
-                      <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
-                      <option value="Financial and Strategic Management">Financial and Strategic Management</option>
-                      <option value="Financial Reporting">Financial Reporting</option>
-                      <option value="Advanced Financial Management">Advanced Financial Management</option>
-                      <option value="Advanced Auditing">Advanced Auditing</option>
-                      <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
-                      <option value="Indirect Tax Laws">Indirect Tax Laws</option>
-                      <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                      <option value="1 - Accounting">1 - Accounting</option>
+                      <option value="2 - Business Laws">2 - Business Laws</option>
+                      <option value="3 - Quantitative Aptitude">3 - Quantitative Aptitude</option>
+                      <option value="4 - Business Economics">4 - Business Economics</option>
+                      <option value="1 - Advanced Accounting">1 - Advanced Accounting</option>
+                      <option value="2 - Corporate and Other Laws">2 - Corporate and Other Laws</option>
+                      <option value="3 - Taxation">3 - Taxation</option>
+                      <option value="4 - Cost and Management Accounting">4 - Cost and Management Accounting</option>
+                      <option value="5 - Auditing and Ethics">5 - Auditing and Ethics</option>
+                      <option value="6 - Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
+                      <option value="1 - Financial Reporting">1 - Financial Reporting</option>
+                      <option value="2 - Advanced Financial Management">2 - Advanced Financial Management</option>
+                      <option value="3 - Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
+                      <option value="4 - Direct Tax Laws and International Taxation">4 - Direct Tax Laws and International Taxation</option>
+                      <option value="5 - Indirect Tax Laws">5 - Indirect Tax Laws</option>
+                      <option value="6 - Integrated Business Solutions (Multidisciplinary Case Study)">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
                     </>
                   )}
                 </select>

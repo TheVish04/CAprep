@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 const AdminAnnouncements = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const getActiveTab = () => {
     if (location.pathname.includes('/resources')) return 'resources';
     if (location.pathname.includes('/analytics')) return 'analytics';
@@ -19,11 +19,11 @@ const AdminAnnouncements = () => {
     return 'questions';
   };
   const [activeTab, setActiveTab] = useState(getActiveTab());
-  
+
   useEffect(() => {
     setActiveTab(getActiveTab());
   }, [location.pathname]);
-  
+
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -107,7 +107,7 @@ const AdminAnnouncements = () => {
     const errors = {};
     if (!formData.title.trim()) errors.title = 'Title is required';
     if (!formData.content.trim()) errors.content = 'Content is required';
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -115,18 +115,18 @@ const AdminAnnouncements = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     try {
       const token = apiUtils.getAuthToken();
       if (!token) {
         navigate('/login');
         return;
       }
-      
+
       let response;
-      
+
       if (editingId) {
         // Update existing announcement
         response = await axios.put(
@@ -142,7 +142,7 @@ const AdminAnnouncements = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-      
+
       if (response.data.success) {
         resetForm();
         fetchAnnouncements();
@@ -189,19 +189,19 @@ const AdminAnnouncements = () => {
   // Delete announcement
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this announcement?')) return;
-    
+
     try {
       const token = apiUtils.getAuthToken();
       if (!token) {
         navigate('/login');
         return;
       }
-      
+
       const response = await axios.delete(
         `${apiUtils.getApiBaseUrl()}/admin/announcements/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data.success) {
         fetchAnnouncements();
         alert('Announcement deleted successfully!');
@@ -217,26 +217,26 @@ const AdminAnnouncements = () => {
   // Subject options for checkboxes
   const subjectOptions = {
     Foundation: [
-      'Accounting',
-      'Business Laws',
-      'Quantitative Aptitude',
-      'Business Economics'
+      '1 - Accounting',
+      '2 - Business Laws',
+      '3 - Quantitative Aptitude',
+      '4 - Business Economics'
     ],
     Intermediate: [
-      'Advanced Accounting',
-      'Corporate Laws',
-      'Cost and Management Accounting',
-      'Taxation',
-      'Auditing and Code of Ethics',
-      'Financial and Strategic Management'
+      '1 - Advanced Accounting',
+      '2 - Corporate and Other Laws',
+      '3 - Taxation',
+      '4 - Cost and Management Accounting',
+      '5 - Auditing and Ethics',
+      '6 - Financial Management and Strategic Management'
     ],
     Final: [
-      'Financial Reporting',
-      'Advanced Financial Management',
-      'Advanced Auditing',
-      'Direct and International Tax Laws',
-      'Indirect Tax Laws',
-      'Integrated Business Solutions'
+      '1 - Financial Reporting',
+      '2 - Advanced Financial Management',
+      '3 - Advanced Auditing, Assurance and Professional Ethics',
+      '4 - Direct Tax Laws and International Taxation',
+      '5 - Indirect Tax Laws',
+      '6 - Integrated Business Solutions (Multidisciplinary Case Study)'
     ]
   };
 
@@ -245,8 +245,8 @@ const AdminAnnouncements = () => {
       <Navbar />
       <div className="admin-announcements-wrapper">
         <div className="admin-tabs">
-          <button 
-            className={activeTab === 'questions' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'questions' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('questions');
               navigate('/admin');
@@ -254,8 +254,8 @@ const AdminAnnouncements = () => {
           >
             Manage Questions
           </button>
-          <button 
-            className={activeTab === 'resources' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'resources' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('resources');
               navigate('/admin/resources');
@@ -263,8 +263,8 @@ const AdminAnnouncements = () => {
           >
             Manage Resources
           </button>
-          <button 
-            className={activeTab === 'announcements' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'announcements' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('announcements');
               navigate('/admin/announcements');
@@ -272,8 +272,8 @@ const AdminAnnouncements = () => {
           >
             Manage Announcements
           </button>
-          <button 
-            className={activeTab === 'analytics' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'analytics' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('analytics');
               navigate('/admin/analytics');
@@ -281,22 +281,22 @@ const AdminAnnouncements = () => {
           >
             Analytics
           </button>
-          <button 
-            className={activeTab === 'feature-requests' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'feature-requests' ? 'active-tab' : ''}
             onClick={() => navigate('/admin/feature-requests')}
           >
             Request Feature
           </button>
-          <button 
-            className={activeTab === 'report-issues' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'report-issues' ? 'active-tab' : ''}
             onClick={() => navigate('/admin/report-issues')}
           >
             Report Issue
           </button>
         </div>
-        
+
         {error && <div className="error-message">{error}</div>}
-        
+
 
         {showForm && (
           <div className="announcement-form-container">
@@ -314,7 +314,7 @@ const AdminAnnouncements = () => {
                 />
                 {formErrors.title && <span className="error-text">{formErrors.title}</span>}
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="content">Content*</label>
                 <textarea
@@ -328,7 +328,7 @@ const AdminAnnouncements = () => {
                 />
                 {formErrors.content && <span className="error-text">{formErrors.content}</span>}
               </div>
-              
+
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="type">Type</label>
@@ -340,7 +340,7 @@ const AdminAnnouncements = () => {
                     <option value="feature">Feature</option>
                   </select>
                 </div>
-                
+
                 <div className="form-group">
                   <label htmlFor="priority">Priority</label>
                   <select id="priority" name="priority" value={formData.priority} onChange={handleChange}>
@@ -350,7 +350,7 @@ const AdminAnnouncements = () => {
                     <option value="urgent">Urgent</option>
                   </select>
                 </div>
-                
+
                 <div className="form-group">
                   <label htmlFor="validUntil">Valid Until</label>
                   <input
@@ -362,10 +362,10 @@ const AdminAnnouncements = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="form-group subject-checkboxes">
                 <label>Target Subjects (Optional)</label>
-                
+
                 <div className="subject-sections">
                   {Object.entries(subjectOptions).map(([examStage, subjects]) => (
                     <div key={examStage} className="subject-section">
@@ -386,7 +386,7 @@ const AdminAnnouncements = () => {
                   ))}
                 </div>
               </div>
-              
+
               <div className="form-buttons">
                 <button type="submit" className="submit-btn">
                   {editingId ? 'Update Announcement' : 'Create Announcement'}
@@ -398,11 +398,11 @@ const AdminAnnouncements = () => {
             </form>
           </div>
         )}
-        
+
         <div className="announcements-list">
           <div className="list-header-flex">
             <h2>Current Announcements</h2>
-            <button 
+            <button
               className="toggle-form-btn"
               onClick={() => {
                 if (showForm && editingId) {
@@ -414,7 +414,7 @@ const AdminAnnouncements = () => {
               {showForm ? 'Cancel' : 'Add New Announcement'}
             </button>
           </div>
-          
+
           {announcements.length === 0 ? (
             <div className="no-announcements">
               <p>No announcements found.</p>
@@ -444,8 +444,8 @@ const AdminAnnouncements = () => {
                       <td>{announcement.priority}</td>
                       <td>{format(new Date(announcement.createdAt), 'dd MMM yyyy')}</td>
                       <td>
-                        {announcement.validUntil ? 
-                          format(new Date(announcement.validUntil), 'dd MMM yyyy') : 
+                        {announcement.validUntil ?
+                          format(new Date(announcement.validUntil), 'dd MMM yyyy') :
                           'Not set'}
                       </td>
                       <td className="actions">

@@ -15,7 +15,7 @@ import './AdminPanel.css';
 const AdminPanel = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const getActiveTab = () => {
     if (location.pathname.includes('/resources')) return 'resources';
     if (location.pathname.includes('/analytics')) return 'analytics';
@@ -25,7 +25,7 @@ const AdminPanel = () => {
     return 'questions';
   };
   const [activeTab, setActiveTab] = useState(getActiveTab());
-  
+
   useEffect(() => {
     setActiveTab(getActiveTab());
   }, [location.pathname]);
@@ -75,24 +75,24 @@ const AdminPanel = () => {
           'Expires': '0',
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         const list = Array.isArray(data) ? data : (data?.data ?? [data]);
         const questions = Array.isArray(list) ? list : [list];
-        const sortedQuestions = [...questions].sort((a, b) => 
+        const sortedQuestions = [...questions].sort((a, b) =>
           new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
         );
         setStoredQuestions(sortedQuestions);
       } else {
         console.error('Failed to fetch questions:', response.statusText, data);
-        
+
         // Check for token expiration and handle automatic logout
         if (authUtils.handleTokenExpiration(data, navigate)) {
           return; // Return early if token expired and user is being redirected
         }
-        
+
         if (data.error) {
           alert(`Failed to fetch questions: ${data.error}`);
         } else {
@@ -101,7 +101,7 @@ const AdminPanel = () => {
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
-      
+
       // Check if it's a token expiration error and handle automatic logout
       if (!authUtils.handleTokenExpiration(error, navigate)) {
         alert(`Error fetching questions: ${error.message}`);
@@ -127,7 +127,7 @@ const AdminPanel = () => {
     if (extractedData.questionType) {
       setQuestionType(extractedData.questionType);
     }
-    
+
     setFormData(prev => ({
       ...prev,
       questionNumber: extractedData.questionNumber || prev.questionNumber || '',
@@ -141,7 +141,7 @@ const AdminPanel = () => {
         })) : [{ optionText: '', isCorrect: false }]
       })) : [],
     }));
-    
+
     setErrors(prev => {
       const newErrors = { ...prev };
       delete newErrors.questionText;
@@ -154,7 +154,7 @@ const AdminPanel = () => {
       });
       return newErrors;
     });
-    
+
     // Auto-resize all textareas after hydration
     setTimeout(() => {
       const textareas = document.querySelectorAll('.admin-form textarea');
@@ -181,7 +181,7 @@ const AdminPanel = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    
+
     // If examStage is changing, reset subject as it depends on examStage
     if (name === 'examStage') {
       setFilters(prev => ({
@@ -249,13 +249,13 @@ const AdminPanel = () => {
       isCorrect: i === optionIndex,
     }));
     setFormData((prev) => ({ ...prev, subQuestions: updated }));
-    
+
     setTimeout(() => {
       const subOptionsElements = document.querySelectorAll(`.sub-question-${subIndex} .option-item`);
       subOptionsElements.forEach((el) => {
         el.classList.remove('correct-option');
       });
-      
+
       const selectedOption = document.querySelector(`.option-item-${subIndex}-${optionIndex}`);
       if (selectedOption) {
         selectedOption.classList.add('correct-option');
@@ -326,7 +326,7 @@ const AdminPanel = () => {
 
   const validateForm = () => {
     let tempErrors = {};
-    
+
     // Core field validation for all question types
     if (!formData.subject || formData.subject === '') tempErrors.subject = 'Subject is required';
     if (!formData.paperType || formData.paperType === '') tempErrors.paperType = 'Paper Type is required';
@@ -335,20 +335,20 @@ const AdminPanel = () => {
     if (!formData.examStage || formData.examStage === '' || formData.examStage === 'Select Exam Stage') {
       tempErrors.examStage = 'Exam Stage is required';
     }
-    
+
     // Question type-specific validation
     switch (questionType) {
       case 'objective-subjective':
         // Both subjective and objective elements, flexible validation
         break;
-        
+
       case 'subjective-only':
         // Must have answer text for subjective-only
         if (!formData.answerText || formData.answerText.trim() === '') {
           tempErrors.answerText = 'Answer text is required for subjective questions';
         }
         break;
-        
+
       case 'objective-only':
         // Must have at least one sub-question with options for objective-only
         if (formData.subQuestions.length === 0) {
@@ -364,7 +364,7 @@ const AdminPanel = () => {
             if (!hasCorrectOption) {
               tempErrors[`subQuestion_0`] = 'One option must be marked as correct';
             }
-            
+
             // Check if all options have text
             firstSubQ.subOptions.forEach((opt, optIndex) => {
               if (!opt.optionText || opt.optionText.trim() === '') {
@@ -374,11 +374,11 @@ const AdminPanel = () => {
           }
         }
         break;
-        
+
       default:
         break;
     }
-    
+
     // Set errors state
     setErrors(tempErrors);
     return tempErrors;
@@ -442,7 +442,7 @@ const AdminPanel = () => {
     });
     setErrors({});
     setQuestionType('objective-subjective'); // Reset question type
-    
+
     // Try to load cached selections
     const cachedSelections = localStorage.getItem('adminFormSelections');
     if (cachedSelections) {
@@ -496,25 +496,25 @@ const AdminPanel = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Prepare question data based on question type
       let questionData = { ...formData };
-      
+
       // For subjective-only, ensure subQuestions is empty
       if (questionType === 'subjective-only') {
         questionData.subQuestions = [];
       }
-      
+
       // For objective-only, ensure answer text is empty if not needed
       if (questionType === 'objective-only') {
         questionData.answerText = '';
       }
-      
+
       // Clean and prepare data
       const cleanedSubQuestions = cleanSubQuestions(questionData.subQuestions);
       questionData.subQuestions = cleanedSubQuestions;
-      
+
       const response = await fetch(`${apiUtils.getApiBaseUrl()}/questions`, {
         method: 'POST',
         headers: {
@@ -523,38 +523,38 @@ const AdminPanel = () => {
         },
         body: JSON.stringify(questionData),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         setLastSubmittedId(data._id || data.id);
         alert('Question saved successfully!');
-        
+
         // Cache selections for convenience
         cacheFormSelections();
-        
+
         // Reset form but keep common fields like exam stage, subject
         const { examStage, subject, paperType, year, month } = formData;
         resetForm();
         setFormData(prev => ({
           ...prev,
-          examStage, 
-          subject, 
-          paperType, 
-          year, 
+          examStage,
+          subject,
+          paperType,
+          year,
           month
         }));
-        
+
         // Refresh the questions list
         fetchQuestions(token);
       } else {
         console.error('Error submitting question:', data);
-        
+
         // Check for token expiration and handle automatic logout
         if (authUtils.handleTokenExpiration(data, navigate)) {
           return; // Return early if token expired and user is being redirected
         }
-        
+
         if (data.message) {
           alert(`Failed to submit: ${data.message}`);
         } else {
@@ -563,7 +563,7 @@ const AdminPanel = () => {
       }
     } catch (error) {
       console.error('Error submitting question:', error);
-      
+
       // Check if it's a token expiration error and handle automatic logout
       if (!authUtils.handleTokenExpiration(error, navigate)) {
         alert(`Error submitting question: ${error.message}`);
@@ -589,25 +589,25 @@ const AdminPanel = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Prepare question data based on question type
       let questionData = { ...formData };
-      
+
       // For subjective-only, ensure subQuestions is empty
       if (questionType === 'subjective-only') {
         questionData.subQuestions = [];
       }
-      
+
       // For objective-only, ensure answer text is empty if not needed
       if (questionType === 'objective-only') {
         questionData.answerText = '';
       }
-      
+
       // Clean and prepare data
       const cleanedSubQuestions = cleanSubQuestions(questionData.subQuestions);
       questionData.subQuestions = cleanedSubQuestions;
-      
+
       const response = await fetch(`${apiUtils.getApiBaseUrl()}/questions/${editingQuestionId}`, {
         method: 'PUT',
         headers: {
@@ -616,29 +616,29 @@ const AdminPanel = () => {
         },
         body: JSON.stringify(questionData),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         alert('Question updated successfully!');
-        
+
         // Cache selections for convenience
         cacheFormSelections();
-        
+
         // Reset form and exit edit mode
         resetForm();
         setEditingQuestionId(null);
-        
+
         // Refresh the questions list
         fetchQuestions(token);
       } else {
         console.error('Error updating question:', data);
-        
+
         // Check for token expiration and handle automatic logout
         if (authUtils.handleTokenExpiration(data, navigate)) {
           return; // Return early if token expired and user is being redirected
         }
-        
+
         if (data.message) {
           alert(`Failed to update: ${data.message}`);
         } else {
@@ -647,7 +647,7 @@ const AdminPanel = () => {
       }
     } catch (error) {
       console.error('Error updating question:', error);
-      
+
       // Check if it's a token expiration error and handle automatic logout
       if (!authUtils.handleTokenExpiration(error, navigate)) {
         alert(`Error updating question: ${error.message}`);
@@ -659,30 +659,30 @@ const AdminPanel = () => {
 
   const handleEdit = (question) => {
     setEditingQuestionId(question._id);
-    
+
     // Determine question type based on content
     let detectedQuestionType = 'objective-subjective'; // Default
-    
+
     if (question.answerText && (!question.subQuestions || question.subQuestions.length === 0)) {
       // If it has answer text but no sub-questions, it's subjective-only
       detectedQuestionType = 'subjective-only';
-    } else if ((!question.answerText || question.answerText.trim() === '') && 
-               question.subQuestions && question.subQuestions.length > 0) {
+    } else if ((!question.answerText || question.answerText.trim() === '') &&
+      question.subQuestions && question.subQuestions.length > 0) {
       // If it has sub-questions but no answer text, it's objective-only
       detectedQuestionType = 'objective-only';
     }
-    
+
     setQuestionType(detectedQuestionType);
-    
+
     // Ensure subQuestions is always an array
     const subQuestions = question.subQuestions || [];
-    
+
     // Map subQuestions to ensure each has subOptions as an array
     const formattedSubQuestions = subQuestions.map(sq => ({
       ...sq,
       subOptions: sq.subOptions || []
     }));
-    
+
     // Set form data (exclude pageNumber)
     setFormData({
       subject: question.subject || '',
@@ -695,7 +695,7 @@ const AdminPanel = () => {
       answerText: question.answerText || '',
       subQuestions: formattedSubQuestions,
     });
-    
+
     // Scroll to the top of the form
     window.scrollTo(0, 0);
   };
@@ -706,10 +706,10 @@ const AdminPanel = () => {
       navigate('/login');
       return;
     }
-    
+
     const confirmDelete = window.confirm('Are you sure you want to delete this question?');
     if (!confirmDelete) return;
-    
+
     try {
       const response = await fetch(`${apiUtils.getApiBaseUrl()}/questions/${id}`, {
         method: 'DELETE',
@@ -717,7 +717,7 @@ const AdminPanel = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       if (response.ok) {
         alert('Question deleted successfully');
         const currentQuery = new URLSearchParams(filters).toString();
@@ -725,17 +725,17 @@ const AdminPanel = () => {
       } else {
         const data = await response.json();
         console.error('Error deleting question:', data);
-        
+
         // Check for token expiration and handle automatic logout
         if (authUtils.handleTokenExpiration(data, navigate)) {
           return; // Return early if token expired and user is being redirected
         }
-        
+
         alert(`Failed to delete question: ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error deleting question:', error);
-      
+
       // Check if it's a token expiration error and handle automatic logout
       if (!authUtils.handleTokenExpiration(error, navigate)) {
         alert(`Error deleting question: ${error.message}`);
@@ -771,7 +771,7 @@ const AdminPanel = () => {
                 </ul>
               </div>
             )}
-            
+
             {previewVisible && (
               <PreviewPanel
                 data={formData}
@@ -779,29 +779,29 @@ const AdminPanel = () => {
                 questionType={questionType}
               />
             )}
-            
+
             <div className="form-mode-indicator">
               <h2>{editingQuestionId ? 'Edit Question' : 'Add New Question'}</h2>
               {editingQuestionId && (
                 <p className="edit-mode-note">You are currently editing question ID: {editingQuestionId}</p>
               )}
-              <button 
-                type="button" 
-                onClick={clearCachedSelections} 
+              <button
+                type="button"
+                onClick={clearCachedSelections}
                 className="clear-cache-btn"
                 title="Clear cached form selections and start fresh"
               >
                 Clear Form Cache
               </button>
             </div>
-            
-            <ImageExtractor 
-              onExtract={handleImageExtract} 
-              disabled={!!editingQuestionId} 
+
+            <ImageExtractor
+              onExtract={handleImageExtract}
+              disabled={!!editingQuestionId}
             />
-            
-            <form 
-              onSubmit={editingQuestionId ? handleUpdate : handleSubmit} 
+
+            <form
+              onSubmit={editingQuestionId ? handleUpdate : handleSubmit}
               className={`admin-form ${editingQuestionId ? 'edit-mode' : ''}`}
             >
               <div className="form-section">
@@ -837,45 +837,45 @@ const AdminPanel = () => {
                       name="subject"
                       value={formData.subject}
                       onChange={(e) => {
-                    handleChange(e);
-                    autoResizeTextarea(e);
-                  }}
-                  onInput={autoResizeTextarea}
+                        handleChange(e);
+                        autoResizeTextarea(e);
+                      }}
+                      onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
                       <option value="">Select Subject</option>
                       {formData.examStage === 'Foundation' ? (
                         <>
-                          <option value="Accounting">1 - Accounting</option>
-                          <option value="Business Laws">2 - Business Laws</option>
-                          <option value="Quantitative Aptitude">3 - Quantitative Aptitude</option>
-                          <option value="Business Economics">4 - Business Economics</option>
+                          <option value="1 - Accounting">1 - Accounting</option>
+                          <option value="2 - Business Laws">2 - Business Laws</option>
+                          <option value="3 - Quantitative Aptitude">3 - Quantitative Aptitude</option>
+                          <option value="4 - Business Economics">4 - Business Economics</option>
                         </>
                       ) : formData.examStage === 'Intermediate' ? (
                         <>
                           <optgroup label="Group I">
-                            <option value="Advanced Accounting">1 - Advanced Accounting</option>
-                            <option value="Corporate and Other Laws">2 - Corporate and Other Laws</option>
-                            <option value="Taxation">3 - Taxation</option>
+                            <option value="1 - Advanced Accounting">1 - Advanced Accounting</option>
+                            <option value="2 - Corporate and Other Laws">2 - Corporate and Other Laws</option>
+                            <option value="3 - Taxation">3 - Taxation</option>
                           </optgroup>
                           <optgroup label="Group II">
-                            <option value="Cost and Management Accounting">4 - Cost and Management Accounting</option>
-                            <option value="Auditing and Ethics">5 - Auditing and Ethics</option>
-                            <option value="Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
+                            <option value="4 - Cost and Management Accounting">4 - Cost and Management Accounting</option>
+                            <option value="5 - Auditing and Ethics">5 - Auditing and Ethics</option>
+                            <option value="6 - Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
                           </optgroup>
                         </>
                       ) : formData.examStage === 'Final' ? (
                         <>
                           <optgroup label="Group I">
-                            <option value="Financial Reporting">1 - Financial Reporting</option>
-                            <option value="Advanced Financial Management">2 - Advanced Financial Management</option>
-                            <option value="Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
+                            <option value="1 - Financial Reporting">1 - Financial Reporting</option>
+                            <option value="2 - Advanced Financial Management">2 - Advanced Financial Management</option>
+                            <option value="3 - Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
                           </optgroup>
                           <optgroup label="Group II">
-                            <option value="Direct Tax Laws and International Taxation">4 - Direct Tax Laws &amp; International Taxation</option>
-                            <option value="Indirect Tax Laws">5 - Indirect Tax Laws</option>
-                            <option value="Integrated Business Solutions">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
+                            <option value="4 - Direct Tax Laws and International Taxation">4 - Direct Tax Laws and International Taxation</option>
+                            <option value="5 - Indirect Tax Laws">5 - Indirect Tax Laws</option>
+                            <option value="6 - Integrated Business Solutions (Multidisciplinary Case Study)">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
                           </optgroup>
                         </>
                       ) : (
@@ -890,10 +890,10 @@ const AdminPanel = () => {
                       name="paperType"
                       value={formData.paperType}
                       onChange={(e) => {
-                    handleChange(e);
-                    autoResizeTextarea(e);
-                  }}
-                  onInput={autoResizeTextarea}
+                        handleChange(e);
+                        autoResizeTextarea(e);
+                      }}
+                      onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
@@ -911,10 +911,10 @@ const AdminPanel = () => {
                       name="year"
                       value={formData.year}
                       onChange={(e) => {
-                    handleChange(e);
-                    autoResizeTextarea(e);
-                  }}
-                  onInput={autoResizeTextarea}
+                        handleChange(e);
+                        autoResizeTextarea(e);
+                      }}
+                      onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
@@ -931,10 +931,10 @@ const AdminPanel = () => {
                       name="month"
                       value={formData.month}
                       onChange={(e) => {
-                    handleChange(e);
-                    autoResizeTextarea(e);
-                  }}
-                  onInput={autoResizeTextarea}
+                        handleChange(e);
+                        autoResizeTextarea(e);
+                      }}
+                      onInput={autoResizeTextarea}
                       className="form-input"
                       required
                     >
@@ -960,23 +960,23 @@ const AdminPanel = () => {
               <div className="form-section">
                 <h2>Question Type</h2>
                 <div className="question-type-selector">
-                  <div 
+                  <div
                     className={`question-type-option ${questionType === 'objective-subjective' ? 'active' : ''}`}
                     onClick={() => setQuestionType('objective-subjective')}
                   >
                     <h3>Question + Answer + Options</h3>
                     <p>For questions with both objective and subjective components</p>
                   </div>
-                  
-                  <div 
+
+                  <div
                     className={`question-type-option ${questionType === 'subjective-only' ? 'active' : ''}`}
                     onClick={() => setQuestionType('subjective-only')}
                   >
                     <h3>Question + Answer Only</h3>
                     <p>For subjective questions without options</p>
                   </div>
-                  
-                  <div 
+
+                  <div
                     className={`question-type-option ${questionType === 'objective-only' ? 'active' : ''}`}
                     onClick={() => setQuestionType('objective-only')}
                   >
@@ -995,10 +995,10 @@ const AdminPanel = () => {
                     name="questionNumber"
                     value={formData.questionNumber}
                     onChange={(e) => {
-                    handleChange(e);
-                    autoResizeTextarea(e);
-                  }}
-                  onInput={autoResizeTextarea}
+                      handleChange(e);
+                      autoResizeTextarea(e);
+                    }}
+                    onInput={autoResizeTextarea}
                     className="form-input"
                     required
                   />
@@ -1010,10 +1010,10 @@ const AdminPanel = () => {
                     name="questionText"
                     value={formData.questionText}
                     onChange={(e) => {
-                    handleChange(e);
-                    autoResizeTextarea(e);
-                  }}
-                  onInput={autoResizeTextarea}
+                      handleChange(e);
+                      autoResizeTextarea(e);
+                    }}
+                    onInput={autoResizeTextarea}
                     rows={6}
                     className="form-input"
                     placeholder="Optional: Paste HTML code for tables, or type your question text..."
@@ -1033,10 +1033,10 @@ const AdminPanel = () => {
                       name="answerText"
                       value={formData.answerText}
                       onChange={(e) => {
-                    handleChange(e);
-                    autoResizeTextarea(e);
-                  }}
-                  onInput={autoResizeTextarea}
+                        handleChange(e);
+                        autoResizeTextarea(e);
+                      }}
+                      onInput={autoResizeTextarea}
                       rows={6}
                       className="form-input"
                       placeholder="Paste HTML code for tables, or just type your answer..."
@@ -1066,33 +1066,32 @@ const AdminPanel = () => {
                           className="form-input html-content"
                           rows={questionType === 'objective-only' ? 4 : 6}
                           placeholder={
-                            questionType === 'objective-only' 
-                              ? "Enter question text with HTML formatting (tables, lists, etc.)" 
+                            questionType === 'objective-only'
+                              ? "Enter question text with HTML formatting (tables, lists, etc.)"
                               : "Paste HTML code for tables, lists, or format your sub-question with HTML tags..."
                           }
                           required={questionType === 'objective-only' && subIndex === 0}
                         />
                         {/* Add HTML preview for sub-question */}
-                        <div 
+                        <div
                           className="rich-text-preview"
-                          dangerouslySetInnerHTML={{ 
-                            __html: DOMPurify.sanitize(subQ.subQuestionText || '') 
+                          dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(subQ.subQuestionText || '')
                           }}
                         />
                         <span className="html-help-tooltip" title="You can use HTML tags for formatting">
                           HTML enabled
                         </span>
-                        {errors[`subQuestion_${subIndex}`] && 
+                        {errors[`subQuestion_${subIndex}`] &&
                           <p className="error-message">{errors[`subQuestion_${subIndex}`]}</p>
                         }
                       </div>
                       <div className="sub-options-section">
                         {subQ.subOptions.map((subOpt, optIndex) => (
-                          <div 
-                            key={optIndex} 
-                            className={`form-group option-item option-item-${subIndex}-${optIndex} ${
-                              subOpt.isCorrect ? 'correct-option' : ''
-                            }`}
+                          <div
+                            key={optIndex}
+                            className={`form-group option-item option-item-${subIndex}-${optIndex} ${subOpt.isCorrect ? 'correct-option' : ''
+                              }`}
                           >
                             <label>Option {String.fromCharCode(65 + optIndex)}:</label>
                             <textarea
@@ -1105,16 +1104,16 @@ const AdminPanel = () => {
                               required
                             />
                             {/* Add HTML preview for option */}
-                            <div 
+                            <div
                               className="rich-text-preview option-preview"
-                              dangerouslySetInnerHTML={{ 
-                                __html: DOMPurify.sanitize(subOpt.optionText || '') 
+                              dangerouslySetInnerHTML={{
+                                __html: DOMPurify.sanitize(subOpt.optionText || '')
                               }}
                             />
                             <span className="html-help-tooltip" title="You can use HTML tags for formatting">
                               HTML enabled
                             </span>
-                            {errors[`subOption_${subIndex}_${optIndex}`] && 
+                            {errors[`subOption_${subIndex}_${optIndex}`] &&
                               <p className="error-message">
                                 {errors[`subOption_${subIndex}_${optIndex}`]}
                               </p>
@@ -1125,7 +1124,7 @@ const AdminPanel = () => {
                                   type="checkbox"
                                   name="isCorrect"
                                   checked={subOpt.isCorrect}
-                                  onChange={(e) => 
+                                  onChange={(e) =>
                                     handleSubOptionChange(subIndex, optIndex, {
                                       target: { name: 'isCorrect', value: e.target.checked }
                                     })
@@ -1134,8 +1133,8 @@ const AdminPanel = () => {
                                 Correct Answer
                               </label>
                               {subQ.subOptions.length > 1 && (
-                                <button 
-                                  type="button" 
+                                <button
+                                  type="button"
                                   onClick={() => removeSubOption(subIndex, optIndex)}
                                   className="remove-btn"
                                 >
@@ -1145,18 +1144,18 @@ const AdminPanel = () => {
                             </div>
                           </div>
                         ))}
-                        <button 
-                          type="button" 
-                          onClick={() => addSubOption(subIndex)} 
+                        <button
+                          type="button"
+                          onClick={() => addSubOption(subIndex)}
                           className="add-btn"
                         >
                           Add Option
                         </button>
                       </div>
                       <div className="sub-question-actions">
-                        <button 
-                          type="button" 
-                          onClick={() => removeSubQuestion(subIndex)} 
+                        <button
+                          type="button"
+                          onClick={() => removeSubQuestion(subIndex)}
                           className="remove-btn"
                         >
                           Remove {questionType === 'objective-only' ? 'This Question' : 'This Sub Question'}
@@ -1232,28 +1231,28 @@ const AdminPanel = () => {
                     <option value="">All Subjects</option>
                     {filters.examStage === 'Foundation' ? (
                       <>
-                        <option value="Accounting">Accounting</option>
-                        <option value="Business Laws">Business Laws</option>
-                        <option value="Quantitative Aptitude">Quantitative Aptitude</option>
-                        <option value="Business Economics">Business Economics</option>
+                        <option value="1 - Accounting">1 - Accounting</option>
+                        <option value="2 - Business Laws">2 - Business Laws</option>
+                        <option value="3 - Quantitative Aptitude">3 - Quantitative Aptitude</option>
+                        <option value="4 - Business Economics">4 - Business Economics</option>
                       </>
                     ) : filters.examStage === 'Intermediate' ? (
                       <>
-                        <option value="Advanced Accounting">Advanced Accounting</option>
-                        <option value="Corporate Laws">Corporate Laws</option>
-                        <option value="Cost and Management Accounting">Cost and Management Accounting</option>
-                        <option value="Taxation">Taxation</option>
-                        <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
-                        <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                        <option value="1 - Advanced Accounting">1 - Advanced Accounting</option>
+                        <option value="2 - Corporate and Other Laws">2 - Corporate and Other Laws</option>
+                        <option value="3 - Taxation">3 - Taxation</option>
+                        <option value="4 - Cost and Management Accounting">4 - Cost and Management Accounting</option>
+                        <option value="5 - Auditing and Ethics">5 - Auditing and Ethics</option>
+                        <option value="6 - Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
                       </>
                     ) : filters.examStage === 'Final' ? (
                       <>
-                        <option value="Financial Reporting">Financial Reporting</option>
-                        <option value="Advanced Financial Management">Advanced Financial Management</option>
-                        <option value="Advanced Auditing">Advanced Auditing</option>
-                        <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
-                        <option value="Indirect Tax Laws">Indirect Tax Laws</option>
-                        <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                        <option value="1 - Financial Reporting">1 - Financial Reporting</option>
+                        <option value="2 - Advanced Financial Management">2 - Advanced Financial Management</option>
+                        <option value="3 - Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
+                        <option value="4 - Direct Tax Laws and International Taxation">4 - Direct Tax Laws and International Taxation</option>
+                        <option value="5 - Indirect Tax Laws">5 - Indirect Tax Laws</option>
+                        <option value="6 - Integrated Business Solutions (Multidisciplinary Case Study)">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
                       </>
                     ) : (
                       <option value="">Select an Exam Stage first</option>
@@ -1417,8 +1416,8 @@ const AdminPanel = () => {
       <Navbar />
       <div className="admin-container">
         <div className="admin-tabs">
-          <button 
-            className={activeTab === 'questions' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'questions' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('questions');
               navigate('/admin');
@@ -1426,8 +1425,8 @@ const AdminPanel = () => {
           >
             Manage Questions
           </button>
-          <button 
-            className={activeTab === 'resources' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'resources' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('resources');
               navigate('/admin/resources');
@@ -1435,8 +1434,8 @@ const AdminPanel = () => {
           >
             Manage Resources
           </button>
-          <button 
-            className={activeTab === 'announcements' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'announcements' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('announcements');
               navigate('/admin/announcements');
@@ -1444,8 +1443,8 @@ const AdminPanel = () => {
           >
             Manage Announcements
           </button>
-          <button 
-            className={activeTab === 'analytics' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'analytics' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('analytics');
               navigate('/admin/analytics');
@@ -1453,8 +1452,8 @@ const AdminPanel = () => {
           >
             Analytics
           </button>
-          <button 
-            className={activeTab === 'feature-requests' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'feature-requests' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('feature-requests');
               navigate('/admin/feature-requests');
@@ -1462,8 +1461,8 @@ const AdminPanel = () => {
           >
             Request Feature
           </button>
-          <button 
-            className={activeTab === 'report-issues' ? 'active-tab' : ''} 
+          <button
+            className={activeTab === 'report-issues' ? 'active-tab' : ''}
             onClick={() => {
               setActiveTab('report-issues');
               navigate('/admin/report-issues');

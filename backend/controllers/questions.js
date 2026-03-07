@@ -138,7 +138,7 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     if (paperType) filter.paperType = paperType;
     if (month) filter.month = month;
     if (examStage) filter.examStage = examStage;
-    
+
     // Handle search keyword (case-insensitive); escape to prevent regex injection
     if (search) {
       filter.questionText = {
@@ -162,8 +162,8 @@ router.get('/', [authMiddleware, cacheMiddleware(300)], async (req, res) => {
     const skip = isAllMode ? 0 : (pageNum - 1) * limitNum;
 
     const [questions, total] = await Promise.all([
-      isAllMode 
-        ? Question.find(filter) 
+      isAllMode
+        ? Question.find(filter)
         : Question.find(filter).skip(skip).limit(limitNum),
       Question.countDocuments(filter)
     ]);
@@ -186,22 +186,22 @@ router.delete('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
     const { id } = req.params;
     logger.info('Attempting to delete question with ID: ' + id);
-    
+
     if (!id || id === 'undefined') {
       return res.status(400).json({ error: 'Invalid question ID provided' });
     }
-    
+
     const question = await Question.findById(id);
     if (!question) {
       return res.status(404).json({ error: 'Question not found' });
     }
-    
+
     const result = await Question.findByIdAndDelete(id);
-    
+
     if (!result) {
       return res.status(500).json({ error: 'Failed to delete question - database operation returned null' });
     }
-    
+
     clearCache([`/api/questions?id=${id}`, '/api/questions']);
     await logAudit(req.user.id, 'delete', 'question', id, { subject: question.subject });
     logger.info('Successfully deleted question with ID: ' + id);
@@ -225,12 +225,12 @@ router.get('/count', [cacheMiddleware(3600)], async (req, res) => {
 router.get('/quiz', [authMiddleware, cacheMiddleware(900)], async (req, res) => {
   try {
     const { examStage, subject, limit = 10 } = req.query;
-    
+
     // Validate required parameters
     if (!examStage || !subject) {
       return res.status(400).json({ error: 'Exam stage and subject are required parameters' });
     }
-    
+
     // Create filter to find questions with MCQ (questions that have subQuestions with subOptions)
     const filter = {
       examStage,
@@ -238,7 +238,7 @@ router.get('/quiz', [authMiddleware, cacheMiddleware(900)], async (req, res) => 
       'subQuestions.0': { $exists: true },  // Has at least one subQuestion
       'subQuestions.subOptions.0': { $exists: true }  // Has at least one option in the first subQuestion
     };
-    
+
     // Fetch MCQ questions with aggregation to ensure we get questions with valid MCQs
     const mcqQuestions = await Question.aggregate([
       { $match: filter },
@@ -248,15 +248,15 @@ router.get('/quiz', [authMiddleware, cacheMiddleware(900)], async (req, res) => 
       // Randomly select questions
       { $sample: { size: parseInt(limit) } }
     ]);
-    
+
     if (mcqQuestions.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'No MCQ questions found for the selected exam stage and subject',
         examStage,
         subject
       });
     }
-    
+
     res.json(mcqQuestions);
   } catch (error) {
     sendErrorResponse(res, 500, { message: 'Failed to fetch quiz questions', error });
@@ -267,11 +267,11 @@ router.get('/quiz', [authMiddleware, cacheMiddleware(900)], async (req, res) => 
 router.get('/available-subjects', [authMiddleware, cacheMiddleware(3600)], async (req, res) => {
   try {
     const { examStage } = req.query;
-    
+
     if (!examStage) {
       return res.status(400).json({ error: 'Exam stage is required' });
     }
-    
+
     // Find all unique subjects for the given exam stage that have MCQ questions
     const availableSubjects = await Question.aggregate([
       {
@@ -295,7 +295,7 @@ router.get('/available-subjects', [authMiddleware, cacheMiddleware(3600)], async
         }
       }
     ]);
-    
+
     res.json(availableSubjects);
   } catch (error) {
     sendErrorResponse(res, 500, { message: 'Failed to fetch available subjects', error });
@@ -306,41 +306,41 @@ router.get('/available-subjects', [authMiddleware, cacheMiddleware(3600)], async
 router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req, res) => {
   try {
     const { examStage } = req.query;
-    
+
     if (!examStage) {
       return res.status(400).json({ error: 'Exam stage is required' });
     }
-    
+
     // Define default subjects for each exam stage
     let defaultSubjects = [];
-    
+
     if (examStage === 'Foundation') {
       defaultSubjects = [
-        { subject: 'Accounting', count: 0 },
-        { subject: 'Business Laws', count: 0 },
-        { subject: 'Quantitative Aptitude', count: 0 },
-        { subject: 'Business Economics', count: 0 }
+        { subject: '1 - Accounting', count: 0 },
+        { subject: '2 - Business Laws', count: 0 },
+        { subject: '3 - Quantitative Aptitude', count: 0 },
+        { subject: '4 - Business Economics', count: 0 }
       ];
     } else if (examStage === 'Intermediate') {
       defaultSubjects = [
-        { subject: 'Advanced Accounting', count: 0 },
-        { subject: 'Corporate Laws', count: 0 },
-        { subject: 'Cost and Management Accounting', count: 0 },
-        { subject: 'Taxation', count: 0 },
-        { subject: 'Auditing and Code of Ethics', count: 0 },
-        { subject: 'Financial and Strategic Management', count: 0 }
+        { subject: '1 - Advanced Accounting', count: 0 },
+        { subject: '2 - Corporate and Other Laws', count: 0 },
+        { subject: '3 - Taxation', count: 0 },
+        { subject: '4 - Cost and Management Accounting', count: 0 },
+        { subject: '5 - Auditing and Ethics', count: 0 },
+        { subject: '6 - Financial Management and Strategic Management', count: 0 }
       ];
     } else if (examStage === 'Final') {
       defaultSubjects = [
-        { subject: 'Financial Reporting', count: 0 },
-        { subject: 'Advanced Financial Management', count: 0 },
-        { subject: 'Advanced Auditing', count: 0 },
-        { subject: 'Direct and International Tax Laws', count: 0 },
-        { subject: 'Indirect Tax Laws', count: 0 },
-        { subject: 'Integrated Business Solutions', count: 0 }
+        { subject: '1 - Financial Reporting', count: 0 },
+        { subject: '2 - Advanced Financial Management', count: 0 },
+        { subject: '3 - Advanced Auditing, Assurance and Professional Ethics', count: 0 },
+        { subject: '4 - Direct Tax Laws and International Taxation', count: 0 },
+        { subject: '5 - Indirect Tax Laws', count: 0 },
+        { subject: '6 - Integrated Business Solutions (Multidisciplinary Case Study)', count: 0 }
       ];
     }
-    
+
     // Find all unique subjects for the given exam stage regardless of question type
     const foundSubjects = await Question.aggregate([
       {
@@ -362,11 +362,11 @@ router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req,
         }
       }
     ]);
-    
+
     // Create a map of default subjects for quick lookup
     const mergedSubjects = [...defaultSubjects];
     const defaultSubjectMap = new Map(defaultSubjects.map(s => [s.subject, s]));
-    
+
     // Update counts for subjects that exist in the database
     foundSubjects.forEach(foundSubj => {
       const defaultSubj = defaultSubjectMap.get(foundSubj.subject);
@@ -381,7 +381,7 @@ router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req,
         mergedSubjects.push(foundSubj);
       }
     });
-    
+
     res.json(mergedSubjects);
   } catch (error) {
     sendErrorResponse(res, 500, { message: 'Failed to fetch subjects', error });
@@ -392,22 +392,22 @@ router.get('/all-subjects', [authMiddleware, cacheMiddleware(3600)], async (req,
 router.post('/batch', [authMiddleware], async (req, res) => {
   try {
     const { questionIds } = req.body;
-    
+
     if (!questionIds || !Array.isArray(questionIds) || questionIds.length === 0) {
       return res.status(400).json({ error: 'A valid array of question IDs is required' });
     }
-    
+
     // Limit the number of questions that can be requested at once
     if (questionIds.length > 50) {
       return res.status(400).json({ error: 'Maximum of 50 questions can be requested at once' });
     }
-    
+
     const questions = await Question.find({ _id: { $in: questionIds } });
-    
+
     if (!questions || questions.length === 0) {
       return res.status(404).json({ error: 'No questions found for the provided IDs' });
     }
-    
+
     res.json(questions);
   } catch (error) {
     sendErrorResponse(res, 500, { message: 'Failed to fetch batch questions', error });

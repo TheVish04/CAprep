@@ -21,8 +21,8 @@ const TITLE_STREAM_TICK_MS = 25;
 
 const ChatBotPage = () => {
   const [messages, setMessages] = useState([
-    { 
-      type: 'bot', 
+    {
+      type: 'bot',
       content: 'Hello! I\'m your CA Assistant. Ask me any questions about Chartered Accountancy. My knowledge is based on the existing CA curriculum. However, remember that accounting standards and legal provisions are subject to change, so always refer to the official ICAI publications for the most up-to-date information. I am a tool to assist your learning, not a replacement for thorough study and engagement with official resources.\n\nPlease mention your Exam Stage and Subject with every question for best results.\nCA Assistant can make mistakes. Check important info. Please dont rely on answers blindly. Check the official ICAI publications for the most up-to-date information.',
       timestamp: new Date()
     }
@@ -38,11 +38,11 @@ const ChatBotPage = () => {
   const createdConversationRef = useRef(null); // Track newly created convo for error-path update
   const [selectedExamStage, setSelectedExamStage] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
-  
+
   const [selectedImage, setSelectedImage] = useState(null); // { file, base64 }
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   // Image Lightbox State
   const [lightboxImage, setLightboxImage] = useState(null);
 
@@ -66,7 +66,7 @@ const ChatBotPage = () => {
       setChatHistory([]);
     }
   }, [apiUtils.getAuthUserId()]);
-  
+
   // Track if we just loaded a chat from history
   const [justLoadedHistory, setJustLoadedHistory] = useState(false);
 
@@ -112,16 +112,16 @@ const ChatBotPage = () => {
     if (messageEndRef.current) {
       if (justLoadedHistory) {
         // Jump instantly when switching loaded chats
-        messageEndRef.current.scrollIntoView({ 
-          behavior: 'auto', 
-          block: 'end' 
+        messageEndRef.current.scrollIntoView({
+          behavior: 'auto',
+          block: 'end'
         });
         setJustLoadedHistory(false);
       } else {
         // Smooth scroll for user typing / bot streaming
-        messageEndRef.current.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'end' 
+        messageEndRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end'
         });
       }
     }
@@ -174,16 +174,16 @@ const ChatBotPage = () => {
   // Function to remove markdown formatting from AI responses
   const sanitizeResponse = (text) => {
     if (!text) return '';
-    
+
     // Remove markdown italics/bold asterisks (replace with the actual text)
     let sanitized = text.replace(/\*\*\*(.*?)\*\*\*/g, '$1'); // Bold + italic (three asterisks)
     sanitized = sanitized.replace(/\*\*(.*?)\*\*/g, '$1'); // Bold (two asterisks)
     sanitized = sanitized.replace(/\*(.*?)\*/g, '$1'); // Italic (one asterisk)
-    
+
     // Remove other markdown if needed
     sanitized = sanitized.replace(/__(.*?)__/g, '$1'); // Underline
     sanitized = sanitized.replace(/_(.*?)_/g, '$1'); // Alternate italic
-    
+
     return sanitized;
   };
 
@@ -198,7 +198,7 @@ const ChatBotPage = () => {
   const handleInputChange = (e) => {
     setInput(e.target.value);
   };
-  
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -212,7 +212,7 @@ const ChatBotPage = () => {
       alert('Please upload an image file.');
       return;
     }
-    
+
     // Convert to base64 for preview and API
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -265,14 +265,14 @@ const ChatBotPage = () => {
   const removeImage = () => {
     setSelectedImage(null);
   };
-  
+
   const createNewChat = () => {
     createdConversationRef.current = null;
     setStreamingMessage(null);
     setStreamingTitle(null);
     setIsLoading(false);
-    setMessages([{ 
-      type: 'bot', 
+    setMessages([{
+      type: 'bot',
       content: 'Hello! I\'m your CA Assistant. Ask me any questions about Chartered Accountancy. My knowledge is based on the existing CA curriculum. However, remember that accounting standards and legal provisions are subject to change, so always refer to the official ICAI publications for the most up-to-date information. I am a tool to assist your learning, not a replacement for thorough study and engagement with official resources.\n\nPlease mention your Exam Stage and Subject with every question for best results.\nCA Assistant can make mistakes. Check important info. Please dont rely on answers blindly. Check the official ICAI publications for the most up-to-date information.',
       timestamp: new Date()
     }]);
@@ -287,7 +287,7 @@ const ChatBotPage = () => {
   const handleSubjectChange = (e) => {
     setSelectedSubject(e.target.value);
   };
-  
+
   // Update conversation title (e.g. when AI-generated title arrives)
   const updateConversationTitle = (convoId, newTitle) => {
     setChatHistory(prev => {
@@ -355,7 +355,7 @@ const ChatBotPage = () => {
         const firstBotMessage = conversation[2];
         // Combine the prompt and AI's answer so the title generator has full context
         const dialogueContext = `User: ${firstUserMessage.content || '[Image uploaded]'}\nAI: ${firstBotMessage.content}`;
-        
+
         api
           .post('/ai-quiz/suggest-title', { question: dialogueContext })
           .then(res => {
@@ -364,7 +364,7 @@ const ChatBotPage = () => {
               setStreamingTitle({ convoId: convoToUpdate.id, fullTitle: aiTitle, displayedLength: 0 });
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     } else {
       // Fallback: create new (e.g. if user navigated away before first message)
@@ -384,7 +384,7 @@ const ChatBotPage = () => {
 
   const handleSendMessage = async () => {
     if ((input.trim() === '' && !selectedImage) || isLoading) return;
-    
+
     // Prepare the message text
     let userMsgContent = input.trim();
 
@@ -395,13 +395,13 @@ const ChatBotPage = () => {
       image: selectedImage ? selectedImage.base64 : null,
       animate: true
     };
-    
+
     const messagesWithUser = [...messages, userMessage];
     setMessages(prev => [...prev, userMessage]);
-    
+
     // Temporarily capture image to send, then clear input UI
     const imageToSend = selectedImage ? selectedImage.base64 : null;
-    
+
     setInput('');
     setSelectedImage(null);
     setIsLoading(true);
@@ -410,42 +410,42 @@ const ChatBotPage = () => {
     if (selectedConversation === null) {
       createConversationOnFirstMessage(messagesWithUser);
     }
-    
+
     try {
       const config = {
         headers: {
           'Content-Type': 'application/json'
         }
       };
-      
+
       // Prepare conversation history (last 10 messages or fewer)
       // Skip the initial greeting/instructions message
-      const conversationHistory = messages.length > 1 
-        ? messages.slice(1).slice(-10) 
+      const conversationHistory = messages.length > 1
+        ? messages.slice(1).slice(-10)
         : [];
-      
+
       // Include the selected options in the API request if they're set
-      const requestData = { 
+      const requestData = {
         question: input.trim(), // Send whatever the user typed (can be empty string)
         conversationHistory: conversationHistory,
         image: imageToSend // the base64 string
       };
-      
+
       if (selectedExamStage) {
         requestData.examStage = selectedExamStage;
       }
-      
+
       if (selectedSubject) {
         requestData.subject = selectedSubject;
       }
-      
+
       const response = await api.post('/ai-quiz/ask', requestData, config);
-      
+
       const content = sanitizeResponse(response.data.answer);
-      
+
       // Start token-by-token animation (ChatGPT-like); isLoading stays true until done
       setStreamingMessage({ content, displayedLength: 0 });
-      
+
     } catch (error) {
       console.error('Error fetching bot response:', error);
       const errorMsg = {
@@ -459,7 +459,7 @@ const ChatBotPage = () => {
       setIsLoading(false);
     }
   };
-  
+
   const loadConversation = (convo) => {
     createdConversationRef.current = null;
     setStreamingMessage(null);
@@ -469,33 +469,33 @@ const ChatBotPage = () => {
     setSelectedConversation(convo);
     setJustLoadedHistory(true);
   };
-  
+
   const deleteConversation = (e, historyId) => {
     e.stopPropagation(); // Prevent triggering the loadConversation
-    
+
     // Show confirmation dialog
     const confirmDelete = window.confirm('Are you sure you want to delete this conversation?');
-    
+
     if (confirmDelete) {
       const updatedHistory = chatHistory.filter(item => item.id !== historyId);
       setChatHistory(updatedHistory);
       localStorage.setItem(getChatHistoryStorageKey(), JSON.stringify(updatedHistory));
-      
+
       // If the deleted conversation is the currently selected one, create a new chat
       if (selectedConversation && selectedConversation.id === historyId) {
         createNewChat();
       }
     }
   };
-  
+
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-  
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, { 
-      month: 'short', 
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
@@ -504,18 +504,18 @@ const ChatBotPage = () => {
   // Add rendering function to format warning message with styled content
   const formatMessageWithWarning = (content) => {
     if (!content) return '';
-    
+
     // Check if the message contains the warning text
     if (content.includes('CA Assistant can make mistakes')) {
       // Find the warning part of the message (starting with "CA Assistant can make mistakes")
       const parts = content.split('CA Assistant can make mistakes');
-      
+
       if (parts.length === 2) {
         // Find the text between "CA Assistant can make mistakes" and "official ICAI publications"
         // The original string was: "CA Assistant can make mistakes. Check important info. Please dont rely on answers blindly. Check the official ICAI publications for the most up-to-date information."
         const warningPart = parts[1];
         const subParts = warningPart.split('official ICAI publications');
-        
+
         return (
           <>
             {parts[0]}
@@ -531,7 +531,7 @@ const ChatBotPage = () => {
         );
       }
     }
-    
+
     // Return the original content if no warning text found
     return content;
   };
@@ -539,11 +539,11 @@ const ChatBotPage = () => {
   return (
     <div className="chatbot-page">
       <Navbar />
-      
+
       <div className="chatbot-container">
         {/* Toggle Button for Sidebar */}
-        <button 
-          className="sidebar-toggle-btn" 
+        <button
+          className="sidebar-toggle-btn"
           onClick={toggleSidebar}
           title={isSidebarCollapsed ? "Open Sidebar" : "Close Sidebar"}
         >
@@ -554,7 +554,7 @@ const ChatBotPage = () => {
           </svg>
         </button>
 
-        <div 
+        <div
           className={`chatbot-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}
           style={{ '--sidebar-width': `${sidebarWidth}px` }}
         >
@@ -565,11 +565,11 @@ const ChatBotPage = () => {
               </svg>
               New chat
             </button>
-            
+
             <div className="history-divider">
               <span>Chat History</span>
             </div>
-            
+
             <div className="chat-history-list">
               {chatHistory.length === 0 ? (
                 <div className="empty-history-message">
@@ -577,8 +577,8 @@ const ChatBotPage = () => {
                 </div>
               ) : (
                 chatHistory.map(convo => (
-                  <div 
-                    key={convo.id} 
+                  <div
+                    key={convo.id}
                     className={`history-item ${selectedConversation?.id === convo.id ? 'active' : ''}`}
                     onClick={() => loadConversation(convo)}
                   >
@@ -592,7 +592,7 @@ const ChatBotPage = () => {
                         convo.title
                       )}
                     </div>
-                    <button 
+                    <button
                       className="history-delete-btn"
                       onClick={(e) => deleteConversation(e, convo.id)}
                       aria-label="Delete conversation"
@@ -606,21 +606,21 @@ const ChatBotPage = () => {
               )}
             </div>
           </div>
-          
+
           {/* Draggable Resizer Handle */}
           {!isSidebarCollapsed && (
-            <div 
-              className="sidebar-resizer" 
+            <div
+              className="sidebar-resizer"
               onMouseDown={handleMouseDown}
             ></div>
           )}
         </div>
-        
+
         <div className="chatbot-main">
           <div className="chatbot-header">
             <h1>CA Assistant</h1>
           </div>
-          
+
           <div className="chat-messages">
             {messages.map((message, index) => (
               <div key={index} className={`chat-message ${message.type} ${message.animate ? 'animate-in' : ''}`}>
@@ -647,8 +647,8 @@ const ChatBotPage = () => {
                   )}
                   {message.content && message.content.trim() !== '' && (
                     <div className="message-text">
-                      {message.type === 'bot' 
-                        ? formatMessageWithWarning(message.content) 
+                      {message.type === 'bot'
+                        ? formatMessageWithWarning(message.content)
                         : message.content}
                     </div>
                   )}
@@ -656,7 +656,7 @@ const ChatBotPage = () => {
                 </div>
               </div>
             ))}
-            
+
             {streamingMessage && (
               <div className="chat-message bot streaming">
                 <div className="message-avatar">
@@ -701,12 +701,12 @@ const ChatBotPage = () => {
                 </div>
               </div>
             )}
-            
+
             <div ref={messageEndRef} className="message-end"></div>
           </div>
-          
+
           <div className="chatbot-input">
-            <div 
+            <div
               className={`input-wrapper ${isDragging ? 'dragging' : ''} ${selectedImage ? 'has-image' : ''}`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -715,9 +715,9 @@ const ChatBotPage = () => {
               {selectedImage && (
                 <div className="image-preview-container">
                   <div className="image-preview">
-                    <img 
-                      src={selectedImage.base64} 
-                      alt="Selected" 
+                    <img
+                      src={selectedImage.base64}
+                      alt="Selected"
                       onClick={() => setLightboxImage(selectedImage.base64)}
                       title="Click to expand"
                       style={{ cursor: 'zoom-in' }}
@@ -731,17 +731,17 @@ const ChatBotPage = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="input-row" style={{ position: 'relative' }}>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleImageSelect} 
-                  accept="image/*" 
-                  style={{ display: 'none' }} 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageSelect}
+                  accept="image/*"
+                  style={{ display: 'none' }}
                 />
-                <button 
-                  className="attach-btn" 
+                <button
+                  className="attach-btn"
                   onClick={() => fileInputRef.current?.click()}
                   title="Attach Image"
                   disabled={isLoading}
@@ -796,9 +796,9 @@ const ChatBotPage = () => {
                   rows={1}
                   style={{ background: 'transparent', position: 'relative', zIndex: 2 }}
                 />
-              
-                <button 
-                  onClick={handleSendMessage} 
+
+                <button
+                  onClick={handleSendMessage}
                   disabled={isLoading || (input.trim() === '' && !selectedImage)}
                   className="send-button"
                 >
@@ -806,11 +806,11 @@ const ChatBotPage = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="input-controls">
               <div className="input-selectors">
                 <div className="select-wrapper" data-value={selectedExamStage || "Exam Stage"}>
-                  <select 
+                  <select
                     value={selectedExamStage}
                     onChange={handleExamStageChange}
                     className="input-selector"
@@ -821,7 +821,7 @@ const ChatBotPage = () => {
                     <option value="Final">Final</option>
                   </select>
                 </div>
-                
+
                 <div className="select-wrapper" data-value={selectedSubject || "Subject"}>
                   <select
                     value={selectedSubject}
@@ -832,28 +832,28 @@ const ChatBotPage = () => {
                     <option value="">Subject</option>
                     {selectedExamStage === 'Foundation' ? (
                       <>
-                        <option value="Accounting">Accounting</option>
-                        <option value="Business Laws">Business Laws</option>
-                        <option value="Quantitative Aptitude">Quantitative Aptitude</option>
-                        <option value="Business Economics">Business Economics</option>
+                        <option value="1 - Accounting">1 - Accounting</option>
+                        <option value="2 - Business Laws">2 - Business Laws</option>
+                        <option value="3 - Quantitative Aptitude">3 - Quantitative Aptitude</option>
+                        <option value="4 - Business Economics">4 - Business Economics</option>
                       </>
                     ) : selectedExamStage === 'Intermediate' ? (
                       <>
-                        <option value="Advanced Accounting">Advanced Accounting</option>
-                        <option value="Corporate Laws">Corporate Laws</option>
-                        <option value="Cost and Management Accounting">Cost and Management Accounting</option>
-                        <option value="Taxation">Taxation</option>
-                        <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
-                        <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                        <option value="1 - Advanced Accounting">1 - Advanced Accounting</option>
+                        <option value="2 - Corporate and Other Laws">2 - Corporate and Other Laws</option>
+                        <option value="3 - Taxation">3 - Taxation</option>
+                        <option value="4 - Cost and Management Accounting">4 - Cost and Management Accounting</option>
+                        <option value="5 - Auditing and Ethics">5 - Auditing and Ethics</option>
+                        <option value="6 - Financial Management and Strategic Management">6 - Financial Management and Strategic Management</option>
                       </>
                     ) : selectedExamStage === 'Final' ? (
                       <>
-                        <option value="Financial Reporting">Financial Reporting</option>
-                        <option value="Advanced Financial Management">Advanced Financial Management</option>
-                        <option value="Advanced Auditing">Advanced Auditing</option>
-                        <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
-                        <option value="Indirect Tax Laws">Indirect Tax Laws</option>
-                        <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                        <option value="1 - Financial Reporting">1 - Financial Reporting</option>
+                        <option value="2 - Advanced Financial Management">2 - Advanced Financial Management</option>
+                        <option value="3 - Advanced Auditing, Assurance and Professional Ethics">3 - Advanced Auditing, Assurance and Professional Ethics</option>
+                        <option value="4 - Direct Tax Laws and International Taxation">4 - Direct Tax Laws and International Taxation</option>
+                        <option value="5 - Indirect Tax Laws">5 - Indirect Tax Laws</option>
+                        <option value="6 - Integrated Business Solutions (Multidisciplinary Case Study)">6 - Integrated Business Solutions (Multidisciplinary Case Study)</option>
                       </>
                     ) : null}
                   </select>

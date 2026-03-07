@@ -34,10 +34,10 @@ const LandingPage = () => {
       once: false,
       disable: 'mobile',
     });
-    
+
     // Show elements after a small delay for better animation effect
     setTimeout(() => setIsVisible(true), 100);
-    
+
     // Check if user is logged in
     const token = apiUtils.getAuthToken();
     if (token) {
@@ -54,7 +54,7 @@ const LandingPage = () => {
         apiUtils.clearAuthToken();
       }
     }
-    
+
     // Fetch question count from the backend (API base includes /api)
     const fetchQuestionCount = async () => {
       try {
@@ -70,7 +70,7 @@ const LandingPage = () => {
         setQuestionCount(1000);
       }
     };
-    
+
     // Fetch resource count from the backend
     const fetchResourceCount = async () => {
       try {
@@ -86,7 +86,7 @@ const LandingPage = () => {
         setResourceCount(3);
       }
     };
-    
+
     fetchQuestionCount();
     fetchResourceCount();
     AOS.refresh();
@@ -101,13 +101,13 @@ const LandingPage = () => {
   return (
     <div className={`landing-page ${isVisible ? 'visible' : ''}`}>
       <Navbar />
-      
+
       <section className="hero">
         <div className="hero-overlay"></div>
         <div className="hero-content" data-aos="fade-up">
           <LayoutGroup>
-            <motion.h1 
-              layout 
+            <motion.h1
+              layout
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               style={{ overflow: 'hidden', padding: '0.2em', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
             >
@@ -115,8 +115,8 @@ const LandingPage = () => {
                 Master Your CA&nbsp;
               </motion.span>
               <motion.span layout style={{ color: '#239ecf' }}>
-                <RotatingText 
-                  texts={['Journey','Foundation', 'Intermediate', 'Final']}
+                <RotatingText
+                  texts={['Journey', 'Foundation', 'Intermediate', 'Final']}
                   mainClassName="overflow-hidden justify-center"
                   staggerFrom={"last"}
                   initial={{ y: "100%" }}
@@ -144,10 +144,10 @@ const LandingPage = () => {
           <div className="hero-stats">
             <div className="stat-item">
               <span className="stat-number">
-                <CountUp 
-                  end={questionCount} 
-                  duration={2.5} 
-                  separator="," 
+                <CountUp
+                  end={questionCount}
+                  duration={2.5}
+                  separator=","
                   enableScrollSpy
                 />
               </span>
@@ -155,10 +155,10 @@ const LandingPage = () => {
             </div>
             <div className="stat-item">
               <span className="stat-number">
-                <CountUp 
-                  end={resourceCount} 
-                  duration={2.5} 
-                  separator="," 
+                <CountUp
+                  end={resourceCount}
+                  duration={2.5}
+                  separator=","
                   enableScrollSpy
                 />
               </span>
@@ -192,7 +192,7 @@ const LandingPage = () => {
               </Magnet>
             </SpotlightCard>
           </div>
-          
+
           <div className="level-card" data-aos="fade-up" data-aos-delay="200">
             <SpotlightCard className="level-card-inner" spotlightColor="rgba(3, 169, 244, 0.15)">
               <div className="level-icon intermediate-icon">
@@ -212,7 +212,7 @@ const LandingPage = () => {
               </Magnet>
             </SpotlightCard>
           </div>
-          
+
           <div className="level-card" data-aos="fade-up" data-aos-delay="300">
             <SpotlightCard className="level-card-inner" spotlightColor="rgba(3, 169, 244, 0.15)">
               <div className="level-icon final-icon">
@@ -241,7 +241,7 @@ const LandingPage = () => {
           <h2><SplitText text="Why Top CA Aspirants Choose Us" tag="span" stagger={25} /></h2>
           <div className="heading-underline"></div>
         </div>
-        
+
         <div className="feature-grid">
           <div className="feature-item" data-aos="fade-up" data-aos-delay="100">
             <div className="feature-item-inner">
@@ -252,7 +252,7 @@ const LandingPage = () => {
               <p>Access thousands of previous year questions categorized by subject, topic, and difficulty level.</p>
             </div>
           </div>
-          
+
           <div className="feature-item" data-aos="fade-up" data-aos-delay="150">
             <div className="feature-item-inner">
               <div className="feature-icon">
@@ -262,7 +262,7 @@ const LandingPage = () => {
               <p>Study with MTP, RTP, and PYQS papers organized systematically for effective preparation.</p>
             </div>
           </div>
-          
+
           <div className="feature-item" data-aos="fade-up" data-aos-delay="200">
             <div className="feature-item-inner">
               <div className="feature-icon">
@@ -272,7 +272,7 @@ const LandingPage = () => {
               <p>Find relevant questions instantly using our advanced filtering and search capabilities.</p>
             </div>
           </div>
-          
+
           <div className="feature-item" data-aos="fade-up" data-aos-delay="300">
             <div className="feature-item-inner">
               <div className="feature-icon">
@@ -282,7 +282,7 @@ const LandingPage = () => {
               <p>Access and download study materials and question sets with answers for offline revision.</p>
             </div>
           </div>
-          
+
           <div className="feature-item" data-aos="fade-up" data-aos-delay="350">
             <div className="feature-item-inner">
               <div className="feature-icon">
@@ -302,7 +302,7 @@ const LandingPage = () => {
               <p>Choose exactly how many questions you want in your quiz, from quick sessions to comprehensive tests.</p>
             </div>
           </div>
-          
+
           <div className="feature-item" data-aos="fade-up" data-aos-delay="450">
             <div className="feature-item-inner">
               <div className="feature-icon">
@@ -312,7 +312,7 @@ const LandingPage = () => {
               <p>Our system displays only subjects with available MCQs, showing the exact count for each.</p>
             </div>
           </div>
-          
+
           <div className="feature-item" data-aos="fade-up" data-aos-delay="500">
             <div className="feature-item-inner">
               <div className="feature-icon">
@@ -331,7 +331,7 @@ const LandingPage = () => {
           <h2><SplitText text="How CAprep Works" tag="span" stagger={35} /></h2>
           <div className="heading-underline"></div>
         </div>
-        
+
         <div className="steps-container">
           <div className="step-flow-line" aria-hidden="true"></div>
           <div className="step" data-aos="fade-right" data-aos-delay="100">
@@ -343,7 +343,7 @@ const LandingPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="step" data-aos="fade-right" data-aos-delay="200">
             <div className="step-number"><span>2</span></div>
             <div className="step-content">
@@ -353,7 +353,7 @@ const LandingPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="step" data-aos="fade-right" data-aos-delay="300">
             <div className="step-number"><span>3</span></div>
             <div className="step-content">
@@ -363,7 +363,7 @@ const LandingPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="step" data-aos="fade-right" data-aos-delay="400">
             <div className="step-number"><span>4</span></div>
             <div className="step-content">
