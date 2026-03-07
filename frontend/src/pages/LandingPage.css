@@ -833,11 +833,13 @@ section {
 
   .feature-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .level-cards {
     flex-direction: column;
     align-items: center;
+    gap: 40px;
   }
 
   .step {
@@ -859,10 +861,13 @@ section {
 
   .footer-content {
     flex-direction: column;
+    gap: 20px;
   }
 
   .footer-links {
-    margin-top: 30px;
+    margin-top: 20px;
+    flex-direction: column;
+    gap: 20px;
   }
 }
 

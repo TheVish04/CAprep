@@ -8,13 +8,15 @@
   align-items: center;
   box-sizing: border-box;
   background: #121212;
-  padding-top: 70px; /* Match fixed navbar height */
+  padding-top: 70px;
+  /* Match fixed navbar height */
 }
 
 .admin-container {
   max-width: 1200px;
   width: 90%;
-  padding: 80px 20px 40px; /* Increase top padding to avoid navbar overlap */
+  padding: 80px 20px 40px;
+  /* Increase top padding to avoid navbar overlap */
   margin: 0 auto;
 }
 
@@ -87,7 +89,8 @@
   justify-content: center;
   align-items: flex-start;
   width: 100%;
-  padding: 20px 20px 40px; /* Keep reduced top padding */
+  padding: 20px 20px 40px;
+  /* Keep reduced top padding */
   box-sizing: border-box;
 }
 
@@ -137,8 +140,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .error-title {
@@ -280,14 +290,14 @@ textarea.form-input {
   display: block;
 }
 
-.rich-text-preview th, 
+.rich-text-preview th,
 .rich-text-preview td {
   border: 1px solid #333;
   padding: 8px;
   text-align: left;
 }
 
-.rich-text-preview ul, 
+.rich-text-preview ul,
 .rich-text-preview ol {
   padding-left: 2rem;
   margin-bottom: 1rem;
@@ -916,14 +926,14 @@ textarea.form-input {
     display: flex;
     flex-direction: column;
   }
-  
+
   /* Stack buttons in sub-question sections for mobile */
   .sub-question-section .form-group {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .sub-question-section .form-group button {
     margin-top: 5px;
     width: 100%;
@@ -931,8 +941,13 @@ textarea.form-input {
 }
 
 @keyframes highlight {
-  0% { background-color: rgba(3, 169, 244, 0.3); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: rgba(3, 169, 244, 0.3);
+  }
+
+  100% {
+    background-color: transparent;
+  }
 }
 
 .highlight-new {
@@ -956,8 +971,13 @@ textarea.form-input {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .success-message {
@@ -1124,12 +1144,12 @@ form.edit-mode .submit-btn:hover {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .question-type-option {
     min-width: auto;
     padding: 15px;
   }
-  
+
   .question-type-option h3 {
     font-size: 1.1rem;
   }
@@ -1276,4 +1296,38 @@ form.edit-mode .submit-btn:hover {
   border-color: #239ecf;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 480px) {
+  .admin-section {
+    padding-top: 60px;
+  }
+
+  .admin-tabs {
+    flex-wrap: wrap;
+    padding: 5px;
+  }
+
+  .admin-tabs button {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    flex: 1 1 45%;
+    margin: 2px;
+  }
+
+  .admin-container {
+    padding: 15px;
+  }
+
+  .admin-container h1 {
+    font-size: 1.5rem;
+  }
+
+  .preview-btn,
+  .submit-btn,
+  .cancel-btn,
+  .apply-filter-btn {
+    width: 100%;
+    margin: 5px 0;
+  }
 }

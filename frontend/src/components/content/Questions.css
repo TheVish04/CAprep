@@ -276,7 +276,8 @@
 }
 
 .bookmark-filter-label {
-  display: inline-block !important; /* Switched from flex to inline-block for vertical-align control */
+  display: inline-block !important;
+  /* Switched from flex to inline-block for vertical-align control */
   vertical-align: middle !important;
   cursor: pointer !important;
   white-space: nowrap;
@@ -284,20 +285,23 @@
   color: #fff !important;
   margin: 0 !important;
   padding: 0 !important;
-  line-height: 40px !important; /* Matches container height for perfect vertical centering */
+  line-height: 40px !important;
+  /* Matches container height for perfect vertical centering */
 }
 
 .bookmark-checkbox {
   display: inline-block !important;
   vertical-align: middle !important;
-  margin: 0 8px 0 0 !important; /* Space between checkbox and text */
+  margin: 0 8px 0 0 !important;
+  /* Space between checkbox and text */
   padding: 0 !important;
   accent-color: var(--primary-color);
   width: 16px !important;
   height: 16px !important;
   cursor: pointer;
   position: relative;
-  top: -1px; /* Tiny nudge to account for font baseline offset */
+  top: -1px;
+  /* Tiny nudge to account for font baseline offset */
 }
 
 /* AI Explanation Box */
@@ -359,8 +363,15 @@
 }
 
 @keyframes aiCursorBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 /* AI Loading Shimmer */
@@ -859,5 +870,71 @@
   .bookmark-btn svg {
     width: 16px;
     height: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .questions-section {
+    padding-top: 60px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .questions-container {
+    padding: 16px;
+  }
+
+  .questions-container h1 {
+    font-size: 1.5rem;
+  }
+
+  .export-btn,
+  .toggle-answers-btn {
+    font-size: 0.85rem;
+    padding: 10px;
+  }
+
+  .filters {
+    padding: 15px !important;
+    gap: 12px !important;
+  }
+
+  .filter-group label {
+    font-size: 0.8rem;
+  }
+
+  .filter-group select,
+  .filter-group input[type="text"] {
+    font-size: 0.85rem;
+    padding: 8px 10px;
+  }
+
+  .search-submit-btn {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 10px;
+  }
+
+  .ai-explanation-container {
+    padding: 15px;
+  }
+
+  .ai-explanation-header {
+    font-size: 1rem;
+  }
+
+  .question-card {
+    padding: 15px;
+  }
+
+  .question-header h2 {
+    font-size: 0.9rem;
+    white-space: normal;
+  }
+
+  .discuss-btn {
+    font-size: 0.75rem;
+    padding: 0 10px;
+    height: 30px;
   }
 }

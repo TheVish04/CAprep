@@ -369,6 +369,8 @@
     padding: 2rem 0;
     background: #1e1e1e;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    height: calc(100vh - 70px);
+    overflow-y: auto;
   }
 
   .nav-menu.active {
@@ -460,8 +462,9 @@
 @media screen and (max-width: 960px) {
   .chat-nav-item {
     margin: 10px auto !important;
+    justify-content: center;
   }
-  
+
   .desktop-only {
     display: none;
   }
@@ -516,7 +519,7 @@
     background: transparent;
     padding: 0;
   }
-  
+
   .policy-link {
     padding: 10px 20px;
     padding-left: 35px;

@@ -282,7 +282,9 @@
   border-color: #03a9f4;
 }
 
-.loading, .no-resources, .error {
+.loading,
+.no-resources,
+.error {
   padding: 30px;
   text-align: center;
   color: #b0b0b0;
@@ -304,31 +306,31 @@
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .search-bar {
     max-width: 100%;
   }
-  
+
   .filter-group {
     min-width: 100%;
   }
-  
+
   .resource-card {
     flex-direction: column;
   }
-  
+
   .resource-actions {
     margin-left: 0;
     margin-top: 15px;
     justify-content: flex-end;
   }
-  
+
   .resource-top-controls {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .view-pdf-btn {
     margin-left: 0;
     align-self: flex-end;
@@ -574,6 +576,7 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+
   .paper-header,
   .paper-title-container,
   .resource-card-header {
@@ -581,7 +584,7 @@
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .paper-header .view-pdf-btn,
   .paper-title-container .view-pdf-btn {
     margin-left: 0;
@@ -636,7 +639,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .paper-view-header .view-pdf-btn {
     margin-left: 0;
     margin-top: 10px;
@@ -657,4 +660,56 @@
 .resource-top-actions .bookmark-btn,
 .resource-top-actions .more-menu-wrapper {
   z-index: 5;
-} 
+}
+
+@media (max-width: 480px) {
+  .resources-section {
+    padding-top: 80px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .resources-container {
+    padding: 15px;
+  }
+
+  .resources-container h1 {
+    font-size: 1.8rem;
+  }
+
+  .search-bar input {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .filters {
+    padding: 15px;
+  }
+
+  .filter-group label {
+    font-size: 12px;
+  }
+
+  .filter-group select {
+    font-size: 13px;
+    padding: 8px;
+  }
+
+  .resource-card {
+    padding: 15px;
+  }
+
+  .paper-view-title {
+    font-size: 1.3rem;
+  }
+
+  .paper-tag {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+  }
+
+  .download-btn {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+}
