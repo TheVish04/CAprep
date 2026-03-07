@@ -643,7 +643,14 @@ const Questions = () => {
                       {q.pdfResourceId && q.pdfResourceId.fileUrl && (
                         <button
                           className="view-paper-btn"
-                          onClick={() => window.open(q.pdfResourceId.fileUrl, '_blank')}
+                          onClick={() => {
+                            const token = apiUtils.getAuthToken();
+                            const res = q.pdfResourceId;
+                            const safeTitle = (res.title || 'paper').replace(/[^\w\s.-]/g, '').trim().replace(/\s+/g, '_');
+                            const filename = `${safeTitle}.pdf`;
+                            const downloadUrl = `${apiUtils.getApiBaseUrl()}/resources/${res._id}/download/${encodeURIComponent(filename)}?token=${token}`;
+                            window.open(downloadUrl, '_blank');
+                          }}
                           title="View associated paper"
                         >
                           <ViewPaperIcon /> View Paper
