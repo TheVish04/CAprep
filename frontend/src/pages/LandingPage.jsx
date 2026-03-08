@@ -115,7 +115,7 @@ const LandingPage = () => {
               <motion.span layout style={{ whiteSpace: 'nowrap' }}>
                 Master Your CA&nbsp;
               </motion.span>
-              <motion.span layout style={{ color: '#239ecf' }}>
+              <motion.span layout style={{ color: '#0584D7' }}>
                 <RotatingText
                   texts={['Journey', 'Foundation', 'Intermediate', 'Final']}
                   mainClassName="overflow-hidden justify-center"
