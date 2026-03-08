@@ -105,7 +105,7 @@ const LandingPage = () => {
       <section className="hero">
         <div className="hero-overlay"></div>
         <div className="hero-content" data-aos="fade-up">
-          <img src="/logo.png" alt="CAprep Logo" className="hero-logo" style={{ height: '100px', marginBottom: '0px', margin: '0 auto', display: 'block' }} />
+          <img src="/logo.webp" alt="CAprep Logo" className="hero-logo" style={{ height: '100px', marginBottom: '0px', margin: '0 auto', display: 'block' }} />
           <LayoutGroup>
             <motion.h1
               layout
@@ -390,7 +390,7 @@ const LandingPage = () => {
       <footer className="landing-footer">
         <div className="footer-content">
           <div className="footer-brand">
-            <img src="/logo.png" alt="CAprep Logo" style={{ height: '100px', marginBottom: '30px' }} />
+            <img src="/logo.webp" alt="CAprep Logo" style={{ height: '100px', marginBottom: '30px' }} />
             <p>Your companion for CA exam success</p>
           </div>
           <div className="footer-links">
