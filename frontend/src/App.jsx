@@ -63,7 +63,7 @@ const ProtectedRoute = ({ element, requireAdmin = false }) => {
 // Redirect already logged in users away from auth pages
 const RedirectIfLoggedIn = ({ element, path }) => {
   const token = apiUtils.getAuthToken();
-  
+
   if (token && (path === '/login' || path === '/register')) {
     try {
       // Validate token format
@@ -77,7 +77,7 @@ const RedirectIfLoggedIn = ({ element, path }) => {
       apiUtils.clearAuthToken();
     }
   }
-  
+
   // No valid token, render the requested auth page
   return element;
 };
@@ -114,7 +114,7 @@ const App = () => {
             <Route path="/contactus" element={<ContactUs />} />
             <Route path="/chat" element={<ProtectedRoute element={<ChatBotPage />} />} />
             <Route path="/faq" element={<FAQ />} />
-            
+
             {/* Protected Routes */}
             <Route
               path="/questions"
@@ -148,7 +148,7 @@ const App = () => {
               path="/dashboard"
               element={<ProtectedRoute element={<Dashboard />} />}
             />
-            
+
             {/* Admin Routes */}
             <Route
               path="/admin"
@@ -174,7 +174,11 @@ const App = () => {
               path="/admin/report-issues"
               element={<ProtectedRoute element={<AdminPanel />} requireAdmin={true} />}
             />
-            
+            <Route
+              path="/admin/contact-us"
+              element={<ProtectedRoute element={<AdminPanel />} requireAdmin={true} />}
+            />
+
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

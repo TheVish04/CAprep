@@ -16,6 +16,7 @@ const AdminAnnouncements = () => {
     if (location.pathname.includes('/announcements')) return 'announcements';
     if (location.pathname.includes('/feature-requests')) return 'feature-requests';
     if (location.pathname.includes('/report-issues')) return 'report-issues';
+    if (location.pathname.includes('/contact-us')) return 'contact-us';
     return 'questions';
   };
   const [activeTab, setActiveTab] = useState(getActiveTab());
@@ -292,6 +293,12 @@ const AdminAnnouncements = () => {
             onClick={() => navigate('/admin/report-issues')}
           >
             Report Issue
+          </button>
+          <button
+            className={activeTab === 'contact-us' ? 'active-tab' : ''}
+            onClick={() => navigate('/admin/contact-us')}
+          >
+            Contact Us
           </button>
         </div>
 
