@@ -126,7 +126,6 @@ const ImageExtractor = ({ onExtract, disabled }) => {
     <div className="image-extractor-container">
       <div className="extractor-header">
         <h3>Auto-Fill via Image (AI)</h3>
-        <p>Instantly extract questions, options, answers, and tables from images.</p>
       </div>
 
       <div
