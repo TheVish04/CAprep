@@ -9,7 +9,7 @@ import './Register.css';
 const Register = () => {
   // Step tracking
   const [step, setStep] = useState(1); // Step 1: Email verification, Step 2: Registration
-  
+
   // Email verification states
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -19,26 +19,26 @@ const Register = () => {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  
+
   // Registration form states
-  const [formData, setFormData] = useState({ 
-    fullName: '', 
-    email: '', 
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
     password: '',
-    confirmPassword: '' 
+    confirmPassword: ''
   });
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({ fullName: '', password: '', confirmPassword: '' });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Password visibility states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const navigate = useNavigate();
-  
+
   // Countdown timer for OTP resend
   useEffect(() => {
     let timer;
@@ -47,19 +47,19 @@ const Register = () => {
     }
     return () => clearTimeout(timer);
   }, [countdown]);
-  
+
   // Handle email input change
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
     setOtpError('');
   };
-  
+
   // Handle OTP input change
   const handleOtpChange = (e) => {
     setOtp(e.target.value);
     setOtpError('');
   };
-  
+
   // Send OTP to email
   const handleSendOtp = async () => {
     // Validate email
@@ -67,31 +67,31 @@ const Register = () => {
       setOtpError('Please enter a valid email address');
       return;
     }
-    
+
     setSendingOtp(true);
     setOtpError('');
-    
+
     try {
       const response = await api.post('/auth/send-otp', { email: email.trim() });
-      
+
       console.log("OTP send response:", response.data);
-      
+
       setOtpSent(true);
       setCountdown(60); // 60 seconds countdown for resend
-      
+
       // Show success message
       setOtpError('');
     } catch (err) {
       console.error('Error sending OTP:', err.response?.data || err);
-      
+
       // Network errors
       if (err.message && err.message.includes('Network Error')) {
         setOtpError('Network error. Please check your internet connection and try again.');
       }
       // Handle specific error messages from backend
       else if (err.response?.data?.error) {
-        if (err.response.data.error.includes('does not exist') || 
-            err.response.data.error.includes('cannot receive emails')) {
+        if (err.response.data.error.includes('does not exist') ||
+          err.response.data.error.includes('cannot receive emails')) {
           setOtpError('This email address appears to be invalid or cannot receive emails. Please check and try again.');
         } else if (err.response.data.error.includes('already registered')) {
           setOtpError('Email already registered. Redirecting to login...');
@@ -108,36 +108,36 @@ const Register = () => {
       setSendingOtp(false);
     }
   };
-  
+
   // Verify OTP
   const handleVerifyOtp = async () => {
     if (!otp.trim()) {
       setOtpError('Please enter the OTP');
       return;
     }
-    
+
     setVerifyingOtp(true);
     setOtpError('');
-    
+
     try {
       console.log(`Sending OTP verification request to caprep.onrender.com for email: ${email.trim()}`);
-      
+
       const response = await api.post('/auth/verify-otp', {
         email: email.trim(),
         otp: otp.trim()
       });
-      
+
       console.log("OTP verification response:", response.data);
-      
+
       setOtpVerified(true);
-      
+
       // Move to step 2 and pre-fill email
       setStep(2);
       setFormData(prev => ({ ...prev, email: email.trim() }));
-      
+
     } catch (err) {
       console.error('Error verifying OTP:', err.response?.data || err);
-      
+
       // Network errors
       if (err.message && err.message.includes('Network Error')) {
         setOtpError('Network error. Please check your internet connection and try again.');
@@ -150,15 +150,15 @@ const Register = () => {
       setVerifyingOtp(false);
     }
   };
-  
+
   // Clear error when user starts typing again
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    
+
     if (error) setError('');
     if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
-    
+
     // Check password strength when password field changes
     if (name === 'password') {
       checkPasswordStrength(value);
@@ -188,16 +188,16 @@ const Register = () => {
 
     // Check length
     if (password.length >= 8) strength += 20;
-    
+
     // Check for lowercase letters
     if (password.match(/[a-z]+/)) strength += 20;
-    
+
     // Check for uppercase letters
     if (password.match(/[A-Z]+/)) strength += 20;
-    
+
     // Check for numbers
     if (password.match(/[0-9]+/)) strength += 20;
-    
+
     // Check for special characters
     if (password.match(/[^a-zA-Z0-9]+/)) strength += 20;
 
@@ -221,42 +221,42 @@ const Register = () => {
   // Form validation with field-level errors
   const validateForm = () => {
     const errors = { fullName: '', password: '', confirmPassword: '' };
-    
+
     if (!formData.fullName.trim()) {
       errors.fullName = 'Full name is required';
     } else if (formData.fullName.trim().length < 3) {
       errors.fullName = 'Full name must be at least 3 characters';
     }
-    
+
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       errors.password = 'Password must be at least 8 characters';
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
-    
+
     setFieldErrors(errors);
-    
+
     if (formData.email !== email) {
       setError('Email mismatch with verified email');
       return false;
     }
-    
+
     return !errors.fullName && !errors.password && !errors.confirmPassword;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Send registration data without OTP
       const dataToSend = {
@@ -264,13 +264,13 @@ const Register = () => {
         email: formData.email.trim(),
         password: formData.password
       };
-      
+
       console.log('Sending registration data:', {...dataToSend, password: '***HIDDEN***'});
-      
+
       const response = await api.post('/auth/register', dataToSend);
-      
+
       console.log('Registration response:', response.data);
-      
+
       // Auto-login: use token from response and navigate to dashboard
       if (response.data?.token) {
         const { token, expires, user, refreshToken, refreshExpires } = response.data;
@@ -288,15 +288,15 @@ const Register = () => {
       }
     } catch (err) {
       console.error('Registration error:', err.response?.data || err);
-      
+
       // Network errors
       if (err.message && err.message.includes('Network Error')) {
         setError('Network error. Please check your internet connection and try again.');
-      } 
+      }
       // Handle specific error messages from backend
       else if (err.response?.data?.error) {
         setError(err.response.data.error);
-        
+
         // If email verification required, go back to step 1
         if (err.response.data.redirect === '/register') {
           setStep(1);
@@ -322,7 +322,7 @@ const Register = () => {
   const renderOtpStep = () => (
     <div id="register-form" aria-labelledby="register-tab">
       {otpError && <p className="error">{otpError}</p>}
-      
+
       <form onSubmit={(e) => {
         e.preventDefault();
         if (!otpSent) {
@@ -348,11 +348,11 @@ const Register = () => {
             }}
           />
         </div>
-        
+
         {!otpSent ? (
           <div className="otp-form-group">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={sendingOtp || !email.trim()}
               className="otp-button"
             >
@@ -364,14 +364,14 @@ const Register = () => {
             <div className="otp-form-group">
               <label>Enter OTP:</label>
               <div className="otp-input-container">
-                <SegmentedOTPInput 
-                  value={otp} 
-                  onChange={setOtp} 
-                  disabled={verifyingOtp} 
+                <SegmentedOTPInput
+                  value={otp}
+                  onChange={setOtp}
+                  disabled={verifyingOtp}
                 />
                 {countdown === 0 && (
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={handleSendOtp}
                     disabled={sendingOtp}
                     className="otp-button resend"
@@ -384,10 +384,10 @@ const Register = () => {
                 <p className="resend-timer">Resend OTP in {countdown}s</p>
               )}
             </div>
-            
+
             <div className="button-group">
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={verifyingOtp || !otp.trim()}
                 className="otp-button verify-otp"
               >
@@ -397,7 +397,7 @@ const Register = () => {
           </>
         )}
       </form>
-      
+
       <p className="auth-link">
         Already have an account? <Link to="/login">Login</Link>
       </p>
@@ -408,7 +408,7 @@ const Register = () => {
   const renderRegistrationStep = () => (
     <div id="register-form" aria-labelledby="register-tab">
       {error && <p className="error">{error}</p>}
-      
+
       <form onSubmit={handleSubmit}>
         <div>
           <label>Full Name:</label>
@@ -425,7 +425,7 @@ const Register = () => {
           />
           {fieldErrors.fullName && <p id="fullName-error" className="inline-error">{fieldErrors.fullName}</p>}
         </div>
-        
+
         <div>
           <label>Email:</label>
           <input
@@ -437,7 +437,7 @@ const Register = () => {
           />
           <p className="verified-email-note">Email verified ✓</p>
         </div>
-        
+
         <div>
           <label>Password:</label>
           <div className="password-container">
@@ -453,20 +453,20 @@ const Register = () => {
               aria-describedby={fieldErrors.password ? 'password-error' : undefined}
             />
             {fieldErrors.password && <p id="password-error" className="inline-error">{fieldErrors.password}</p>}
-            <span 
-              className="toggle-password" 
+            <span
+              className="toggle-password"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? 'Hide' : 'Show'}
             </span>
           </div>
-          
+
           {formData.password && (
             <div className="password-strength">
               <div className="strength-bar">
-                <div 
-                  className="strength-fill" 
-                  style={{ 
+                <div
+                  className="strength-fill"
+                  style={{
                     width: `${passwordStrength}%`,
                     backgroundColor: getStrengthColor()
                   }}
@@ -476,7 +476,7 @@ const Register = () => {
             </div>
           )}
         </div>
-        
+
         <div>
           <label>Confirm Password:</label>
           <div className="password-container">
@@ -496,8 +496,8 @@ const Register = () => {
                 }
               }}
             />
-            <span 
-              className="toggle-password" 
+            <span
+              className="toggle-password"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             >
               {showConfirmPassword ? 'Hide' : 'Show'}
@@ -505,21 +505,21 @@ const Register = () => {
           </div>
           {fieldErrors.confirmPassword && <p id="confirmPassword-error" className="inline-error">{fieldErrors.confirmPassword}</p>}
         </div>
-        
-        <button 
-          type="submit" 
+
+        <button
+          type="submit"
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Registering...' : 'Register'}
         </button>
       </form>
-      
+
       <p className="auth-link">
         Already have an account? <Link to="/login">Login</Link>
       </p>
-      
-      <button 
-        type="button" 
+
+      <button
+        type="button"
         onClick={() => setStep(1)}
         className="otp-button back-button"
       >

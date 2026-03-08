@@ -86,7 +86,7 @@ const Navbar = () => {
 
 
   return (
-    <motion.nav 
+    <motion.nav
       className="navbar"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -110,13 +110,13 @@ const Navbar = () => {
           </div>
         </div>
 
-        <motion.ul 
+        <motion.ul
           className={`nav-menu ${isMenuOpen ? 'active' : ''}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <motion.li 
+          <motion.li
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -124,8 +124,8 @@ const Navbar = () => {
               Home
             </Link>
           </motion.li>
-          
-          <motion.li 
+
+          <motion.li
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -133,8 +133,8 @@ const Navbar = () => {
               About
             </Link>
           </motion.li>
-          
-          <motion.li 
+
+          <motion.li
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -142,7 +142,7 @@ const Navbar = () => {
               Contact Us
             </Link>
           </motion.li>
-          
+
           {isLoggedIn ? (
             <>
               <motion.li
@@ -151,54 +151,54 @@ const Navbar = () => {
                 whileTap={{ scale: 0.95 }}
               >
                 <div ref={studyDropdownRef} className="nav-dropdown-inner">
-                <button
-                  type="button"
-                  className={`nav-link nav-dropdown-trigger ${studyDropdownOpen ? 'open' : ''}`}
-                  onClick={() => setStudyDropdownOpen(!studyDropdownOpen)}
-                  aria-expanded={studyDropdownOpen}
-                  aria-haspopup="true"
-                >
-                  Study
-                  <svg className="nav-dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-                {studyDropdownOpen && (
-                  <ul className="nav-dropdown-menu" role="menu">
-                    <motion.li 
-                      role="none"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Link to="/questions" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
-                        Questions
-                      </Link>
-                    </motion.li>
-                    <motion.li 
-                      role="none"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Link to="/quiz" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
-                        Quiz
-                      </Link>
-                    </motion.li>
-                    <motion.li 
-                      role="none"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Link to="/resources" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
-                        Resources
-                      </Link>
-                    </motion.li>
-                  </ul>
-                )}
+                  <button
+                    type="button"
+                    className={`nav-link nav-dropdown-trigger ${studyDropdownOpen ? 'open' : ''}`}
+                    onClick={() => setStudyDropdownOpen(!studyDropdownOpen)}
+                    aria-expanded={studyDropdownOpen}
+                    aria-haspopup="true"
+                  >
+                    Study
+                    <svg className="nav-dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  {studyDropdownOpen && (
+                    <ul className="nav-dropdown-menu" role="menu">
+                      <motion.li
+                        role="none"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link to="/questions" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
+                          Questions
+                        </Link>
+                      </motion.li>
+                      <motion.li
+                        role="none"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link to="/quiz" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
+                          Quiz
+                        </Link>
+                      </motion.li>
+                      <motion.li
+                        role="none"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link to="/resources" className="nav-dropdown-item" onClick={() => { setStudyDropdownOpen(false); setIsMenuOpen(false); }} role="menuitem">
+                          Resources
+                        </Link>
+                      </motion.li>
+                    </ul>
+                  )}
                 </div>
               </motion.li>
 
               {!isAdmin && (
-                <motion.li 
+                <motion.li
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -209,7 +209,7 @@ const Navbar = () => {
               )}
 
               {isAdmin && (
-                <motion.li 
+                <motion.li
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -218,8 +218,8 @@ const Navbar = () => {
                   </Link>
                 </motion.li>
               )}
-              
-              <motion.li 
+
+              <motion.li
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 className="nav-item nav-profile-dropdown-wrapper"
@@ -245,7 +245,7 @@ const Navbar = () => {
                   </button>
                   {profileDropdownOpen && (
                     <ul className="nav-dropdown-menu nav-profile-dropdown-menu" role="menu">
-                      <motion.li 
+                      <motion.li
                         role="none"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -257,7 +257,7 @@ const Navbar = () => {
                       <li role="none" className="nav-profile-notifications-item">
                         <NotificationsDropdown embedded />
                       </li>
-                      <motion.li 
+                      <motion.li
                         role="none"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -270,8 +270,8 @@ const Navbar = () => {
                   )}
                 </div>
               </motion.li>
-              
-              <motion.li 
+
+              <motion.li
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 className="nav-item chat-nav-item"
@@ -291,7 +291,7 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <motion.li 
+              <motion.li
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -300,7 +300,7 @@ const Navbar = () => {
                 </Link>
               </motion.li>
 
-              <motion.li 
+              <motion.li
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -311,7 +311,7 @@ const Navbar = () => {
 
 
 
-              <motion.li 
+              <motion.li
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 className="nav-item chat-nav-item"

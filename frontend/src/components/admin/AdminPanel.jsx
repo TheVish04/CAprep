@@ -11,6 +11,7 @@ import authUtils from '../../utils/authUtils';
 import apiUtils from '../../utils/apiUtils';
 import ImageExtractor from './ImageExtractor';
 import PointPdfModal from './PointPdfModal';
+import AdminContactUs from './AdminContactUs';
 import './AdminPanel.css';
 
 const AdminPanel = () => {
@@ -23,6 +24,7 @@ const AdminPanel = () => {
     if (location.pathname.includes('/announcements')) return 'announcements';
     if (location.pathname.includes('/feature-requests')) return 'feature-requests';
     if (location.pathname.includes('/report-issues')) return 'report-issues';
+    if (location.pathname.includes('/contact-us')) return 'contact-us';
     return 'questions';
   };
   const [activeTab, setActiveTab] = useState(getActiveTab());
@@ -776,6 +778,8 @@ const AdminPanel = () => {
         return <AdminFeatureRequests />;
       case 'report-issues':
         return <AdminReportIssues />;
+      case 'contact-us':
+        return <AdminContactUs />;
       case 'announcements':
         return null; // This tab is handled by a separate route
       case 'questions':
@@ -1571,6 +1575,15 @@ const AdminPanel = () => {
             }}
           >
             Report Issue
+          </button>
+          <button
+            className={activeTab === 'contact-us' ? 'active-tab' : ''}
+            onClick={() => {
+              setActiveTab('contact-us');
+              navigate('/admin/contact-us');
+            }}
+          >
+            Contact Us
           </button>
         </div>
         {renderActiveTab()}

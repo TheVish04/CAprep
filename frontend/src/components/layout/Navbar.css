@@ -29,6 +29,16 @@
   align-items: center;
 }
 
+.navbar-brand-container {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo-img {
+  height: 40px;
+  width: auto;
+}
+
 .nav-menu {
   display: flex;
   align-items: center;

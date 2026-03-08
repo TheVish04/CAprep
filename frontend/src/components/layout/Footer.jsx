@@ -7,7 +7,7 @@ const Footer = () => {
     <footer className="main-footer">
       <div className="footer-content">
         <div className="footer-brand">
-          <h3>CAprep</h3>
+          <img src="/logo.png" alt="CAprep Logo" style={{ height: '100px', marginBottom: '10px' }} />
           <p>Your companion for CA exam success</p>
         </div>
         <div className="footer-links">

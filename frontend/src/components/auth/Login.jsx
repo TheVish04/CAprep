@@ -16,7 +16,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // State for toggling password visibility
   const [showPassword, setShowPassword] = useState(false);
 
@@ -27,7 +27,7 @@ const Login = () => {
     if (queryParams.get('expired') === 'true') {
       setInfoMessage('Your session has expired. Please log in again.');
     }
-    
+
     // Check if there's a message from redirect state (from authUtils)
     if (location.state?.message) {
       setInfoMessage(location.state.message);
@@ -68,11 +68,11 @@ const Login = () => {
 
     try {
       console.log('Attempting login...');
-      
+
       const response = await api.post('/auth/login', credentials);
-      
+
       console.log('Login response received:', response.status);
-      
+
       if (response.data && response.data.token) {
         const { token, expires, user, refreshToken, refreshExpires } = response.data;
         // Store auth object for token refresh flow (apiUtils + axios interceptor)
@@ -104,7 +104,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      
+
       if (err.response) {
         // Server responded with an error status
         console.error('Error response:', err.response.status, err.response.data);
@@ -174,8 +174,8 @@ const Login = () => {
                   }}
                 />
                 {fieldErrors.password && <p id="password-error" className="inline-error">{fieldErrors.password}</p>}
-                <span 
-                  className="toggle-password" 
+                <span
+                  className="toggle-password"
                   onClick={() => !isLoading && setShowPassword(!showPassword)}
                 >
                   {showPassword ? 'Hide' : 'Show'}

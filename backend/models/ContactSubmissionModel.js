@@ -5,7 +5,7 @@ const ContactSubmissionSchema = new Schema({
   type: {
     type: String,
     required: true,
-    enum: ['feature', 'issue'],
+    enum: ['feature', 'issue', 'contact'],
     index: true
   },
   name: {

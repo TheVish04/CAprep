@@ -14,11 +14,35 @@ const ContactUs = () => {
     category: '',
     description: '',
   });
+  const [generalData, setGeneralData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    description: '',
+  });
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
   const [featureStatus, setFeatureStatus] = useState({ type: '', message: '' });
+  const [generalStatus, setGeneralStatus] = useState({ type: '', message: '' });
 
   useEffect(() => {
-    setIsLoggedIn(!!apiUtils.getAuthToken());
+    const token = apiUtils.getAuthToken();
+    setIsLoggedIn(!!token);
+    if (token) {
+      // Decode JWT payload or fetch user to pre-fill info
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          setGeneralData(prev => ({
+            ...prev,
+            name: payload.fullName || '',
+            email: payload.email || '',
+          }));
+        }
+      } catch (err) {
+        console.error('Error decoding token:', err);
+      }
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -29,6 +53,40 @@ const ContactUs = () => {
   const handleFeatureChange = (e) => {
     const { name, value } = e.target;
     setFeatureData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGeneralChange = (e) => {
+    const { name, value } = e.target;
+    setGeneralData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGeneralSubmit = async (e) => {
+    e.preventDefault();
+    if (!generalData.name || !generalData.email || !generalData.subject || !generalData.description) {
+      setGeneralStatus({ type: 'error', message: 'Please fill out all fields.' });
+      return;
+    }
+    setGeneralStatus({ type: '', message: '' });
+
+    try {
+      const baseUrl = apiUtils.getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/contact/general`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(generalData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setGeneralData({ name: '', email: '', subject: '', description: '' });
+        setGeneralStatus({ type: 'success', message: 'Thank you! Your message has been sent.' });
+      } else {
+        setGeneralStatus({ type: 'error', message: data.error || data.message || 'Failed to submit. Please try again.' });
+      }
+    } catch (err) {
+      setGeneralStatus({ type: 'error', message: 'Unable to submit. Please check your connection and try again.' });
+    }
   };
 
   const handleReportSubmit = async (e) => {
@@ -144,6 +202,76 @@ const ContactUs = () => {
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="general-contact-section" style={{ marginBottom: '40px' }}>
+            <h2>Send Us a Message</h2>
+            <p>
+              For any general inquiries, partnerships, or support questions, please drop us a message below.
+            </p>
+
+            {generalStatus.message && (
+              <div className={`status-message ${generalStatus.type}`}>
+                {generalStatus.message}
+              </div>
+            )}
+            <form onSubmit={handleGeneralSubmit} className="report-form">
+              <div className="form-group">
+                <label htmlFor="general-name">Name</label>
+                <input
+                  type="text"
+                  id="general-name"
+                  name="name"
+                  value={generalData.name}
+                  onChange={handleGeneralChange}
+                  placeholder="Your full name"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="general-email">Email</label>
+                <input
+                  type="email"
+                  id="general-email"
+                  name="email"
+                  value={generalData.email}
+                  onChange={handleGeneralChange}
+                  placeholder="Your email address"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="general-subject">Subject</label>
+                <input
+                  type="text"
+                  id="general-subject"
+                  name="subject"
+                  value={generalData.subject}
+                  onChange={handleGeneralChange}
+                  placeholder="What is this regarding?"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="general-description">Message</label>
+                <textarea
+                  id="general-description"
+                  name="description"
+                  value={generalData.description}
+                  onChange={handleGeneralChange}
+                  placeholder="How can we help you today?"
+                  rows="5"
+                  required
+                ></textarea>
+              </div>
+
+              <button type="submit" className="submit-button">
+                Send Message
+              </button>
+            </form>
           </div>
 
           <div className="report-section">

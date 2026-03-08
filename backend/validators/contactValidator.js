@@ -69,8 +69,55 @@ const issueReportSchema = Joi.object({
     })
 }).unknown(false);
 
+/**
+ * Joi schema for POST /api/contact/general (general inquiry).
+ */
+const generalContactSchema = Joi.object({
+  name: Joi.string()
+    .required()
+    .trim()
+    .min(1)
+    .max(200)
+    .messages({
+      'string.empty': 'Name is required',
+      'any.required': 'Name is required',
+    }),
+  email: Joi.string()
+    .required()
+    .email()
+    .trim()
+    .lowercase()
+    .max(320)
+    .messages({
+      'string.empty': 'Email is required',
+      'string.email': 'Valid email is required',
+      'any.required': 'Email is required',
+    }),
+  subject: Joi.string()
+    .required()
+    .trim()
+    .min(1)
+    .max(LIMITS.subject)
+    .messages({
+      'string.empty': 'Subject is required',
+      'any.required': 'Subject is required',
+      'string.max': `Subject must be at most ${LIMITS.subject} characters`
+    }),
+  description: Joi.string()
+    .required()
+    .trim()
+    .min(1)
+    .max(LIMITS.description)
+    .messages({
+      'string.empty': 'Message is required',
+      'any.required': 'Message is required',
+      'string.max': `Message must be at most ${LIMITS.description} characters`
+    })
+}).unknown(false);
+
 module.exports = {
   featureRequestSchema,
   issueReportSchema,
+  generalContactSchema,
   LIMITS
 };
